@@ -1,38 +1,83 @@
+
 import React, { useState, useEffect } from "react";
 import { ViewState, Worker, Room, RoomType, WorkerRole } from "./types";
-import { SparklesIcon, SpaIcon, PuzzleIcon, UsersIcon, DoorIcon, MapPinIcon, ChevronLeftIcon, SettingsIcon, CheckCircleIcon, DragIndicatorIcon, EditIcon, TrashIcon, PlusIcon } from "./components/Icons";
+import { SparklesIcon, SpaIcon, PuzzleIcon, UsersIcon, DoorIcon, MapPinIcon, ChevronLeftIcon, SettingsIcon, CheckCircleIcon, DragIndicatorIcon, EditIcon, TrashIcon, PlusIcon, MoreDotsIcon, CheckIcon, HomeIcon, GfaLogo } from "./components/Icons";
 import { autoAssignWorkers } from "./services/geminiService";
 
 // --- Sub Components ---
 
-const Header = ({ title, onBack, showSettings }: { title: string; onBack?: () => void; showSettings?: boolean }) => (
-  <header className="fixed top-0 left-0 right-0 z-20 bg-background/90 backdrop-blur-sm px-4 h-16 flex items-center justify-between border-b border-white/50">
-    <div className="flex items-center gap-2">
+// The main background component that replicates the "Blue Sky & Rays" look from the screenshots
+const MainBackground = () => (
+  <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+      {/* Sky Blue Gradient Base */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#6cb8f6] via-[#aed8f7] to-[#e4eff6]"></div>
+      
+      {/* Sun/Light Rays Top Right - Stronger Effect */}
+      <div className="absolute top-[-30%] right-[-20%] w-[100%] h-[100%] bg-gradient-radial from-white/70 via-white/10 to-transparent blur-3xl mix-blend-overlay"></div>
+      
+      {/* Defined Rays */}
+      <div className="absolute top-[-10%] right-[-10%] w-[120%] h-[120%] opacity-40 bg-[conic-gradient(at_top_right,_rgba(255,255,255,0.8)_0deg,_transparent_10deg,_rgba(255,255,255,0.4)_20deg,_transparent_40deg,_rgba(255,255,255,0.6)_60deg,_transparent_80deg)] blur-2xl"></div>
+
+      {/* Subtle Sparkles/Dust */}
+      <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(white 1.5px, transparent 1.5px)', backgroundSize: '70px 70px' }}></div>
+      
+      {/* Bottom Waves - The "Ethereal" Curves */}
+      <div className="absolute bottom-0 left-0 right-0 h-[45%] z-0 pointer-events-none">
+         <svg viewBox="0 0 1440 320" className="absolute bottom-0 w-full h-full text-white/20" preserveAspectRatio="none">
+            <path fill="currentColor" d="M0,160L60,170.7C120,181,240,203,360,202.7C480,203,600,181,720,176C840,171,960,181,1080,186.7C1200,192,1320,192,1380,192L1440,192L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"></path>
+         </svg>
+         <svg viewBox="0 0 1440 320" className="absolute bottom-[-20px] w-full h-full text-white/40" preserveAspectRatio="none">
+             <path fill="currentColor" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,218.7C672,235,768,245,864,229.3C960,213,1056,171,1152,165.3C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+         </svg>
+         <svg viewBox="0 0 1440 320" className="absolute bottom-0 w-full h-full text-gradient-to-t from-orange-50/40 to-white/10" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="wave-grad" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="rgba(255, 250, 240, 0)" />
+                  <stop offset="100%" stopColor="rgba(255, 248, 235, 0.6)" />
+                </linearGradient>
+              </defs>
+              <path fill="url(#wave-grad)" d="M0,256L60,245.3C120,235,240,213,360,213.3C480,213,600,235,720,245.3C840,256,960,256,1080,245.3C1200,235,1320,213,1380,202.7L1440,192L1440,320L0,320Z"></path>
+         </svg>
+      </div>
+  </div>
+);
+
+const Header = ({ title, onBack, showSettings, action }: { title: string; onBack?: () => void; showSettings?: boolean; action?: React.ReactNode }) => (
+  <header className="fixed top-0 left-0 right-0 z-30 bg-white/50 backdrop-blur-md px-4 h-16 flex items-center justify-between border-b border-white/20">
+    <div className="flex items-center gap-3">
       {onBack && (
         <button onClick={onBack} className="p-2 -ml-2 text-text-main hover:bg-black/5 rounded-full transition-colors">
           <ChevronLeftIcon className="w-6 h-6" />
         </button>
       )}
-      <h1 className="text-xl font-display font-semibold text-text-main">{title}</h1>
+      <div className="flex items-center gap-2">
+         {/* Small Logo in Header */}
+         {!onBack && <GfaLogo className="w-6 h-6 text-gfa-blue" />}
+         <h1 className="text-xl font-bold text-text-main tracking-tight">{title}</h1>
+      </div>
     </div>
-    {showSettings && (
-      <button className="p-2 text-text-light hover:text-text-main transition-colors">
-        <SettingsIcon className="w-6 h-6" />
-      </button>
-    )}
+    <div className="flex items-center gap-2">
+        {action}
+        {showSettings && (
+        <button className="p-2 text-text-light hover:text-text-main transition-colors">
+            <SettingsIcon className="w-6 h-6" />
+        </button>
+        )}
+    </div>
   </header>
 );
 
 const BottomNav = ({ active, onChange }: { active: ViewState; onChange: (v: ViewState) => void }) => {
   const items = [
+    { id: 'DASHBOARD', label: 'Início', icon: HomeIcon },
     { id: 'ROOM_ASSEMBLY', label: 'Montagem', icon: PuzzleIcon },
-    { id: 'WORKERS', label: 'Trabalhadores', icon: UsersIcon },
+    { id: 'WORKERS', label: 'Equipe', icon: UsersIcon }, // Shortened label for better fit
     { id: 'ROOMS', label: 'Salas', icon: DoorIcon },
     { id: 'LOCATIONS', label: 'Locais', icon: MapPinIcon },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-slate-100 pb-safe pt-2 px-2 shadow-lg rounded-t-2xl">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-xl border-t border-white/60 pb-safe pt-2 px-2 shadow-2xl rounded-t-3xl">
       <div className="flex justify-around items-end">
         {items.map((item) => {
           const isActive = active === item.id;
@@ -40,12 +85,12 @@ const BottomNav = ({ active, onChange }: { active: ViewState; onChange: (v: View
             <button
               key={item.id}
               onClick={() => onChange(item.id as ViewState)}
-              className={`flex flex-col items-center gap-1 p-2 w-full transition-all duration-300 ${isActive ? 'text-primary' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex flex-col items-center gap-1 p-1 w-full transition-all duration-300 ${isActive ? 'text-primary-dark' : 'text-slate-400 hover:text-slate-600'}`}
             >
-              <div className={`p-1.5 rounded-xl transition-all ${isActive ? 'bg-primary/10 -translate-y-1' : ''}`}>
-                <item.icon className="w-6 h-6" />
+              <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'bg-primary/20 -translate-y-2 shadow-sm' : ''}`}>
+                <item.icon className={`w-6 h-6 ${isActive ? 'stroke-2' : ''}`} />
               </div>
-              <span className={`text-[10px] font-medium transition-all ${isActive ? 'opacity-100 font-bold' : 'opacity-80'}`}>{item.label}</span>
+              <span className={`text-[10px] font-medium transition-all ${isActive ? 'opacity-100 font-bold text-slate-700 translate-y-[-4px]' : 'opacity-80'}`}>{item.label}</span>
             </button>
           );
         })}
@@ -58,37 +103,50 @@ const BottomNav = ({ active, onChange }: { active: ViewState; onChange: (v: View
 
 const LoginView = ({ onLogin }: { onLogin: () => void }) => {
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
-       <div className="w-full flex flex-col items-center mb-6">
-        <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
-          <SpaIcon className="text-primary w-10 h-10" />
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-6 overflow-hidden">
+       <MainBackground />
+       
+       <div className="relative w-full flex flex-col items-center mb-10 z-10">
+        <div className="w-28 h-28 bg-white rounded-full flex items-center justify-center mb-6 shadow-2xl border-4 border-white/40">
+          <GfaLogo className="text-gfa-blue w-16 h-16" />
         </div>
-        <h1 className="text-text-main text-3xl font-bold">GFA</h1>
+        <h1 className="text-text-main text-4xl font-bold tracking-tight">GFA</h1>
       </div>
-      <h2 className="text-text-main/90 text-2xl font-bold mb-8">Bem-vindo(a) de volta</h2>
       
-      <div className="w-full max-w-sm space-y-4">
+      <h2 className="relative text-text-main text-[28px] font-bold mb-8 text-center leading-tight z-10">Bem-vindo(a) de volta</h2>
+      
+      <div className="relative w-full max-w-sm space-y-5 z-10">
         <div>
-           <label className="block text-text-main/80 font-medium mb-2">Email ou usuário</label>
-           <input type="text" placeholder="Digite seu email ou usuário" className="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-text-main placeholder:text-text-light/70" />
+           <label className="block text-text-main/80 text-base font-medium mb-2 pl-1">Email ou usuário</label>
+           <div className="relative">
+                <input type="text" placeholder="Digite seu email ou usuário" className="w-full pl-5 pr-12 py-4 rounded-2xl border border-blue-100/50 bg-white/80 backdrop-blur-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-text-main placeholder:text-text-light/50 text-base shadow-sm" />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-primary-dark/50">
+                    <UsersIcon className="w-6 h-6" />
+                </div>
+           </div>
         </div>
         <div>
-           <label className="block text-text-main/80 font-medium mb-2">Senha</label>
-           <input type="password" placeholder="Digite sua senha" className="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-text-main placeholder:text-text-light/70" />
+           <label className="block text-text-main/80 text-base font-medium mb-2 pl-1">Senha</label>
+           <div className="relative">
+                <input type="password" placeholder="Digite sua senha" className="w-full pl-5 pr-12 py-4 rounded-2xl border border-blue-100/50 bg-white/80 backdrop-blur-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-text-main placeholder:text-text-light/50 text-base shadow-sm" />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-primary-dark/50">
+                    <DoorIcon className="w-6 h-6" />
+                </div>
+           </div>
         </div>
         
-        <div className="text-right">
-          <a href="#" className="text-primary text-sm font-medium hover:underline">Esqueceu a senha?</a>
+        <div className="text-right pt-1">
+          <a href="#" className="text-primary-dark text-sm font-semibold hover:underline">Esqueceu a senha?</a>
         </div>
 
-        <button onClick={onLogin} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-xl transition-transform active:scale-[0.98] shadow-lg shadow-primary/30">
+        <button onClick={onLogin} className="w-full bg-primary-dark hover:bg-cyan-500 text-text-main font-bold text-lg py-4 rounded-2xl transition-all active:scale-[0.98] shadow-lg shadow-cyan-200/50 mt-4">
           Entrar
         </button>
       </div>
 
-       <div className="mt-8 text-center">
+       <div className="relative mt-12 text-center z-10">
           <p className="text-sm text-text-light">Não tem uma conta?</p>
-          <a href="#" className="text-primary font-bold hover:underline">Criar conta</a>
+          <a href="#" className="text-primary-dark font-bold text-base hover:underline mt-1 inline-block">Criar conta</a>
        </div>
     </div>
   );
@@ -96,70 +154,85 @@ const LoginView = ({ onLogin }: { onLogin: () => void }) => {
 
 const DashboardView = ({ onNavigate }: { onNavigate: (v: ViewState) => void }) => {
   const menuItems = [
-    { id: 'ROOM_ASSEMBLY', label: 'Montagem das Salas', icon: PuzzleIcon, desc: 'Organizar trabalhadores e salas' },
-    { id: 'WORKERS', label: 'Cadastro de Trabalhadores', icon: UsersIcon, desc: 'Gerenciar médiuns e apoio' },
-    { id: 'ROOMS', label: 'Cadastro de Salas de Passe', icon: DoorIcon, desc: 'Configurar salas físicas' },
-    { id: 'LOCATIONS', label: 'Cadastro de Locais de Trabalho', icon: MapPinIcon, desc: 'Recepção e outros locais' },
+    { id: 'ROOM_ASSEMBLY', label: 'Montagem das Salas', icon: PuzzleIcon },
+    { id: 'WORKERS', label: 'Cadastro de Trabalhadores', icon: UsersIcon },
+    { id: 'ROOMS', label: 'Cadastro de Salas de Passe', icon: DoorIcon },
+    { id: 'LOCATIONS', label: 'Cadastro de Locais de Trabalho', icon: MapPinIcon },
   ];
 
   return (
-    <div className="min-h-screen pt-20 px-4 pb-24">
-      <Header title="Navegação" showSettings />
-      <div className="w-full h-40 bg-gradient-to-r from-blue-400 to-primary rounded-3xl mb-8 flex items-center justify-center relative overflow-hidden shadow-xl shadow-blue-200">
-         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-xl -ml-5 -mb-5"></div>
-         <div className="text-center text-white z-10">
-            <SpaIcon className="w-12 h-12 mx-auto mb-2 opacity-90" />
-            <h2 className="text-2xl font-bold tracking-tight">Portal GFA</h2>
-            <p className="text-white/80 text-sm">Gestão Fraterna</p>
-         </div>
-      </div>
+    <div className="relative min-h-screen pt-4 px-0 overflow-hidden">
+      <MainBackground />
+      
+      <div className="min-h-screen px-6 pt-10 relative z-10">
+        <div className="flex justify-between items-center mb-8">
+            <h1 className="text-2xl font-bold text-slate-800">Navegação</h1>
+            <SettingsIcon className="w-6 h-6 text-slate-600" />
+        </div>
+        
+        <div className="flex flex-col items-center mb-10">
+             <div className="bg-white p-4 rounded-full mb-2 shadow-lg backdrop-blur-md border border-white/60">
+                <GfaLogo className="w-12 h-12 text-gfa-blue" />
+             </div>
+             {/* Use text shadow/glow for the title if desired, but bold text is usually enough */}
+             <h2 className="text-3xl font-serif italic font-bold text-slate-800 drop-shadow-sm">GFA</h2>
+        </div>
 
-      <div className="grid gap-4">
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onNavigate(item.id as ViewState)}
-            className="group relative flex items-center p-4 bg-white rounded-2xl shadow-sm border border-slate-100 hover:border-primary/30 hover:shadow-md transition-all active:scale-[0.99] text-left"
-          >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-               <item.icon className="w-6 h-6" />
-            </div>
-            <div className="ml-4 flex-1">
-              <h3 className="font-bold text-text-main text-lg">{item.label}</h3>
-              <p className="text-xs text-text-light">{item.desc}</p>
-            </div>
-            <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary rounded-r-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </button>
-        ))}
+        <div className="grid gap-4">
+            {menuItems.map((item, idx) => (
+            <button
+                key={item.id}
+                onClick={() => onNavigate(item.id as ViewState)}
+                className={`group relative flex items-center p-4 rounded-2xl shadow-lg border border-white/60 backdrop-blur-xl overflow-hidden transition-all active:scale-[0.98] text-left
+                bg-gradient-to-r from-white/60 to-white/30 hover:from-white/70 hover:to-white/40`}
+            >
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-inner bg-gradient-to-br from-cyan-400 to-blue-500`}>
+                    <item.icon className="w-6 h-6" />
+                </div>
+                <div className="ml-4 flex-1 relative z-10">
+                    <h3 className="font-medium text-slate-700 text-lg">{item.label}</h3>
+                </div>
+            </button>
+            ))}
+        </div>
       </div>
+      
+      <BottomNav active="DASHBOARD" onChange={onNavigate} />
     </div>
   );
 };
 
 // -- Reusable Card for Worker in Assembly --
 const WorkerCard: React.FC<{ worker: Worker; roleLabel?: string }> = ({ worker, roleLabel }) => {
-  const roleColor = {
-    [WorkerRole.Coordenador]: "bg-blue-100 text-blue-700",
-    [WorkerRole.Medium]: "bg-purple-100 text-purple-700",
-    [WorkerRole.Dialogo]: "bg-green-100 text-green-700",
-    [WorkerRole.Psicografa]: "bg-indigo-100 text-indigo-700",
-    [WorkerRole.Sustentacao]: "bg-slate-100 text-slate-700",
+  const roleStyles = {
+    [WorkerRole.Coordenador]: "bg-blue-200 text-blue-800",
+    [WorkerRole.Medium]: "bg-purple-200 text-purple-800",
+    [WorkerRole.Dialogo]: "bg-green-200 text-green-800",
+    [WorkerRole.Psicografa]: "bg-indigo-200 text-indigo-800",
+    [WorkerRole.Sustentacao]: "bg-[#e0dcd5] text-[#5c554a]",
   }[worker.roles[0]] || "bg-gray-100 text-gray-700";
 
+  // Use DiceBear Avataaars for illustrative look similar to the screenshot
+  // We use the name as a seed to generate consistent, unique avatars
+  const avatarUrl = worker.avatarUrl || `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(worker.name)}&backgroundType=solid,gradientLinear&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+
   return (
-    <div className="flex items-center p-3 bg-gradient-to-br from-[#fdfbf7] to-[#f4f1ea] rounded-xl border border-[#e8e4db] shadow-sm mb-2 relative group">
-      <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
-        <img src={`https://picsum.photos/seed/${worker.id}/100/100`} alt={worker.name} className="w-full h-full object-cover" />
+    <div className="flex items-center p-2.5 bg-[#fdfbf7] rounded-xl border border-[#e8e4db] shadow-sm mb-2 relative group">
+      <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
+        <img 
+          src={avatarUrl} 
+          alt={worker.name} 
+          className="w-full h-full object-cover" 
+        />
       </div>
       <div className="ml-3 flex-1 min-w-0">
         <p className="font-semibold text-text-main text-sm truncate">{worker.name}</p>
-        <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider mt-0.5 ${roleColor}`}>
+        <div className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold mt-0.5 ${roleStyles}`}>
           {roleLabel || worker.roles[0]}
-        </span>
+        </div>
       </div>
-      <button className="text-slate-300 hover:text-slate-500">
-        <DragIndicatorIcon className="w-5 h-5 rotate-90" />
+      <button className="text-[#d0cdc5] hover:text-[#999]">
+        <DragIndicatorIcon className="w-5 h-5" />
       </button>
     </div>
   );
@@ -191,47 +264,47 @@ const RoomAssemblyView = ({ workers, rooms, setWorkers, onBack }: { workers: Wor
   const unassignedWorkers = workers.filter(w => !w.assignedRoomId);
 
   return (
-    <div className="min-h-screen pt-20 px-4 pb-24 bg-[#fcf9f2]">
-      <Header title="Montagem das Salas" showSettings />
+    <div className="min-h-screen pt-20 px-4 pb-28 bg-[#fdfbf7]">
+      <Header 
+        title="Montagem das Salas" 
+        action={<button className="px-3 py-1 bg-blue-400 text-white text-sm font-bold rounded-lg shadow-sm">Salvar</button>}
+      />
       
-      <div className="sticky top-16 z-10 py-4 bg-[#fcf9f2]/95 backdrop-blur-sm -mx-4 px-4 border-b border-stone-200 shadow-sm">
+      <div className="mt-4 mb-6">
         <button 
           onClick={handleAutoGenerate}
           disabled={isGenerating}
-          className="w-full bg-gradient-to-r from-sky-400 to-primary text-white font-bold py-3 rounded-2xl shadow-lg shadow-sky-200 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-70"
+          className="w-full bg-gradient-to-r from-cyan-300 to-cyan-200 text-slate-800 font-bold py-3.5 rounded-full shadow-lg shadow-cyan-100 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-70 border border-white/50"
         >
           {isGenerating ? (
-            <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+            <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-600"></span>
           ) : (
-            <SparklesIcon className="w-5 h-5" />
+            <SparklesIcon className="w-5 h-5 text-slate-700" />
           )}
           {isGenerating ? "Gerando..." : "Gerar Automaticamente"}
         </button>
       </div>
 
-      <div className="mt-6 space-y-8">
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-sky-800 flex items-center gap-2">
-            <span className="w-1.5 h-6 bg-sky-500 rounded-full"></span>
-            Salas de Passe
-          </h3>
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <h3 className="text-lg font-medium text-slate-500 px-1">Salas de Passe</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {passeRooms.map(room => {
                const occupants = workers.filter(w => w.assignedRoomId === room.id);
                const isFull = occupants.length >= room.capacity;
                
                return (
-                <div key={room.id} className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-bold text-text-main">{room.name}</h4>
-                    <span className={`px-2 py-1 rounded-lg text-xs font-bold ${isFull ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                <div key={room.id} className="bg-white rounded-2xl p-3 shadow-soft border border-card-border/60">
+                  <div className="flex justify-between items-center mb-3 px-1">
+                    <h4 className="font-bold text-text-main text-base">{room.name}</h4>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${isFull ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
                       {occupants.length}/{room.capacity}
-                      {isFull && <CheckCircleIcon className="w-3 h-3 inline ml-1"/>}
+                      {isFull ? <CheckCircleIcon className="w-3 h-3"/> : "!"}
                     </span>
                   </div>
-                  <div className="space-y-2 min-h-[100px]">
+                  <div className="space-y-2 min-h-[60px]">
                     {occupants.length === 0 && (
-                       <div className="h-24 border-2 border-dashed border-stone-100 rounded-xl flex items-center justify-center text-stone-300 text-sm">
+                       <div className="h-20 border-2 border-dashed border-slate-100 rounded-xl flex items-center justify-center bg-slate-50 text-slate-400 text-sm">
                          Arraste aqui
                        </div>
                     )}
@@ -245,22 +318,19 @@ const RoomAssemblyView = ({ workers, rooms, setWorkers, onBack }: { workers: Wor
           </div>
         </div>
 
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-sky-800 flex items-center gap-2">
-            <span className="w-1.5 h-6 bg-sky-500 rounded-full"></span>
-            Outros Locais
-          </h3>
+        <div className="space-y-3">
+          <h3 className="text-lg font-medium text-slate-500 px-1">Outros Locais</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {otherRooms.map(room => {
                const occupants = workers.filter(w => w.assignedRoomId === room.id);
                return (
-                <div key={room.id} className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-bold text-text-main">{room.name}</h4>
-                    <span className="text-stone-400 font-bold text-sm">{occupants.length}</span>
+                <div key={room.id} className="bg-white rounded-2xl p-3 shadow-soft border border-card-border/60">
+                  <div className="flex justify-between items-center mb-3 px-1">
+                    <h4 className="font-bold text-text-main text-base">{room.name}</h4>
+                    <span className="text-slate-400 font-bold text-sm">{occupants.length}</span>
                   </div>
                    <div className="space-y-2">
-                    {occupants.length === 0 && <p className="text-xs text-stone-300 italic">Vazio</p>}
+                    {occupants.length === 0 && <p className="text-xs text-stone-300 italic px-1">Vazio</p>}
                     {occupants.map(w => (
                       <WorkerCard key={w.id} worker={w} />
                     ))}
@@ -272,8 +342,11 @@ const RoomAssemblyView = ({ workers, rooms, setWorkers, onBack }: { workers: Wor
         </div>
 
         {unassignedWorkers.length > 0 && (
-           <div className="bg-stone-100 rounded-2xl p-4 border border-stone-200">
-             <h3 className="text-stone-500 font-bold mb-3 text-sm uppercase tracking-wide">Não Alocados ({unassignedWorkers.length})</h3>
+           <div className="bg-white rounded-2xl p-4 border border-card-border/60 shadow-soft">
+             <div className="flex justify-between items-center mb-3">
+                <h3 className="text-text-main font-bold text-base">Não Alocados</h3>
+                <span className="text-slate-400 text-sm font-bold">{unassignedWorkers.length}</span>
+             </div>
              <div className="space-y-2">
                 {unassignedWorkers.map(w => (
                   <WorkerCard key={w.id} worker={w} />
@@ -288,55 +361,55 @@ const RoomAssemblyView = ({ workers, rooms, setWorkers, onBack }: { workers: Wor
 
 const WorkerFormView = ({ onSave, onCancel }: { onSave: () => void, onCancel: () => void }) => {
   return (
-    <div className="min-h-screen pt-20 px-4 pb-24 bg-background">
+    <div className="min-h-screen pt-20 px-4 pb-28 bg-gradient-to-br from-white to-blue-50/50">
       <Header title="Cadastro de Trabalhadores" onBack={onCancel} />
       
-      <div className="space-y-6 mt-4">
+      <div className="space-y-6 mt-6">
         <div>
-          <label className="block text-sm font-bold text-text-main mb-2">Nome</label>
-          <input className="w-full h-14 px-4 bg-sky-50 border-none rounded-2xl text-text-main placeholder:text-text-light/60 focus:ring-2 focus:ring-primary/50 outline-none" placeholder="Nome completo" />
+          <label className="block text-base font-semibold text-text-main mb-2 ml-1">Nome</label>
+          <input className="w-full h-16 px-5 bg-blue-50/80 border-none rounded-2xl text-text-main placeholder:text-slate-400 focus:ring-2 focus:ring-primary/30 outline-none text-lg" placeholder="Nome completo" />
         </div>
         
         <div>
-          <label className="block text-sm font-bold text-text-main mb-2">Contato</label>
-          <input className="w-full h-14 px-4 bg-sky-50 border-none rounded-2xl text-text-main placeholder:text-text-light/60 focus:ring-2 focus:ring-primary/50 outline-none" placeholder="Telefone ou email" />
+          <label className="block text-base font-semibold text-text-main mb-2 ml-1">Contato</label>
+          <input className="w-full h-16 px-5 bg-blue-50/80 border-none rounded-2xl text-text-main placeholder:text-slate-400 focus:ring-2 focus:ring-primary/30 outline-none text-lg" placeholder="Telefone ou email" />
         </div>
 
         <div>
-          <label className="block text-lg font-bold text-text-main mb-4">Habilidades</label>
-          <div className="bg-white rounded-3xl p-2 shadow-sm border border-slate-100">
+          <label className="block text-lg font-bold text-text-main mb-4 ml-1">Habilidades</label>
+          <div className="space-y-1">
              {[
                { id: 1, label: 'Médium', checked: true },
                { id: 2, label: 'Diálogo', checked: true },
                { id: 3, label: 'Psicografa', checked: true },
                { id: 4, label: 'Sustentação', checked: true },
              ].map((skill, idx) => (
-               <div key={skill.id} className={`flex items-center justify-between p-4 ${idx !== 3 ? 'border-b border-slate-50' : ''}`}>
+               <div key={skill.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/50 transition-colors">
                  <div className="flex items-center gap-3">
-                   <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white">
-                     <CheckCircleIcon className="w-4 h-4" />
+                   <div className="w-6 h-6 rounded-full bg-primary-dark flex items-center justify-center text-white">
+                     <CheckIcon className="w-3.5 h-3.5 stroke-[4]" />
                    </div>
-                   <span className="font-medium text-text-main">{skill.label}</span>
+                   <span className="font-medium text-text-main text-lg">{skill.label}</span>
                  </div>
-                 {/* Toggle Switch Simulation */}
-                 <div className={`w-12 h-7 rounded-full p-1 transition-colors ${skill.checked ? 'bg-blue-300' : 'bg-slate-200'}`}>
-                   <div className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${skill.checked ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                 {/* Styled Toggle Switch */}
+                 <div className={`w-14 h-8 rounded-full p-1 transition-colors ${skill.checked ? 'bg-blue-300' : 'bg-slate-200'}`}>
+                   <div className={`w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-300 ${skill.checked ? 'translate-x-6' : 'translate-x-0'}`}></div>
                  </div>
                </div>
              ))}
           </div>
         </div>
 
-        <div className="flex items-center justify-between p-4 mt-8">
-           <span className="text-text-main font-medium">Coordenador de Sala</span>
-           <div className="w-12 h-7 rounded-full p-1 bg-slate-200">
-               <div className="w-5 h-5 rounded-full bg-white shadow-sm translate-x-0"></div>
+        <div className="flex items-center justify-between p-3 mt-4">
+           <span className="text-text-main font-medium text-lg">Coordenador de Sala</span>
+           <div className="w-14 h-8 rounded-full p-1 bg-slate-200">
+               <div className="w-6 h-6 rounded-full bg-white shadow-md translate-x-0"></div>
            </div>
         </div>
 
-        <div className="flex gap-4 pt-4">
-           <button onClick={onCancel} className="flex-1 h-12 rounded-xl border border-slate-300 text-slate-500 font-bold hover:bg-slate-50">Cancelar</button>
-           <button onClick={onSave} className="flex-1 h-12 rounded-xl bg-primary text-text-main font-bold shadow-lg shadow-primary/20 hover:opacity-90">Salvar</button>
+        <div className="grid grid-cols-2 gap-4 pt-4 fixed bottom-8 left-4 right-4 bg-white/0">
+           <button onClick={onCancel} className="h-14 rounded-2xl border-2 border-slate-200 text-slate-500 font-bold hover:bg-slate-50 text-lg">Cancelar</button>
+           <button onClick={onSave} className="h-14 rounded-2xl bg-blue-300 text-white font-bold shadow-lg shadow-blue-200 hover:opacity-90 text-lg">Salvar</button>
         </div>
       </div>
     </div>
@@ -345,76 +418,82 @@ const WorkerFormView = ({ onSave, onCancel }: { onSave: () => void, onCancel: ()
 
 const RoomListView = () => {
     return (
-        <div className="min-h-screen pt-20 px-4 pb-24 bg-gradient-to-b from-blue-50 to-green-50/30">
-            <Header title="Salas de Passe" showSettings />
+        <div className="min-h-screen pt-24 px-4 pb-28 bg-gradient-to-b from-purple-50 via-white to-green-50">
+            <header className="fixed top-0 left-0 right-0 h-20 flex items-end justify-center pb-2 bg-white/80 backdrop-blur-md z-20">
+                 <h1 className="font-serif text-3xl text-slate-800">Salas de Passe</h1>
+            </header>
             
-            <div className="mt-4">
-                <div className="bg-white p-1 rounded-2xl border border-blue-100 shadow-sm flex items-center">
-                    <input className="flex-1 h-12 px-4 outline-none bg-transparent placeholder:text-blue-300 text-blue-900" placeholder="Nome da Sala" />
+            <div className="mt-6 mb-8">
+                <div className="bg-white p-1 rounded-2xl border border-blue-100 shadow-sm flex items-center mb-4">
+                    <input className="flex-1 h-14 px-4 outline-none bg-transparent placeholder:text-slate-400 text-slate-700 text-lg" placeholder="Nome da Sala" />
                 </div>
-                <button className="w-full mt-3 h-12 bg-blue-400 text-white font-bold rounded-2xl shadow-lg shadow-blue-200 hover:bg-blue-500 transition-colors">
+                <button className="w-full h-14 bg-[#7faec1] text-white font-bold rounded-full shadow-lg hover:bg-[#6a9bb0] transition-colors text-lg">
                     Adicionar Sala
                 </button>
             </div>
 
-            <h3 className="mt-8 mb-4 text-xl font-display font-serif text-slate-700">Salas Cadastradas</h3>
+            <h3 className="mb-4 text-2xl font-serif text-slate-800">Salas Cadastradas</h3>
             
-            <div className="space-y-3">
+            <div className="space-y-4">
                 {['Sala 1', 'Sala 2', 'Sala 3'].map((room, i) => (
-                    <div key={i} className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 flex items-center justify-between group hover:border-blue-200 transition-colors">
+                    <div key={i} className="bg-white p-3 rounded-[20px] shadow-sm border border-slate-100 flex items-center justify-between group h-24">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-orange-100 overflow-hidden relative">
-                                {/* Abstract room illustration placeholder */}
-                                <div className="absolute inset-0 bg-[url('https://picsum.photos/100/100?random=10')] opacity-80 bg-cover"></div>
+                            <div className="w-16 h-16 rounded-2xl overflow-hidden relative shadow-inner">
+                                <img src={`https://picsum.photos/seed/room${i}/200/200`} className="w-full h-full object-cover" alt="Room" />
                             </div>
-                            <span className="font-semibold text-lg text-slate-700">{room}</span>
+                            <span className="font-medium text-xl text-slate-700">{room}</span>
                         </div>
-                        <div className="flex gap-2">
-                             <button className="p-2 text-slate-400 hover:text-blue-500"><EditIcon className="w-5 h-5"/></button>
-                             <button className="p-2 text-slate-400 hover:text-red-500"><TrashIcon className="w-5 h-5"/></button>
+                        <div className="flex gap-1 pr-2">
+                             <button className="p-2 text-slate-400 hover:text-blue-500"><EditIcon className="w-6 h-6"/></button>
+                             <button className="p-2 text-slate-400 hover:text-red-500"><TrashIcon className="w-6 h-6"/></button>
                         </div>
                     </div>
                 ))}
             </div>
             
             {/* Background decoration */}
-            <div className="fixed bottom-0 right-0 w-64 h-64 pointer-events-none opacity-10 text-green-700">
-               <SpaIcon className="w-full h-full" />
+            <div className="fixed bottom-0 right-0 w-80 h-80 pointer-events-none opacity-[0.03] text-gfa-blue rotate-12 translate-x-1/3 translate-y-1/3">
+               <GfaLogo className="w-full h-full" />
             </div>
         </div>
     )
 }
 
-const LocationListView = () => {
+const LocationListView = ({ onBack }: { onBack: () => void }) => {
   const locations = [
-    { name: "Recepção", desc: "Convenina e um spiritual, local de trabalho.", icon: "💙" },
-    { name: "Sala de Espera", desc: "Paiiii de espera, com outra sala de espera.", icon: "🪑" },
-    { name: "Auditório", desc: "Cortar comem gradas de auditórios e teócia.", icon: "📖" },
-    { name: "Sala de Entrevistas", desc: "Convrufttar coma nachemar gom em sala.", icon: "🤝" },
+    { name: "Recepção", desc: "Convenina e um spiritual, local de trabalho.", icon: "💙", type: "Recepção" },
+    { name: "Sala de Espera", desc: "Paiiii de espera, com outa sala de espera.", icon: "🪑", type: "Espera" },
+    { name: "Auditório", desc: "Cortar comem gradas de auditórios e teócia.", icon: "📖", type: "Estudo" },
+    { name: "Sala de Entrevistas", desc: "Convrufttar coma nachemar gom em sala.", icon: "🤝", type: "Atendimento" },
   ];
 
   return (
-    <div className="min-h-screen pt-20 px-4 pb-24 bg-[#f8fae8]">
-      <Header title="Locais de Trabalho" onBack={() => {}} />
-      <div className="mt-6 space-y-3">
+    <div className="min-h-screen pt-20 px-4 pb-28 bg-[#f2f7f9]">
+      <Header title="Locais de Trabalho" onBack={onBack} />
+      
+      <div className="mt-6 space-y-4">
         {locations.map((loc, idx) => (
-          <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-yellow-50 flex items-start gap-4">
-             <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center text-2xl shadow-inner">
+          <div key={idx} className="bg-white p-5 rounded-2xl shadow-soft border border-white flex items-center gap-4 relative overflow-hidden">
+             <div className="w-14 h-14 rounded-2xl bg-orange-50/50 flex items-center justify-center text-3xl shadow-sm border border-orange-100">
                {loc.icon}
              </div>
-             <div className="flex-1">
-               <h4 className="font-bold text-lg text-slate-800">{loc.name}</h4>
-               <p className="text-sm text-slate-500 leading-tight mt-1">{loc.desc}</p>
+             <div className="flex-1 min-w-0 z-10">
+               <h4 className="font-bold text-xl text-slate-800">{loc.name}</h4>
+               <p className="text-sm text-slate-500 leading-tight mt-1 truncate">{loc.desc}</p>
              </div>
-             <button className="text-slate-300 hover:text-slate-500">
-                <DragIndicatorIcon className="w-6 h-6 rotate-90" />
-             </button>
+             <div className="flex flex-col gap-2 z-10">
+                <button className="text-slate-300 hover:text-slate-500 p-1">
+                    <MoreDotsIcon className="w-6 h-6 text-slate-300" />
+                </button>
+             </div>
+             {/* Decorative pattern on card */}
+             <div className="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-orange-50/30 to-transparent pointer-events-none"></div>
           </div>
         ))}
       </div>
       
-      <button className="fixed bottom-24 right-4 w-14 h-14 bg-white rounded-full shadow-xl flex items-center justify-center text-yellow-600 border border-yellow-100 hover:scale-110 transition-transform">
-        <PlusIcon className="w-8 h-8" />
+      <button className="fixed bottom-24 right-6 w-16 h-16 bg-white rounded-full shadow-2xl flex items-center justify-center text-[#d4a45a] border border-[#f0e6d2] hover:scale-105 transition-transform z-40">
+        <PlusIcon className="w-8 h-8 stroke-[3]" />
       </button>
     </div>
   );
@@ -466,9 +545,6 @@ export default function App() {
       }
   }
 
-  // Effect to handle back button behavior for specific sub-views
-  const isSubView = ['WORKERS', 'ROOMS', 'LOCATIONS'].includes(view);
-
   return (
     <div className="font-sans text-text-main selection:bg-primary/20">
       {view === 'LOGIN' && <LoginView onLogin={() => setView('DASHBOARD')} />}
@@ -488,18 +564,11 @@ export default function App() {
       
       {view === 'ROOMS' && <RoomListView />}
       
-      {view === 'LOCATIONS' && <LocationListView />}
+      {view === 'LOCATIONS' && <LocationListView onBack={handleBack} />}
 
       {/* Show Bottom Nav only on main internal screens */}
-      {view !== 'LOGIN' && !['WORKERS', 'LOCATIONS'].includes(view) && (
+      {view !== 'LOGIN' && (
         <BottomNav active={view} onChange={handleNavigate} />
-      )}
-      
-      {/* Specific Bottom Nav logic: if we are in 'WORKERS' or 'LOCATIONS' which look like forms/subpages in screenshots, 
-          we might hide the bottom nav or show a simplified one. For this demo, let's keep it consistent for navigation ease 
-          except for the WorkerForm which fills the screen. */}
-      {['ROOMS', 'LOCATIONS'].includes(view) && (
-           <BottomNav active={view} onChange={handleNavigate} />
       )}
     </div>
   );
