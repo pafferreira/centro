@@ -1,0 +1,5 @@
+{
+  "name": "centro",
+  "description": "A spiritual center management application for organizing workers, rooms, and assignments with AI-powered automatic distribution.",
+  "requestFramePermissions": []
+}
