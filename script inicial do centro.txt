@@ -1,0 +1,22 @@
+Script para montagem de Sala de Passe
+
+Vamos criar uma aplicação para celular para distribuição de pessoas em salas.
+Trata-se de um centro espírita que precisa organizar as salas de passe com a distribuição de pessoas de acordo com a habilidade dos trabalhadores.
+O Centro Espírita GFA - Grupo Fraterno de Assistência atende as pessoas que comparecem aplicando passes energéticos
+
+Salas de Passe devem ser criadas com nome/número e administradas e são preenchidas com trabalhadores do Centro
+
+Nos dias que tem passe devemos fazer a distribuição dos trabalhadores nas 4 ou 5 salas e nos locais de trabalho
+
+Os locais de trabalho são: Recepção, Palestra, Aulinha, Entrevista
+Cada trabalhador tem habilidades como: Médium, Diálogo, Psicografa, Sustentação
+
+Alguns trabalhadores também são Coordenador de Sala
+
+Na montagem das salas devemos distribuir no mínimo com 4 trabalhadores, mas atendendo a regra:
+ cada sala deve ser preenchida por um Coordenador, um Médium, um Diálogo e o restante por Sustentação
+
+A interface deve ser simples e facil de navegar com botões visíveis, apresentando menu de cadastro dos Trabalhadores , Salas e Locais de Trabalho
+deve ter uma opção para Montagem das Salas
+a distribuição dos trabalhadores será automática, seguindo a regra de preenchimento
+Na montagem deve ser possível mover os trabalhadores de uma sala para outra, arrastando o nome ou identificando o número da sala
