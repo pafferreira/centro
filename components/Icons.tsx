@@ -8,30 +8,7 @@ export const SpaIcon = ({ className }: { className?: string }) => (
 );
 
 export const GfaLogo = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    {/* Stem */}
-    <path d="M50 75 V 110" />
-    {/* Leaves */}
-    <path d="M50 100 Q 30 100 25 90" />
-    <path d="M50 100 Q 70 100 75 90" />
-    
-    {/* Center */}
-    <circle cx="50" cy="50" r="7" fill="currentColor" stroke="none" />
-
-    {/* Petals (Simulated Heart Shapes rotated) */}
-    <g transform="translate(50, 50)">
-      {/* Top */}
-      <path d="M0 -10 C -10 -25 -25 -15 0 -38 C 25 -15 10 -25 0 -10" />
-      {/* Top Right */}
-      <path d="M0 -10 C -10 -25 -25 -15 0 -38 C 25 -15 10 -25 0 -10" transform="rotate(72)" />
-      {/* Bottom Right */}
-      <path d="M0 -10 C -10 -25 -25 -15 0 -38 C 25 -15 10 -25 0 -10" transform="rotate(144)" />
-      {/* Bottom Left */}
-      <path d="M0 -10 C -10 -25 -25 -15 0 -38 C 25 -15 10 -25 0 -10" transform="rotate(216)" />
-      {/* Top Left */}
-      <path d="M0 -10 C -10 -25 -25 -15 0 -38 C 25 -15 10 -25 0 -10" transform="rotate(288)" />
-    </g>
-  </svg>
+  <img src="GFANOSSACASA-AZUL.png" alt="GFA Logo" className={`object-contain ${className}`} />
 );
 
 export const PuzzleIcon = ({ className }: { className?: string }) => (

@@ -52,7 +52,7 @@ const Header = ({ title, onBack, showSettings, action }: { title: string; onBack
       )}
       <div className="flex items-center gap-2">
          {/* Small Logo in Header */}
-         {!onBack && <GfaLogo className="w-6 h-6 text-gfa-blue" />}
+         {!onBack && <GfaLogo className="w-6 h-6" />}
          <h1 className="text-xl font-bold text-text-main tracking-tight">{title}</h1>
       </div>
     </div>
@@ -108,7 +108,7 @@ const LoginView = ({ onLogin }: { onLogin: () => void }) => {
        
        <div className="relative w-full flex flex-col items-center mb-10 z-10">
         <div className="w-28 h-28 bg-white rounded-full flex items-center justify-center mb-6 shadow-2xl border-4 border-white/40">
-          <GfaLogo className="text-gfa-blue w-16 h-16" />
+          <GfaLogo className="w-16 h-16" />
         </div>
         <h1 className="text-text-main text-4xl font-bold tracking-tight">GFA</h1>
       </div>
@@ -172,7 +172,7 @@ const DashboardView = ({ onNavigate }: { onNavigate: (v: ViewState) => void }) =
         
         <div className="flex flex-col items-center mb-10">
              <div className="bg-white p-4 rounded-full mb-2 shadow-lg backdrop-blur-md border border-white/60">
-                <GfaLogo className="w-12 h-12 text-gfa-blue" />
+                <GfaLogo className="w-12 h-12" />
              </div>
              {/* Use text shadow/glow for the title if desired, but bold text is usually enough */}
              <h2 className="text-3xl font-serif italic font-bold text-slate-800 drop-shadow-sm">GFA</h2>
@@ -461,10 +461,10 @@ const RoomListView = () => {
 
 const LocationListView = ({ onBack }: { onBack: () => void }) => {
   const locations = [
-    { name: "Recepção", desc: "Convenina e um spiritual, local de trabalho.", icon: "💙", type: "Recepção" },
-    { name: "Sala de Espera", desc: "Paiiii de espera, com outa sala de espera.", icon: "🪑", type: "Espera" },
-    { name: "Auditório", desc: "Cortar comem gradas de auditórios e teócia.", icon: "📖", type: "Estudo" },
-    { name: "Sala de Entrevistas", desc: "Convrufttar coma nachemar gom em sala.", icon: "🤝", type: "Atendimento" },
+    { name: "Recepção", desc: "Atendimento dos assistidos.", icon: "💙", type: "Recepção" },
+    { name: "Sala de Aula", desc: "Acolhimento dos irmãos iniciantes.", icon: "🪑", type: "Aula" },
+    { name: "Auditório", desc: "Palestra sobre o Evangelho Segundo o Espiritismo.", icon: "📖", type: "Auditório" },
+    { name: "Sala de Entrevista", desc: "Sala de entrevista para direcionamento.", icon: "🤝", type: "Entrevista" },
   ];
 
   return (
