@@ -5,12 +5,13 @@ interface HeaderProps {
     title: string;
     onBack?: () => void;
     showSettings?: boolean;
+    onSettingsClick?: () => void;
     action?: React.ReactNode;
 }
 
 import { useLayout } from "../../context/LayoutContext";
 
-export const Header: React.FC<HeaderProps> = ({ title, onBack, showSettings, action }) => {
+export const Header: React.FC<HeaderProps> = ({ title, onBack, showSettings, onSettingsClick, action }) => {
     const { barsVisible } = useLayout();
 
     return (
@@ -33,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({ title, onBack, showSettings, act
             <div className="flex items-center gap-2">
                 {action}
                 {showSettings && (
-                    <button className="p-2 text-text-light hover:text-text-main transition-colors">
+                    <button onClick={onSettingsClick} className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
                         <SettingsIcon className="w-6 h-6" />
                     </button>
                 )}

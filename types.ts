@@ -38,4 +38,5 @@ export type ViewState =
   | 'ROOM_ASSEMBLY'
   | 'WORKERS'
   | 'ROOMS'
-  | 'LOCATIONS';
+  | 'LOCATIONS'
+  | 'SETTINGS';

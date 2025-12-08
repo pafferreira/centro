@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ViewState, Worker, Room } from "./types";
 import { BottomNav } from "./components/shared/BottomNav";
 import { LoginView } from "./views/LoginView";
@@ -9,19 +9,29 @@ import { WorkerFormView } from "./views/WorkerFormView";
 import { RoomsListView } from "./views/RoomsListView";
 import { RoomFormView } from "./views/RoomFormView";
 import { LocationListView } from "./views/LocationListView";
+import { SettingsView } from "./views/SettingsView";
 import { RoomType } from "./types";
-import { initialWorkers, initialRooms } from "./data/initialData";
+import { loadWorkers, loadRooms, saveWorkers, saveRooms } from "./utils/storage";
 import { LayoutProvider } from "./context/LayoutContext";
 
 export default function App() {
   const [view, setView] = useState<ViewState>('LOGIN');
-  const [workers, setWorkers] = useState<Worker[]>(initialWorkers);
-  const [rooms, setRooms] = useState<Room[]>(initialRooms);
+  const [workers, setWorkers] = useState<Worker[]>(loadWorkers());
+  const [rooms, setRooms] = useState<Room[]>(loadRooms());
   const [previousView, setPreviousView] = useState<ViewState | null>(null);
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
   const [showWorkerForm, setShowWorkerForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [showRoomForm, setShowRoomForm] = useState(false);
+
+  // Auto-save to localStorage whenever data changes
+  useEffect(() => {
+    saveWorkers(workers);
+  }, [workers]);
+
+  useEffect(() => {
+    saveRooms(rooms);
+  }, [rooms]);
 
   const handleNavigate = (newView: ViewState) => {
     if (view !== 'LOGIN') {
@@ -111,6 +121,12 @@ export default function App() {
     setEditingRoom(null);
   };
 
+  // Settings handler
+  const handleDataImported = (newWorkers: Worker[], newRooms: Room[]) => {
+    setWorkers(newWorkers);
+    setRooms(newRooms);
+  };
+
   return (
     <LayoutProvider>
       <div className="font-sans text-text-main selection:bg-primary/20 bg-gray-100 h-screen flex justify-center overflow-hidden">
@@ -172,6 +188,10 @@ export default function App() {
                 onDelete={handleDeleteRoom}
                 onAdd={handleAddRoom}
               />
+            )}
+
+            {view === 'SETTINGS' && (
+              <SettingsView onDataImported={handleDataImported} />
             )}
           </div>
 

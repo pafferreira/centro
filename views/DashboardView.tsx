@@ -12,7 +12,7 @@ import { PageContainer } from "../components/shared/PageContainer";
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const menuItems = [
-    { id: 'ROOM_ASSEMBLY', label: 'Montagem das Salas', icon: LegoIcon, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
+        { id: 'ROOM_ASSEMBLY', label: 'Montagem das Salas', icon: LegoIcon, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
         { id: 'WORKERS', label: 'Cadastro de Trabalhadores', icon: UsersIcon, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' },
         { id: 'ROOMS', label: 'Cadastro de Salas de Passe', icon: DoorIcon, color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100' },
         { id: 'LOCATIONS', label: 'Cadastro de Locais de Trabalho', icon: MapPinIcon, color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' },
@@ -20,7 +20,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
     return (
         <PageContainer>
-            <Header title="Início" showSettings />
+            <Header title="Início" showSettings onSettingsClick={() => onNavigate('SETTINGS')} />
 
             <div className="mt-4 grid gap-4">
                 {menuItems.map((item, idx) => (
