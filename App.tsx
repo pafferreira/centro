@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { ViewState, Worker, Room, RoomType, WorkerRole } from "./types";
-import { SparklesIcon, SpaIcon, PuzzleIcon, UsersIcon, DoorIcon, MapPinIcon, ChevronLeftIcon, SettingsIcon, CheckCircleIcon, DragIndicatorIcon, EditIcon, TrashIcon, PlusIcon, MoreDotsIcon, CheckIcon, HomeIcon, GfaLogo } from "./components/Icons";
+import { SparklesIcon, SpaIcon, PuzzleIcon, UsersIcon, DoorIcon, MapPinIcon, ChevronLeftIcon, SettingsIcon, CheckCircleIcon, DragIndicatorIcon, EditIcon, TrashIcon, PlusIcon, MoreDotsIcon, CheckIcon, HomeIcon, GfaLogo, BookIcon, MicrophoneIcon } from "./components/Icons";
 import { autoAssignWorkers } from "./services/geminiService";
 
 // --- Sub Components ---
@@ -52,7 +51,7 @@ const Header = ({ title, onBack, showSettings, action }: { title: string; onBack
       )}
       <div className="flex items-center gap-2">
          {/* Small Logo in Header */}
-         {!onBack && <GfaLogo className="w-6 h-6" />}
+         {!onBack && <GfaLogo className="w-6 h-6 text-gfa-blue" />}
          <h1 className="text-xl font-bold text-text-main tracking-tight">{title}</h1>
       </div>
     </div>
@@ -108,7 +107,7 @@ const LoginView = ({ onLogin }: { onLogin: () => void }) => {
        
        <div className="relative w-full flex flex-col items-center mb-10 z-10">
         <div className="w-28 h-28 bg-white rounded-full flex items-center justify-center mb-6 shadow-2xl border-4 border-white/40">
-          <GfaLogo className="w-16 h-16" />
+          <GfaLogo className="w-16 h-16 text-gfa-blue" />
         </div>
         <h1 className="text-text-main text-4xl font-bold tracking-tight">GFA</h1>
       </div>
@@ -172,7 +171,7 @@ const DashboardView = ({ onNavigate }: { onNavigate: (v: ViewState) => void }) =
         
         <div className="flex flex-col items-center mb-10">
              <div className="bg-white p-4 rounded-full mb-2 shadow-lg backdrop-blur-md border border-white/60">
-                <GfaLogo className="w-12 h-12" />
+                <GfaLogo className="w-12 h-12 text-gfa-blue" />
              </div>
              {/* Use text shadow/glow for the title if desired, but bold text is usually enough */}
              <h2 className="text-3xl font-serif italic font-bold text-slate-800 drop-shadow-sm">GFA</h2>
@@ -212,9 +211,8 @@ const WorkerCard: React.FC<{ worker: Worker; roleLabel?: string }> = ({ worker, 
     [WorkerRole.Sustentacao]: "bg-[#e0dcd5] text-[#5c554a]",
   }[worker.roles[0]] || "bg-gray-100 text-gray-700";
 
-  // Use DiceBear Avataaars for illustrative look similar to the screenshot
-  // We use the name as a seed to generate consistent, unique avatars
-  const avatarUrl = worker.avatarUrl || `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(worker.name)}&backgroundType=solid,gradientLinear&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+  // Using DiceBear v7 for stability.
+  const avatarUrl = worker.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(worker.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
   return (
     <div className="flex items-center p-2.5 bg-[#fdfbf7] rounded-xl border border-[#e8e4db] shadow-sm mb-2 relative group">
@@ -438,8 +436,9 @@ const RoomListView = () => {
                 {['Sala 1', 'Sala 2', 'Sala 3'].map((room, i) => (
                     <div key={i} className="bg-white p-3 rounded-[20px] shadow-sm border border-slate-100 flex items-center justify-between group h-24">
                         <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 rounded-2xl overflow-hidden relative shadow-inner">
-                                <img src={`https://picsum.photos/seed/room${i}/200/200`} className="w-full h-full object-cover" alt="Room" />
+                            {/* Replaced DiceBear Shapes with a robust SVG Icon in a container */}
+                            <div className="w-16 h-16 rounded-2xl overflow-hidden relative shadow-inner bg-blue-50 flex items-center justify-center">
+                                <DoorIcon className="w-8 h-8 text-blue-300" />
                             </div>
                             <span className="font-medium text-xl text-slate-700">{room}</span>
                         </div>
@@ -453,7 +452,7 @@ const RoomListView = () => {
             
             {/* Background decoration */}
             <div className="fixed bottom-0 right-0 w-80 h-80 pointer-events-none opacity-[0.03] text-gfa-blue rotate-12 translate-x-1/3 translate-y-1/3">
-               <GfaLogo className="w-full h-full" />
+               <GfaLogo className="w-full h-full text-gfa-blue" />
             </div>
         </div>
     )
@@ -461,10 +460,10 @@ const RoomListView = () => {
 
 const LocationListView = ({ onBack }: { onBack: () => void }) => {
   const locations = [
-    { name: "Recepção", desc: "Atendimento dos assistidos.", icon: "💙", type: "Recepção" },
-    { name: "Sala de Aula", desc: "Acolhimento dos irmãos iniciantes.", icon: "🪑", type: "Aula" },
-    { name: "Auditório", desc: "Palestra sobre o Evangelho Segundo o Espiritismo.", icon: "📖", type: "Auditório" },
-    { name: "Sala de Entrevista", desc: "Sala de entrevista para direcionamento.", icon: "🤝", type: "Entrevista" },
+    { name: "Recepção", desc: "Atendimento dos assistidos.", icon: <UsersIcon className="w-8 h-8 text-orange-400" />, type: "Recepção", color: "bg-orange-50 border-orange-100" },
+    { name: "Sala de Aula", desc: "Acolhimento dos irmãos iniciantes.", icon: <BookIcon className="w-8 h-8 text-blue-400" />, type: "Aula", color: "bg-blue-50 border-blue-100" },
+    { name: "Auditório", desc: "Palestra sobre o Evangelho Segundo o Espiritismo.", icon: <MicrophoneIcon className="w-8 h-8 text-purple-400" />, type: "Auditório", color: "bg-purple-50 border-purple-100" },
+    { name: "Sala de Entrevista", desc: "Sala de entrevista para direcionamento.", icon: <UsersIcon className="w-8 h-8 text-green-400" />, type: "Entrevista", color: "bg-green-50 border-green-100" },
   ];
 
   return (
@@ -474,7 +473,8 @@ const LocationListView = ({ onBack }: { onBack: () => void }) => {
       <div className="mt-6 space-y-4">
         {locations.map((loc, idx) => (
           <div key={idx} className="bg-white p-5 rounded-2xl shadow-soft border border-white flex items-center gap-4 relative overflow-hidden">
-             <div className="w-14 h-14 rounded-2xl bg-orange-50/50 flex items-center justify-center text-3xl shadow-sm border border-orange-100">
+             {/* Replaced DiceBear Icons with robust local SVGs */}
+             <div className={`w-14 h-14 rounded-2xl ${loc.color} overflow-hidden flex items-center justify-center text-3xl shadow-sm border`}>
                {loc.icon}
              </div>
              <div className="flex-1 min-w-0 z-10">
@@ -487,7 +487,7 @@ const LocationListView = ({ onBack }: { onBack: () => void }) => {
                 </button>
              </div>
              {/* Decorative pattern on card */}
-             <div className="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-orange-50/30 to-transparent pointer-events-none"></div>
+             <div className="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-gray-50/50 to-transparent pointer-events-none"></div>
           </div>
         ))}
       </div>

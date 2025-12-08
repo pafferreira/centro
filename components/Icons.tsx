@@ -1,6 +1,7 @@
 import React from 'react';
 
 // Using simple SVG icons to avoid external heavy dependencies, styled to match Material Symbols
+
 export const SpaIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
     <path d="M12 2C7.5 2 4 6.5 4 11C4 16.5 8 21 12 21C16 21 20 16.5 20 11C20 6.5 16.5 2 12 2ZM12 19C9.5 19 7 15.5 7 12C7 9.5 9 7 12 7C15 7 17 9.5 17 12C17 15.5 14.5 19 12 19Z"/>
@@ -8,7 +9,33 @@ export const SpaIcon = ({ className }: { className?: string }) => (
 );
 
 export const GfaLogo = ({ className }: { className?: string }) => (
-  <img src="GFANOSSACASA-AZUL.png" alt="GFA Logo" className={`object-contain ${className}`} />
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" className={className} fill="currentColor">
+    {/* Stem */}
+    <path d="M47 70 L47 110" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+    
+    {/* Leaves */}
+    <path d="M47 100 Q25 100 20 85 Q35 85 47 95" fill="currentColor" />
+    <path d="M47 100 Q69 100 74 85 Q59 85 47 95" fill="currentColor" />
+
+    {/* Center */}
+    <circle cx="47" cy="47" r="9" fill="currentColor" />
+
+    {/* Petals (Heart Shapes) - Adjusted for better symmetry */}
+    {/* Top */}
+    <path d="M47 38 C 35 15, 15 35, 40 45 C 43 46, 51 46, 54 45 C 79 35, 59 15, 47 38" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+    
+    {/* Top Right */}
+    <path d="M56 40 C 75 25, 90 50, 65 60 C 62 61, 58 55, 56 50" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+    
+    {/* Bottom Right */}
+    <path d="M56 54 C 80 65, 60 90, 50 65" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+
+    {/* Bottom Left */}
+    <path d="M38 54 C 14 65, 34 90, 44 65" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+
+    {/* Top Left */}
+    <path d="M38 40 C 19 25, 4 50, 29 60 C 32 61, 36 55, 38 50" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
 );
 
 export const PuzzleIcon = ({ className }: { className?: string }) => (
@@ -113,5 +140,19 @@ export const HomeIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
         <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+);
+
+export const BookIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+    </svg>
+);
+
+export const MicrophoneIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+        <line x1="12" x2="12" y1="19" y2="22" />
     </svg>
 );
