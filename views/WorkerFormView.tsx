@@ -47,6 +47,17 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
         }
     }, [worker]);
 
+    // Close form on Escape key
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' || e.key === 'Esc') {
+                onCancel();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [onCancel]);
+
     useEffect(() => {
         // Only update avatar automatically if user hasn't explicitly selected one
         if (!avatarLocked && name && !worker) {

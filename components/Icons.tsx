@@ -156,3 +156,83 @@ export const MicrophoneIcon = ({ className }: { className?: string }) => (
         <line x1="12" x2="12" y1="19" y2="22" />
     </svg>
 );
+
+// New: Lego / brick style icon (simple stacked bricks)
+export const LegoIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {/* Bottom brick */}
+    <rect x="2.5" y="9.5" width="19" height="8" rx="1.2" stroke="currentColor" fill="currentColor" fillOpacity="0.06" />
+    {/* Top brick */}
+    <rect x="4.5" y="4.5" width="15" height="6" rx="1" stroke="currentColor" fill="currentColor" fillOpacity="0.06" />
+    {/* Studs */}
+    <rect x="6" y="3.2" width="2" height="1.6" rx="0.4" fill="currentColor" />
+    <rect x="10" y="3.2" width="2" height="1.6" rx="0.4" fill="currentColor" />
+    <rect x="14" y="3.2" width="2" height="1.6" rx="0.4" fill="currentColor" />
+  </svg>
+);
+
+// New: alternative Puzzle piece icon (single puzzle piece silhouette)
+export const Puzzle2Icon = ({ className }: { className?: string }) => (
+  // Two-piece puzzle outline (stroke-only) — clearer distinct pieces
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {/* Left puzzle piece */}
+    <path d="M2.5 6.5h5.5c0.55 0 1 .45 1 1v1.2c0 .66.54 1.2 1.2 1.2.66 0 1.2.54 1.2 1.2s-.54 1.2-1.2 1.2H6.2a1 1 0 0 0-1 1v4.4c0 .55-.45 1-1 1H3" />
+    {/* Right puzzle piece */}
+    <path d="M21.5 11.5h-5.5c-0.55 0-1 .45-1 1v1.2c0 .66-.54 1.2-1.2 1.2-.66 0-1.2.54-1.2 1.2s.54 1.2 1.2 1.2h4.0c1.1 0 2-.9 2-2v-4.4c0-.55.45-1 1-1h1.5" />
+    {/* Interlock indicators (tabs) */}
+    <path d="M9.8 8.7c.4-.35.95-.55 1.5-.55.83 0 1.5.67 1.5 1.5S12.13 11.2 11.3 11.2c-.55 0-1.05-.2-1.4-.55" />
+    <path d="M14.2 14.8c.4-.35.95-.55 1.5-.55.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5c-.55 0-1.05-.2-1.4-.55" />
+  </svg>
+);
+
+// Single puzzle piece (diagonal-style, outline)
+export const PuzzlePieceIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {/* main body */}
+    <path d="M3.5 7.5c0-1 0.8-1.8 1.8-1.8h8.4c.9 0 1.7.7 1.7 1.6v1.6h1.2a1.1 1.1 0 110 2.2H16v3.8c0 .9-.7 1.6-1.6 1.6H6.3a1.6 1.6 0 01-1.6-1.6V7.5z" />
+    {/* stud */}
+    <circle cx="8.2" cy="5.9" r="0.9" />
+  </svg>
+);
+
+// Cluster of three puzzle pieces (outline)
+export const PuzzleClusterIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {/* left-bottom piece */}
+    <rect x="2.6" y="12.6" width="6" height="6" rx="1" />
+    <circle cx="4.6" cy="11.4" r="0.7" />
+    {/* top-middle piece */}
+    <rect x="8.4" y="4.4" width="5" height="5" rx="1" />
+    <circle cx="10.4" cy="3.2" r="0.6" />
+    {/* right piece */}
+    <rect x="15.2" y="8.8" width="6" height="6" rx="1" />
+    <circle cx="17.2" cy="7.6" r="0.7" />
+  </svg>
+);
+
+// 2x2 puzzle grid (four pieces forming a square) — outline only
+export const PuzzleGridIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {/* top-left */}
+    <path d="M3.5 3.5h7c.6 0 1 .4 1 1v1.2a1.2 1.2 0 001.2 1.2c.7 0 1.2.6 1.2 1.2s-.5 1.2-1.2 1.2H9.5v6.6c0 .6-.4 1-1 1h-4c-.6 0-1-.4-1-1v-10z" />
+    {/* top-right */}
+    <path d="M13.5 3.5h7v7c0 .6-.4 1-1 1h-1.2a1.2 1.2 0 00-1.2 1.2c0 .7-.6 1.2-1.2 1.2s-1.2-.5-1.2-1.2V9.5h-1.2c-.6 0-1-.4-1-1v-4c0-.6.4-1 1-1z" />
+    {/* bottom-left */}
+    <path d="M3.5 13.5h4c.6 0 1 .4 1 1v1.2c0 .7.6 1.2 1.2 1.2.7 0 1.2.6 1.2 1.2s-.5 1.2-1.2 1.2H3.5v-7z" />
+    {/* bottom-right */}
+    <path d="M13.5 13.5h7v7c0 .6-.4 1-1 1h-7c-.6 0-1-.4-1-1v-6c0-.6.4-1 1-1z" />
+  </svg>
+);
+
+// Overlapping two-piece puzzle icon inspired by the provided image (stroke-only)
+export const PuzzleOverlapIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {/* top-left piece (rotated) */}
+    <rect x="2.6" y="2.6" width="9.2" height="9.2" rx="1.6" transform="rotate(-28 7.2 7.2)" />
+    {/* bottom-right piece */}
+    <rect x="10.2" y="10.2" width="9.6" height="9.6" rx="1.6" />
+    {/* interlocking tabs (outline circles) */}
+    <circle cx="10.4" cy="7.8" r="0.9" />
+    <circle cx="12.6" cy="11.6" r="0.9" />
+  </svg>
+);

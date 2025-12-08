@@ -28,6 +28,8 @@ export interface Room {
   capacity: number;
   description?: string;
   avatarUrl?: string;
+  /** Optional icon key to render an inline SVG icon for the room (e.g. 'SpaIcon') */
+  avatarIcon?: string;
 }
 
 export type ViewState =

@@ -2,7 +2,7 @@ import React from "react";
 import { ViewState } from "../types";
 import { Header } from "../components/shared/Header";
 import { BottomNav } from "../components/shared/BottomNav";
-import { PuzzleIcon, UsersIcon, DoorIcon, MapPinIcon } from "../components/Icons";
+import { LegoIcon, UsersIcon, DoorIcon, MapPinIcon } from "../components/Icons";
 
 interface DashboardViewProps {
     onNavigate: (v: ViewState) => void;
@@ -12,7 +12,7 @@ import { PageContainer } from "../components/shared/PageContainer";
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const menuItems = [
-        { id: 'ROOM_ASSEMBLY', label: 'Montagem das Salas', icon: PuzzleIcon, color: 'text-purple-500', bg: 'bg-purple-50', border: 'border-purple-100' },
+    { id: 'ROOM_ASSEMBLY', label: 'Montagem das Salas', icon: LegoIcon, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
         { id: 'WORKERS', label: 'Cadastro de Trabalhadores', icon: UsersIcon, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' },
         { id: 'ROOMS', label: 'Cadastro de Salas de Passe', icon: DoorIcon, color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100' },
         { id: 'LOCATIONS', label: 'Cadastro de Locais de Trabalho', icon: MapPinIcon, color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' },

@@ -2,7 +2,8 @@ import React from "react";
 import { Room } from "../types";
 import { Header } from "../components/shared/Header";
 import { PageContainer } from "../components/shared/PageContainer";
-import { PlusIcon, EditIcon, TrashIcon } from "../components/Icons";
+import { PlusIcon, EditIcon, TrashIcon, DoorIcon } from "../components/Icons";
+import { RoomType } from "../types";
 
 interface RoomsListViewProps {
     rooms: Room[];
@@ -13,7 +14,8 @@ interface RoomsListViewProps {
 
 export const RoomsListView: React.FC<RoomsListViewProps> = ({ rooms, onEdit, onDelete, onAdd }) => {
     const getRoomAvatarUrl = (room: Room) => {
-        return room.avatarUrl || `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(room.name)}&backgroundColor=d1f4d1,c0f0c0,b8e6b8`;
+        // Prefer an explicitly set avatar, otherwise use the same DiceBear style used for workers
+        return room.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(room.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
     };
 
     // Sort rooms alphabetically by name
@@ -30,12 +32,16 @@ export const RoomsListView: React.FC<RoomsListViewProps> = ({ rooms, onEdit, onD
                         className="bg-white p-4 rounded-2xl shadow-soft border border-card-border/60 flex items-center gap-4 group"
                     >
                         {/* Avatar */}
-                        <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 border-2 border-green-100 shadow-sm bg-green-50">
-                            <img
-                                src={getRoomAvatarUrl(room)}
-                                alt={room.name}
-                                className="w-full h-full object-cover"
-                            />
+                        <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 border-2 border-green-100 shadow-sm bg-green-50 flex items-center justify-center">
+                            {room.avatarIcon === 'DoorIcon' || (!room.avatarUrl && room.type === RoomType.Passe) ? (
+                                <DoorIcon className="w-8 h-8 text-green-600" />
+                            ) : (
+                                <img
+                                    src={getRoomAvatarUrl(room)}
+                                    alt={room.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            )}
                         </div>
 
                         {/* Info */}

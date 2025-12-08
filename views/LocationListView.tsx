@@ -1,46 +1,68 @@
 import React from "react";
 import { Header } from "../components/shared/Header";
-import { UsersIcon, BookIcon, MicrophoneIcon, MoreDotsIcon, PlusIcon } from "../components/Icons";
+import { UsersIcon, BookIcon, MicrophoneIcon, MoreDotsIcon, PlusIcon, DoorIcon, MapPinIcon, EditIcon, TrashIcon } from "../components/Icons";
+import { PageContainer } from "../components/shared/PageContainer";
+import { Room, RoomType } from "../types";
 
 interface LocationListViewProps {
-    onBack: () => void;
+    onBack?: () => void;
+    rooms: Room[];
+    onEdit: (room: Room) => void;
+    onDelete: (roomId: string) => void;
+    onAdd: () => void;
 }
 
-import { PageContainer } from "../components/shared/PageContainer";
+export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, rooms, onEdit, onDelete, onAdd }) => {
+    // Show all rooms but keep the "Locais de Trabalho" visual
+    const sorted = [...rooms].sort((a, b) => a.name.localeCompare(b.name));
 
-export const LocationListView: React.FC<LocationListViewProps> = ({ onBack }) => {
-    const locations = [
-        { name: "Recepção", desc: "Atendimento dos assistidos.", icon: <UsersIcon className="w-8 h-8 text-orange-400" />, type: "Recepção", color: "bg-orange-50 border-orange-100" },
-        { name: "Sala de Aula", desc: "Acolhimento dos irmãos iniciantes.", icon: <BookIcon className="w-8 h-8 text-blue-400" />, type: "Aula", color: "bg-blue-50 border-blue-100" },
-        { name: "Auditório", desc: "Palestra sobre o Evangelho Segundo o Espiritismo.", icon: <MicrophoneIcon className="w-8 h-8 text-purple-400" />, type: "Auditório", color: "bg-purple-50 border-purple-100" },
-        { name: "Sala de Entrevista", desc: "Sala de entrevista para direcionamento.", icon: <UsersIcon className="w-8 h-8 text-green-400" />, type: "Entrevista", color: "bg-green-50 border-green-100" },
-    ];
+    const getIconFor = (room: Room) => {
+        // Prefer explicit avatarIcon when present
+        if (room.avatarIcon === 'DoorIcon') return <DoorIcon className="w-8 h-8 text-green-500" />;
+        if (room.avatarIcon === 'MicrophoneIcon') return <MicrophoneIcon className="w-8 h-8 text-purple-400" />;
+        if (room.avatarIcon === 'UsersIcon') return <UsersIcon className="w-8 h-8 text-orange-400" />;
+        if (room.avatarIcon === 'BookIcon') return <BookIcon className="w-8 h-8 text-blue-400" />;
+
+        // Fallback heuristics by name to map to desired icons:
+        const n = room.name.toLowerCase();
+        if (n.includes('palestr') || n.includes('palestra') || n.includes('audit')) return <MicrophoneIcon className="w-8 h-8 text-purple-400" />; // Palestra
+        if (n.includes('recep') || n.includes('recepção') || n.includes('entrada')) return <UsersIcon className="w-8 h-8 text-orange-400" />; // Recepção
+        if (n.includes('sala de passe') || n.includes('sala de passe') || n.includes('passe')) return <DoorIcon className="w-8 h-8 text-green-500" />; // Sala de Passe
+        if (n.includes('aula') || n.includes('sala de aula') || n.includes('quadro') || n.includes('livro')) return <BookIcon className="w-8 h-8 text-blue-400" />; // Sala de Aula
+
+        return <MapPinIcon className="w-8 h-8 text-slate-400" />;
+    };
+
+    const getColorFor = (room: Room) => {
+        return room.type === RoomType.Passe ? 'bg-green-50 border-green-100' : 'bg-white border-card-border/60';
+    };
 
     return (
         <PageContainer>
             <Header title="Locais de Trabalho" />
 
             <div className="mt-6 space-y-4">
-                {locations.map((loc, idx) => (
-                    <div key={idx} className="bg-white p-5 rounded-2xl shadow-soft border border-card-border/60 flex items-center gap-4 relative overflow-hidden">
-                        <div className={`w-14 h-14 rounded-2xl ${loc.color} overflow-hidden flex items-center justify-center text-3xl shadow-sm border`}>
-                            {loc.icon}
+                {sorted.map((loc) => (
+                    <div key={loc.id} className="bg-white p-4 rounded-2xl shadow-soft border border-card-border/60 flex items-center gap-4 relative overflow-hidden">
+                        <div className={`w-16 h-16 rounded-2xl ${loc.type === RoomType.Passe ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'} overflow-hidden flex items-center justify-center text-3xl shadow-sm border`}> 
+                            {getIconFor(loc)}
                         </div>
+
+                        {/* Only icon/avatar visual + name (clean view) */}
                         <div className="flex-1 min-w-0 z-10">
-                            <h4 className="font-bold text-xl text-slate-800">{loc.name}</h4>
-                            <p className="text-sm text-slate-500 leading-tight mt-1 truncate">{loc.desc}</p>
+                            <h4 className="font-bold text-lg text-slate-800 truncate">{loc.name}</h4>
                         </div>
-                        <div className="flex flex-col gap-2 z-10">
-                            <button className="text-slate-300 hover:text-slate-500 p-1">
-                                <MoreDotsIcon className="w-6 h-6 text-slate-300" />
-                            </button>
+
+                        {/* Keep actions available for CRUD but keep them small */}
+                        <div className="flex gap-1 z-10">
+                            <button onClick={() => onEdit(loc)} className="p-2 text-slate-400 hover:text-blue-500"><EditIcon className="w-5 h-5" /></button>
+                            <button onClick={() => onDelete(loc.id)} className="p-2 text-slate-400 hover:text-red-500"><TrashIcon className="w-5 h-5" /></button>
                         </div>
-                        <div className="absolute right-0 top-0 w-24 h-full bg-gradient-to-l from-gray-50/50 to-transparent pointer-events-none"></div>
                     </div>
                 ))}
             </div>
 
-            <button className="absolute bottom-24 right-6 w-16 h-16 bg-white rounded-full shadow-2xl flex items-center justify-center text-[#d4a45a] border border-[#f0e6d2] hover:scale-105 transition-transform z-40">
+            <button onClick={onAdd} className="absolute bottom-24 right-6 w-16 h-16 bg-white rounded-full shadow-2xl flex items-center justify-center text-[#d4a45a] border border-[#f0e6d2] hover:scale-105 transition-transform z-40">
                 <PlusIcon className="w-8 h-8 stroke-[3]" />
             </button>
         </PageContainer>

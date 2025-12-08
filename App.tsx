@@ -9,6 +9,7 @@ import { WorkerFormView } from "./views/WorkerFormView";
 import { RoomsListView } from "./views/RoomsListView";
 import { RoomFormView } from "./views/RoomFormView";
 import { LocationListView } from "./views/LocationListView";
+import { RoomType } from "./types";
 import { initialWorkers, initialRooms } from "./data/initialData";
 import { LayoutProvider } from "./context/LayoutContext";
 
@@ -154,15 +155,24 @@ export default function App() {
               />
             )}
 
-            {view === 'ROOMS' && showRoomForm && (
+            {((view === 'ROOMS') || (view === 'LOCATIONS')) && showRoomForm && (
               <RoomFormView
                 room={editingRoom}
                 onSave={handleSaveRoom}
                 onCancel={handleCancelRoomForm}
+                defaultType={view === 'LOCATIONS' ? RoomType.Outros : undefined}
               />
             )}
 
-            {view === 'LOCATIONS' && <LocationListView onBack={handleBack} />}
+            {view === 'LOCATIONS' && !showRoomForm && (
+              <LocationListView
+                onBack={handleBack}
+                rooms={rooms}
+                onEdit={handleEditRoom}
+                onDelete={handleDeleteRoom}
+                onAdd={handleAddRoom}
+              />
+            )}
           </div>
 
           {/* Show Bottom Nav only on main internal screens */}

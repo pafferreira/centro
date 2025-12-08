@@ -15,8 +15,8 @@ export const initialWorkers: Worker[] = [
 ];
 
 export const initialRooms: Room[] = [
-    { id: 'room1', name: 'Sala de Passe 1', capacity: 8, type: RoomType.Passe },
-    { id: 'room2', name: 'Sala de Passe 2', capacity: 8, type: RoomType.Passe },
+    { id: 'room1', name: 'Sala de Passe 1', capacity: 8, type: RoomType.Passe, avatarIcon: 'DoorIcon' },
+    { id: 'room2', name: 'Sala de Passe 2', capacity: 8, type: RoomType.Passe, avatarIcon: 'DoorIcon' },
     { id: 'loc1', name: 'Recepção', capacity: 5, type: RoomType.Outros },
     { id: 'loc2', name: 'Palestra', capacity: 50, type: RoomType.Outros },
 ];
