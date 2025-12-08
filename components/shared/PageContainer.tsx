@@ -1,0 +1,21 @@
+import React, { useRef } from "react";
+import { useScrollDirection } from "../../hooks/useScrollDirection";
+
+interface PageContainerProps {
+    children: React.ReactNode;
+    className?: string;
+}
+
+export const PageContainer: React.FC<PageContainerProps> = ({ children, className = "" }) => {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    useScrollDirection(scrollRef);
+
+    return (
+        <div
+            ref={scrollRef}
+            className={`h-full overflow-y-auto pt-20 px-4 pb-32 bg-[#fdfbf7] transition-all duration-300 ${className}`}
+        >
+            {children}
+        </div>
+    );
+};

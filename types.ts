@@ -27,12 +27,13 @@ export interface Room {
   type: RoomType;
   capacity: number;
   description?: string;
+  avatarUrl?: string;
 }
 
-export type ViewState = 
-  | 'LOGIN' 
-  | 'DASHBOARD' 
-  | 'ROOM_ASSEMBLY' 
-  | 'WORKERS' 
-  | 'ROOMS' 
+export type ViewState =
+  | 'LOGIN'
+  | 'DASHBOARD'
+  | 'ROOM_ASSEMBLY'
+  | 'WORKERS'
+  | 'ROOMS'
   | 'LOCATIONS';
