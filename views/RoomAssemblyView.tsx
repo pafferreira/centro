@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Worker, Room, RoomType, WorkerRole } from "../types";
 import { Header } from "../components/shared/Header";
 import { WorkerCard } from "../components/shared/WorkerCardFixed";
@@ -15,6 +15,8 @@ interface RoomAssemblyViewProps {
 
 export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, rooms, setWorkers, onBack }) => {
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isSharingImage, setIsSharingImage] = useState(false);
+    const captureRef = useRef<HTMLDivElement>(null);
 
     // Helper to get role priority for sorting (lower = higher priority)
     const getRolePriority = (worker: Worker): number => {
@@ -92,7 +94,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
     );
     const unassignedWorkers = activeWorkers.filter(w => !w.assignedRoomId);
 
-    const handleShareWhatsApp = () => {
+    const buildAssemblyText = () => {
         const dateStr = new Date().toLocaleDateString("pt-BR");
         const lines: string[] = [`Dia: ${dateStr}`, ""];
 
@@ -117,9 +119,59 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
             lines.push("");
         }
 
-        const message = encodeURIComponent(lines.join("\n"));
+        return lines.join("\n");
+    };
+
+    const handleShareText = () => {
+        const message = buildAssemblyText()
+            .split("\n")
+            .map(line => encodeURIComponent(line))
+            .join("%0A"); // força quebra de linha estilo Ctrl+Enter
         const whatsappUrl = `https://wa.me/?text=${message}`;
         window.open(whatsappUrl, "_blank");
+    };
+
+    const handleShareImage = async () => {
+        if (isSharingImage) return;
+        setIsSharingImage(true);
+        try {
+            const { default: html2canvas } = await import("html2canvas");
+            if (!captureRef.current) throw new Error("Nada para capturar.");
+
+            const canvas = await html2canvas(captureRef.current, { scale: 2, useCORS: true });
+            const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+            if (!blob) throw new Error("Falha ao gerar imagem.");
+
+            const file = new File([blob], "montagem-salas.png", { type: "image/png" });
+
+            const downloadFallback = () => {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "montagem-salas.png";
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1500);
+                alert("Imagem salva. Anexe manualmente no WhatsApp.");
+            };
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({ files: [file], title: "Montagem das Salas" });
+                    return;
+                } catch (shareError) {
+                    console.warn("Compartilhamento nativo falhou, usando download:", shareError);
+                    downloadFallback();
+                    return;
+                }
+            }
+
+            downloadFallback();
+        } catch (error) {
+            console.error(error);
+            alert("Não foi possível gerar a imagem. Tente novamente.");
+        } finally {
+            setIsSharingImage(false);
+        }
     };
 
     // Create rooms list with "Não Alocados" option
@@ -130,31 +182,48 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
 
     return (
         <PageContainer>
-            <Header
-                title="Montagem das Salas"
-                action={<button onClick={handleShareWhatsApp} className="px-3 py-1 bg-blue-400 text-white text-sm font-bold rounded-lg shadow-sm">Salvar</button>}
-            />
+            <div ref={captureRef}>
+                <Header
+                    title="Montagem das Salas"
+                    action={
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleShareText}
+                                className="px-3 py-1 bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-sm"
+                            >
+                                Texto
+                            </button>
+                            <button
+                                onClick={handleShareImage}
+                                disabled={isSharingImage}
+                                className="px-3 py-1 bg-blue-400 text-white text-sm font-bold rounded-lg shadow-sm disabled:opacity-70"
+                            >
+                                {isSharingImage ? "Salvando..." : "Imagem"}
+                            </button>
+                        </div>
+                    }
+                />
 
-            <div className="mt-4 mb-6">
-                <button
-                    onClick={handleAutoGenerate}
-                    disabled={isGenerating}
-                    className="w-full bg-gradient-to-r from-cyan-300 to-cyan-200 text-slate-800 font-bold py-3.5 rounded-full shadow-lg shadow-cyan-100 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-70 border border-white/50"
-                >
-                    {isGenerating ? (
-                        <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-600"></span>
-                    ) : (
-                        <SparklesIcon className="w-5 h-5 text-slate-700" />
-                    )}
-                    {isGenerating ? "Gerando..." : "Montar Salas Automaticamente"}
-                </button>
-            </div>
+                <div className="mt-4 mb-6">
+                    <button
+                        onClick={handleAutoGenerate}
+                        disabled={isGenerating}
+                        className="w-full bg-gradient-to-r from-cyan-300 to-cyan-200 text-slate-800 font-bold py-3.5 rounded-full shadow-lg shadow-cyan-100 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-70 border border-white/50"
+                    >
+                        {isGenerating ? (
+                            <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-600"></span>
+                        ) : (
+                            <SparklesIcon className="w-5 h-5 text-slate-700" />
+                        )}
+                        {isGenerating ? "Gerando..." : "Montar Salas Automaticamente"}
+                    </button>
+                </div>
 
-            <div className="space-y-6">
-                <div className="space-y-3">
-                    <h3 className="text-lg font-medium text-slate-500 px-1">Salas de Passe</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {passeRooms.map(room => {
+                <div className="space-y-6">
+                    <div className="space-y-3">
+                        <h3 className="text-lg font-medium text-slate-500 px-1">Salas de Passe</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {passeRooms.map(room => {
                             const occupants = activeWorkers.filter(w => w.assignedRoomId === room.id);
                             const sortedOccupants = sortWorkersByRole(occupants);
 
@@ -257,6 +326,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                         </div>
                     </div>
                 )}
+            </div>
             </div>
         </PageContainer>
     );
