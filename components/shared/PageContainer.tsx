@@ -13,7 +13,8 @@ export const PageContainer: React.FC<PageContainerProps> = ({ children, classNam
     return (
         <div
             ref={scrollRef}
-            className={`h-full overflow-y-auto pt-20 px-4 pb-32 bg-[#fdfbf7] transition-all duration-300 ${className}`}
+            className={`h-full overflow-y-auto pt-20 px-4 pb-[140px] bg-[#fdfbf7] transition-all duration-300 ${className}`}
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 120px)' }}
         >
             {children}
         </div>
