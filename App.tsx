@@ -141,6 +141,7 @@ export default function App() {
                 workers={workers}
                 rooms={rooms}
                 setWorkers={setWorkers}
+                setRooms={setRooms}
                 onBack={handleBack}
               />
             )}

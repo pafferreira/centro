@@ -4,6 +4,8 @@ export enum WorkerRole {
   Dialogo = "Diálogo",
   Psicografa = "Psicografa",
   Sustentacao = "Sustentação",
+  Entrevista = "Entrevista",
+  Recepção = "Recepção"
 }
 
 export interface Worker {

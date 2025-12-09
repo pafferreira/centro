@@ -19,6 +19,8 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
         dialogue: worker?.roles.includes(WorkerRole.Dialogo) || false,
         psychography: worker?.roles.includes(WorkerRole.Psicografa) || false,
         support: worker?.roles.includes(WorkerRole.Sustentacao) || false,
+        interview: worker?.roles.includes(WorkerRole.Entrevista) || false,
+        reception: worker?.roles.includes(WorkerRole.Recepção) || false,
     });
     const [isCoordinator, setIsCoordinator] = useState(worker?.isCoordinator || false);
 
@@ -42,6 +44,8 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
                 dialogue: worker.roles.includes(WorkerRole.Dialogo),
                 psychography: worker.roles.includes(WorkerRole.Psicografa),
                 support: worker.roles.includes(WorkerRole.Sustentacao),
+                interview: worker.roles.includes(WorkerRole.Entrevista),
+                reception: worker.roles.includes(WorkerRole.Recepção),
             });
             setIsCoordinator(worker.isCoordinator);
         }
@@ -81,6 +85,8 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
         if (skills.dialogue) roles.push(WorkerRole.Dialogo);
         if (skills.psychography) roles.push(WorkerRole.Psicografa);
         if (skills.support) roles.push(WorkerRole.Sustentacao);
+    if (skills.interview) roles.push(WorkerRole.Entrevista);
+    if (skills.reception) roles.push(WorkerRole.Recepção);
 
         const newWorker: Worker = {
             id: worker?.id || `worker-${Date.now()}`,
@@ -157,6 +163,18 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
                     />
                 </div>
 
+                {/* Coordenador de Sala */}
+                <div className="flex items-center justify-between p-2.5 mt-2">
+                    <span className="text-text-main font-medium">Coordenador de Sala</span>
+                    <button
+                        type="button"
+                        onClick={() => setIsCoordinator(!isCoordinator)}
+                        className={`w-14 h-8 rounded-full p-1 transition-colors ${isCoordinator ? 'bg-blue-500' : 'bg-slate-200'}`}
+                    >
+                        <div className={`w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-300 ${isCoordinator ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                    </button>
+                </div>
+
                 {/* Habilidades */}
                 <div>
                     <label className="block text-sm font-semibold text-text-main mb-2 ml-1">Habilidades</label>
@@ -200,19 +218,27 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
                             />
                             <span className="font-medium text-text-main">Sustentação</span>
                         </label>
-                    </div>
-                </div>
 
-                {/* Coordenador de Sala */}
-                <div className="flex items-center justify-between p-2.5 mt-2">
-                    <span className="text-text-main font-medium">Coordenador de Sala</span>
-                    <button
-                        type="button"
-                        onClick={() => setIsCoordinator(!isCoordinator)}
-                        className={`w-14 h-8 rounded-full p-1 transition-colors ${isCoordinator ? 'bg-blue-500' : 'bg-slate-200'}`}
-                    >
-                        <div className={`w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-300 ${isCoordinator ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                    </button>
+                        <label className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/50 transition-colors cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={skills.interview}
+                                onChange={() => toggleSkill('interview')}
+                                className="w-5 h-5 rounded border-2 border-blue-300 text-blue-500 focus:ring-2 focus:ring-blue-300 cursor-pointer"
+                            />
+                            <span className="font-medium text-text-main">Entrevista</span>
+                        </label>
+
+                        <label className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/50 transition-colors cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={skills.reception}
+                                onChange={() => toggleSkill('reception')}
+                                className="w-5 h-5 rounded border-2 border-blue-300 text-blue-500 focus:ring-2 focus:ring-blue-300 cursor-pointer"
+                            />
+                            <span className="font-medium text-text-main">Recepção</span>
+                        </label>
+                    </div>
                 </div>
 
                 {/* Botões */}

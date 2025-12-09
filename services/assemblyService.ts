@@ -1,0 +1,127 @@
+import { Worker, Room, RoomType, WorkerRole } from "../types";
+
+type Assignment = { workerId: string; roomId: string };
+
+/**
+ * Generate room assignments according to rules:
+ * - Distribute workers only to 'Passe' rooms and 'Recepção'.
+ * - For each 'Passe' room, assign workers in order: Coordenador, Médium, Diálogo, Psicografa, Sustentação.
+ * - For 'Recepção', assign at least 1 worker (prefer Recepção role, then Sustentação).
+ * - Do not exceed room capacity.
+ */
+export function generateAssembly(workers: Worker[], rooms: Room[]): Assignment[] {
+  const assignments: Assignment[] = [];
+
+  // Make a mutable copy of available workers
+  const avail = workers.map(w => ({ ...w, assigned: false }));
+
+  const findAndAssign = (predicate: (w: typeof avail[0]) => boolean, roomId: string) => {
+    const idx = avail.findIndex(w => !w.assigned && predicate(w));
+    if (idx >= 0) {
+      avail[idx].assigned = true;
+      assignments.push({ workerId: avail[idx].id, roomId });
+      return true;
+    }
+    return false;
+  };
+
+  // Helper to assign any available worker
+  const assignAny = (roomId: string) => {
+    const idx = avail.findIndex(w => !w.assigned);
+    if (idx >= 0) {
+      avail[idx].assigned = true;
+      assignments.push({ workerId: avail[idx].id, roomId });
+      return true;
+    }
+    return false;
+  };
+
+  // Prepare quick role-check helpers
+  const hasRole = (w: typeof avail[0], role: WorkerRole) => w.roles.includes(role);
+
+  // Define role priority order for Passe rooms
+  const roleOrder = [
+    WorkerRole.Coordenador,
+    WorkerRole.Medium,
+    WorkerRole.Dialogo,
+    WorkerRole.Psicografa,
+    WorkerRole.Sustentacao
+  ];
+
+  // Helper to get role priority (lower number = higher priority)
+  const getRolePriority = (worker: Worker): number => {
+    if (worker.isCoordinator) return 0; // Coordenador has highest priority
+
+    for (let i = 0; i < roleOrder.length; i++) {
+      if (worker.roles.includes(roleOrder[i])) {
+        return i;
+      }
+    }
+    return roleOrder.length; // No matching role
+  };
+
+  // 1) Handle Passe rooms (by type or name containing "Passe")
+  const passeRooms = rooms.filter(r =>
+    r.type === RoomType.Passe ||
+    r.name.toLowerCase().includes('passe')
+  );
+  for (const room of passeRooms) {
+    // Assign in priority order: Coordenador, Médium, Diálogo, Psicografa, Sustentação
+
+    // 1. Coordenador
+    findAndAssign(w => w.isCoordinator === true, room.id);
+
+    // 2. Médium
+    findAndAssign(w => hasRole(w, WorkerRole.Medium), room.id);
+
+    // 3. Diálogo
+    findAndAssign(w => hasRole(w, WorkerRole.Dialogo), room.id);
+
+    // 4. Psicografa
+    findAndAssign(w => hasRole(w, WorkerRole.Psicografa), room.id);
+
+    // 5. Fill remaining slots with Sustentação
+    while (assignments.filter(a => a.roomId === room.id).length < room.capacity) {
+      const filled = findAndAssign(w => hasRole(w, WorkerRole.Sustentacao), room.id) || assignAny(room.id);
+      if (!filled) break;
+    }
+  }
+
+  // 2) Handle Recepção room (identified by name)
+  const recepcaoRooms = rooms.filter(r => r.name.toLowerCase().includes('recepção') || r.name.toLowerCase().includes('recepcao'));
+  for (const room of recepcaoRooms) {
+    // Prefer workers with Recepção role, then Sustentação
+    const ok = findAndAssign(w => hasRole(w, WorkerRole.Recepção), room.id) ||
+      findAndAssign(w => hasRole(w, WorkerRole.Sustentacao), room.id) ||
+      assignAny(room.id);
+
+    // Fill remaining slots
+    while (assignments.filter(a => a.roomId === room.id).length < room.capacity) {
+      const filled = findAndAssign(w => hasRole(w, WorkerRole.Recepção), room.id) ||
+        findAndAssign(w => hasRole(w, WorkerRole.Sustentacao), room.id) ||
+        assignAny(room.id);
+      if (!filled) break;
+    }
+  }
+
+  // Sort assignments to maintain role order within each room
+  const sortedAssignments = assignments.map(assignment => {
+    const worker = workers.find(w => w.id === assignment.workerId);
+    return {
+      ...assignment,
+      priority: worker ? getRolePriority(worker) : 999
+    };
+  }).sort((a, b) => {
+    // First sort by room
+    if (a.roomId !== b.roomId) {
+      return a.roomId.localeCompare(b.roomId);
+    }
+    // Then by role priority
+    return a.priority - b.priority;
+  });
+
+  // Return without priority field
+  return sortedAssignments.map(({ workerId, roomId }) => ({ workerId, roomId }));
+}
+
+export default generateAssembly;

@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Worker, Room, RoomType } from "../types";
+import { Worker, Room, RoomType, WorkerRole } from "../types";
 import { Header } from "../components/shared/Header";
-import { WorkerCard } from "../components/shared/WorkerCard";
-import { SparklesIcon, CheckCircleIcon } from "../components/Icons";
-import { autoAssignWorkers } from "../services/geminiService";
+import { WorkerCard } from "../components/shared/WorkerCardFixed";
+import { SparklesIcon } from "../components/Icons";
+import { generateAssembly } from "../services/assemblyService";
+import { PageContainer } from "../components/shared/PageContainer";
 
 interface RoomAssemblyViewProps {
     workers: Worker[];
@@ -12,32 +13,88 @@ interface RoomAssemblyViewProps {
     onBack: () => void;
 }
 
-import { PageContainer } from "../components/shared/PageContainer";
-
 export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, rooms, setWorkers, onBack }) => {
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Helper to get role priority for sorting (lower = higher priority)
+    const getRolePriority = (worker: Worker): number => {
+        if (worker.isCoordinator) return 0;
+
+        const roleOrder = [
+            WorkerRole.Coordenador,
+            WorkerRole.Medium,
+            WorkerRole.Dialogo,
+            WorkerRole.Psicografa,
+            WorkerRole.Sustentacao,
+            WorkerRole.Recepção,
+            WorkerRole.Entrevista
+        ];
+
+        for (let i = 0; i < roleOrder.length; i++) {
+            if (worker.roles.includes(roleOrder[i])) {
+                return i;
+            }
+        }
+        return roleOrder.length;
+    };
+
+    // Helper to sort workers by role priority
+    const sortWorkersByRole = (workersList: Worker[]): Worker[] => {
+        return [...workersList].sort((a, b) => getRolePriority(a) - getRolePriority(b));
+    };
 
     const handleAutoGenerate = async () => {
         setIsGenerating(true);
         try {
-            const assignments = await autoAssignWorkers(workers, rooms);
+            // First, clear all room assignments
+            const clearedWorkers = workers.map(w => ({ ...w, assignedRoomId: null }));
 
-            const newWorkers = workers.map(w => {
+            // Then use deterministic generator
+            const assignments = generateAssembly(clearedWorkers, rooms);
+            const newWorkers = clearedWorkers.map(w => {
                 const assignment = assignments.find(a => a.workerId === w.id);
                 return assignment ? { ...w, assignedRoomId: assignment.roomId } : { ...w, assignedRoomId: null };
             });
 
             setWorkers(newWorkers);
         } catch (e) {
-            alert("Falha ao gerar automaticamente. Verifique a API Key.");
+            alert("Falha ao gerar automaticamente.");
         } finally {
             setIsGenerating(false);
         }
     };
 
-    const passeRooms = rooms.filter(r => r.type === RoomType.Passe);
-    const otherRooms = rooms.filter(r => r.type === RoomType.Outros);
+    // Move worker to a specific room or unassign
+    const handleMoveWorker = (workerId: string, roomId: string) => {
+        setWorkers((prev: Worker[]) =>
+            prev.map(w => w.id === workerId ? { ...w, assignedRoomId: roomId === 'unassigned' ? null : roomId } : w)
+        );
+    };
+
+    // Drag and drop handlers
+    const onDropToRoom = (e: React.DragEvent, roomId: string | null) => {
+        e.preventDefault();
+        const workerId = e.dataTransfer.getData('text/plain');
+        if (!workerId) return;
+        setWorkers((prev: Worker[]) => prev.map(w => w.id === workerId ? { ...w, assignedRoomId: roomId } : w));
+    };
+    const onDragOver = (e: React.DragEvent) => e.preventDefault();
+
+    const passeRooms = rooms.filter(r =>
+        r.type === RoomType.Passe ||
+        r.name.toLowerCase().includes('passe')
+    );
+    const otherRooms = rooms.filter(r =>
+        r.type !== RoomType.Passe &&
+        !r.name.toLowerCase().includes('passe')
+    );
     const unassignedWorkers = workers.filter(w => !w.assignedRoomId);
+
+    // Create rooms list with "Não Alocados" option
+    const roomsWithUnassigned = [
+        { id: 'unassigned', name: '❌ Não Alocados' },
+        ...rooms
+    ];
 
     return (
         <PageContainer>
@@ -67,15 +124,19 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {passeRooms.map(room => {
                             const occupants = workers.filter(w => w.assignedRoomId === room.id);
-                            const isFull = occupants.length >= room.capacity;
+                            const sortedOccupants = sortWorkersByRole(occupants);
 
                             return (
-                                <div key={room.id} className="bg-white rounded-2xl p-3 shadow-soft border border-card-border/60">
+                                <div
+                                    key={room.id}
+                                    className="bg-white rounded-2xl p-3 shadow-soft border border-card-border/60"
+                                    onDragOver={onDragOver}
+                                    onDrop={(e) => onDropToRoom(e, room.id)}
+                                >
                                     <div className="flex justify-between items-center mb-3 px-1">
                                         <h4 className="font-bold text-text-main text-base">{room.name}</h4>
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 ${isFull ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
-                                            {occupants.length}/{room.capacity}
-                                            {isFull ? <CheckCircleIcon className="w-3 h-3" /> : "!"}
+                                        <span className="px-3 py-1 rounded-full text-sm font-bold bg-blue-100 text-blue-600">
+                                            {occupants.length}
                                         </span>
                                     </div>
                                     <div className="space-y-2 min-h-[60px]">
@@ -84,8 +145,15 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                                 Arraste aqui
                                             </div>
                                         )}
-                                        {occupants.map(w => (
-                                            <WorkerCard key={w.id} worker={w} roleLabel={w.isCoordinator ? 'Coordenador' : undefined} />
+                                        {sortedOccupants.map(w => (
+                                            <div key={w.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', w.id)}>
+                                                <WorkerCard
+                                                    worker={w}
+                                                    roleLabel={w.isCoordinator ? 'Coordenador' : undefined}
+                                                    rooms={roomsWithUnassigned}
+                                                    onMove={handleMoveWorker}
+                                                />
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
@@ -99,16 +167,31 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {otherRooms.map(room => {
                             const occupants = workers.filter(w => w.assignedRoomId === room.id);
+                            const sortedOccupants = sortWorkersByRole(occupants);
+
                             return (
-                                <div key={room.id} className="bg-white rounded-2xl p-3 shadow-soft border border-card-border/60">
+                                <div
+                                    key={room.id}
+                                    className="bg-white rounded-2xl p-3 shadow-soft border border-card-border/60"
+                                    onDragOver={onDragOver}
+                                    onDrop={(e) => onDropToRoom(e, room.id)}
+                                >
                                     <div className="flex justify-between items-center mb-3 px-1">
                                         <h4 className="font-bold text-text-main text-base">{room.name}</h4>
-                                        <span className="text-slate-400 font-bold text-sm">{occupants.length}</span>
+                                        <span className="px-3 py-1 rounded-full text-sm font-bold bg-slate-100 text-slate-600">
+                                            {occupants.length}
+                                        </span>
                                     </div>
                                     <div className="space-y-2">
                                         {occupants.length === 0 && <p className="text-xs text-stone-300 italic px-1">Vazio</p>}
-                                        {occupants.map(w => (
-                                            <WorkerCard key={w.id} worker={w} />
+                                        {sortedOccupants.map(w => (
+                                            <div key={w.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', w.id)}>
+                                                <WorkerCard
+                                                    worker={w}
+                                                    rooms={roomsWithUnassigned}
+                                                    onMove={handleMoveWorker}
+                                                />
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
@@ -118,14 +201,26 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                 </div>
 
                 {unassignedWorkers.length > 0 && (
-                    <div className="bg-white rounded-2xl p-4 border border-card-border/60 shadow-soft">
+                    <div
+                        className="bg-white rounded-2xl p-4 border border-card-border/60 shadow-soft"
+                        onDragOver={onDragOver}
+                        onDrop={(e) => onDropToRoom(e, null)}
+                    >
                         <div className="flex justify-between items-center mb-3">
                             <h3 className="text-text-main font-bold text-base">Não Alocados</h3>
-                            <span className="text-slate-400 text-sm font-bold">{unassignedWorkers.length}</span>
+                            <span className="px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-600">
+                                {unassignedWorkers.length}
+                            </span>
                         </div>
                         <div className="space-y-2">
                             {unassignedWorkers.map(w => (
-                                <WorkerCard key={w.id} worker={w} />
+                                <div key={w.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', w.id)}>
+                                    <WorkerCard
+                                        worker={w}
+                                        rooms={roomsWithUnassigned}
+                                        onMove={handleMoveWorker}
+                                    />
+                                </div>
                             ))}
                         </div>
                     </div>
