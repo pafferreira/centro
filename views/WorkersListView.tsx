@@ -62,6 +62,10 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
     return (
         <PageContainer>
             <Header title="Trabalhadores" />
+            <div className="mt-2 flex items-center justify-between text-sm text-slate-600 px-1">
+                <span>Total: <strong className="text-slate-800">{workers.length}</strong></span>
+                <span>Filtrados: <strong className="text-slate-800">{filteredAndSortedWorkers.length}</strong></span>
+            </div>
 
             {/* Search Bar */}
             <div className="mt-6 relative">
