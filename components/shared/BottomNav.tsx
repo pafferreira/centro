@@ -1,17 +1,15 @@
 import React from "react";
 import { ViewState } from "../../types";
 import { HomeIcon, LegoIcon, UsersIcon, DoorIcon, MapPinIcon } from "../Icons";
+// import { useLayout } from "../../context/LayoutContext"; // deixar comentado para referência
 
 interface BottomNavProps {
     active: ViewState;
     onChange: (v: ViewState) => void;
 }
 
-import { useLayout } from "../../context/LayoutContext";
-
 export const BottomNav: React.FC<BottomNavProps> = ({ active, onChange }) => {
-    const { barsVisible } = useLayout();
-
+    // const { barsVisible } = useLayout(); // deixado comentado para manter o footer fixo
     const items = [
         { id: 'DASHBOARD', label: 'Início', icon: HomeIcon, color: 'text-cyan-500', bg: 'bg-cyan-50' },
     { id: 'ROOM_ASSEMBLY', label: 'Montagem', icon: LegoIcon, color: 'text-green-600', bg: 'bg-green-50' },
@@ -22,8 +20,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ active, onChange }) => {
 
     return (
         <nav
-            className={`absolute bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-xl border-t border-white/60 pt-2 px-2 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.05)] rounded-t-3xl transition-transform duration-300 ${barsVisible ? 'translate-y-0' : 'translate-y-full'
-                }`}
+            className={`absolute bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-xl border-t border-white/60 pt-2 px-2 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.05)] rounded-t-3xl transition-transform duration-300 translate-y-0`}
+            // className={`absolute bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-xl border-t border-white/60 pt-2 px-2 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.05)] rounded-t-3xl transition-transform duration-300 ${barsVisible ? 'translate-y-0' : 'translate-y-full'}`}
             style={{
                 paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
                 bottom: 'env(safe-area-inset-bottom, 0px)',
