@@ -152,6 +152,9 @@ export default function App() {
                 onEdit={handleEditWorker}
                 onDelete={handleDeleteWorker}
                 onAdd={handleAddWorker}
+                onTogglePresence={(workerId, present) => {
+                  setWorkers(prev => prev.map(w => w.id === workerId ? { ...w, present, assignedRoomId: present ? w.assignedRoomId ?? null : null } : w));
+                }}
               />
             )}
 

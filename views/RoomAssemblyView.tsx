@@ -80,6 +80,8 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
     };
     const onDragOver = (e: React.DragEvent) => e.preventDefault();
 
+    const activeWorkers = workers.filter(w => w.present !== false);
+
     const passeRooms = rooms.filter(r =>
         r.type === RoomType.Passe ||
         r.name.toLowerCase().includes('passe')
@@ -88,7 +90,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         r.type !== RoomType.Passe &&
         !r.name.toLowerCase().includes('passe')
     );
-    const unassignedWorkers = workers.filter(w => !w.assignedRoomId);
+    const unassignedWorkers = activeWorkers.filter(w => !w.assignedRoomId);
 
     // Create rooms list with "Não Alocados" option
     const roomsWithUnassigned = [
@@ -123,7 +125,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                     <h3 className="text-lg font-medium text-slate-500 px-1">Salas de Passe</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {passeRooms.map(room => {
-                            const occupants = workers.filter(w => w.assignedRoomId === room.id);
+                            const occupants = activeWorkers.filter(w => w.assignedRoomId === room.id);
                             const sortedOccupants = sortWorkersByRole(occupants);
 
                             return (
@@ -166,7 +168,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                     <h3 className="text-lg font-medium text-slate-500 px-1">Outros Locais</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {otherRooms.map(room => {
-                            const occupants = workers.filter(w => w.assignedRoomId === room.id);
+                            const occupants = activeWorkers.filter(w => w.assignedRoomId === room.id);
                             const sortedOccupants = sortWorkersByRole(occupants);
 
                             return (

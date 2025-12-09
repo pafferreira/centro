@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Worker, Room, RoomType, WorkerRole } from "../types";
 
-const apiKey = process.env.API_KEY || "";
+const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
 const ai = new GoogleGenAI({ apiKey });
 
 // Define the response schema for the assignments
@@ -24,15 +24,17 @@ const assignmentSchema = {
 };
 
 export const autoAssignWorkers = async (workers: Worker[], rooms: Room[]) => {
+  const availableWorkers = workers.filter(w => w.present !== false);
+
   if (!apiKey) {
     console.error("API Key is missing");
-    throw new Error("API Key is missing. Please check your configuration.");
+    throw new Error("API Key is missing. Please set GEMINI_API_KEY (preferred) or API_KEY in your environment.");
   }
 
   const model = "gemini-2.5-flash";
 
   // Prepare data for the prompt
-  const workersData = workers.map(w => ({
+  const workersData = availableWorkers.map(w => ({
     id: w.id,
     name: w.name,
     roles: w.roles,
@@ -54,7 +56,7 @@ export const autoAssignWorkers = async (workers: Worker[], rooms: Room[]) => {
     2. Distribute workers with the 'Médium' role evenly across 'Sala de Passe' rooms.
     3. Fill the remaining spots with 'Sustentação' or other roles.
     4. Ensure no room exceeds its capacity.
-    5. 'Outros' type rooms (like Reception) need at least 1 person, preferably with 'Sustentação'.
+    5. 'Outros' type rooms (like Reception) must be staffed only by workers who have the 'Recepção' skill.
     6. Return a complete list of assignments. If a worker cannot be assigned, do not include them in the list (they will remain unassigned).
 
     Input Data:

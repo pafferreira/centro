@@ -14,6 +14,7 @@ export interface Worker {
   contact?: string; // email or phone
   roles: WorkerRole[]; // A worker can have multiple skills
   isCoordinator: boolean; // Explicit toggle for room leadership
+  present?: boolean; // Present in the center for allocation
   assignedRoomId?: string | null;
   avatarUrl?: string;
 }

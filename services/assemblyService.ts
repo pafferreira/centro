@@ -4,30 +4,22 @@ type Assignment = { workerId: string; roomId: string };
 
 /**
  * Generate room assignments according to rules:
- * - Distribute workers only to 'Passe' rooms and 'Recepção'.
+ * - Distribute workers only to 'Passe' rooms and 'Recepção' using only workers marked as present.
+ * - Handle 'Recepção' first, using only workers with the Recepção skill.
  * - For each 'Passe' room, assign workers in order: Coordenador, Médium, Diálogo, Psicografa, Sustentação.
- * - For 'Recepção', assign at least 1 worker (prefer Recepção role, then Sustentação).
+ * - If there are not enough workers for a role, leave remaining workers unassigned instead of overfilling rooms.
  * - Do not exceed room capacity.
  */
 export function generateAssembly(workers: Worker[], rooms: Room[]): Assignment[] {
   const assignments: Assignment[] = [];
 
-  // Make a mutable copy of available workers
-  const avail = workers.map(w => ({ ...w, assigned: false }));
+  // Use only present workers and make a mutable copy
+  const avail = workers
+    .filter(w => w.present !== false)
+    .map(w => ({ ...w, assigned: false }));
 
   const findAndAssign = (predicate: (w: typeof avail[0]) => boolean, roomId: string) => {
     const idx = avail.findIndex(w => !w.assigned && predicate(w));
-    if (idx >= 0) {
-      avail[idx].assigned = true;
-      assignments.push({ workerId: avail[idx].id, roomId });
-      return true;
-    }
-    return false;
-  };
-
-  // Helper to assign any available worker
-  const assignAny = (roomId: string) => {
-    const idx = avail.findIndex(w => !w.assigned);
     if (idx >= 0) {
       avail[idx].assigned = true;
       assignments.push({ workerId: avail[idx].id, roomId });
@@ -60,7 +52,20 @@ export function generateAssembly(workers: Worker[], rooms: Room[]): Assignment[]
     return roleOrder.length; // No matching role
   };
 
-  // 1) Handle Passe rooms (by type or name containing "Passe")
+  // 1) Handle Recepção room (identified by name) before other rooms to preserve the specialized skill
+  const recepcaoRooms = rooms.filter(r => r.name.toLowerCase().includes('recepção') || r.name.toLowerCase().includes('recepcao'));
+  for (const room of recepcaoRooms) {
+    // Use only workers with Recepção skill
+    findAndAssign(w => hasRole(w, WorkerRole.Recepção), room.id);
+
+    // Fill remaining slots
+    while (assignments.filter(a => a.roomId === room.id).length < room.capacity) {
+      const filled = findAndAssign(w => hasRole(w, WorkerRole.Recepção), room.id);
+      if (!filled) break;
+    }
+  }
+
+  // 2) Handle Passe rooms (by type or name containing "Passe")
   const passeRooms = rooms.filter(r =>
     r.type === RoomType.Passe ||
     r.name.toLowerCase().includes('passe')
@@ -80,26 +85,9 @@ export function generateAssembly(workers: Worker[], rooms: Room[]): Assignment[]
     // 4. Psicografa
     findAndAssign(w => hasRole(w, WorkerRole.Psicografa), room.id);
 
-    // 5. Fill remaining slots with Sustentação
+    // 5. Fill remaining slots with Sustentação (do not overfill with other roles)
     while (assignments.filter(a => a.roomId === room.id).length < room.capacity) {
-      const filled = findAndAssign(w => hasRole(w, WorkerRole.Sustentacao), room.id) || assignAny(room.id);
-      if (!filled) break;
-    }
-  }
-
-  // 2) Handle Recepção room (identified by name)
-  const recepcaoRooms = rooms.filter(r => r.name.toLowerCase().includes('recepção') || r.name.toLowerCase().includes('recepcao'));
-  for (const room of recepcaoRooms) {
-    // Prefer workers with Recepção role, then Sustentação
-    const ok = findAndAssign(w => hasRole(w, WorkerRole.Recepção), room.id) ||
-      findAndAssign(w => hasRole(w, WorkerRole.Sustentacao), room.id) ||
-      assignAny(room.id);
-
-    // Fill remaining slots
-    while (assignments.filter(a => a.roomId === room.id).length < room.capacity) {
-      const filled = findAndAssign(w => hasRole(w, WorkerRole.Recepção), room.id) ||
-        findAndAssign(w => hasRole(w, WorkerRole.Sustentacao), room.id) ||
-        assignAny(room.id);
+      const filled = findAndAssign(w => hasRole(w, WorkerRole.Sustentacao), room.id);
       if (!filled) break;
     }
   }

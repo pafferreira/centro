@@ -9,9 +9,10 @@ interface WorkersListViewProps {
     onEdit: (worker: Worker) => void;
     onDelete: (workerId: string) => void;
     onAdd: () => void;
+    onTogglePresence: (workerId: string, present: boolean) => void;
 }
 
-export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdit, onDelete, onAdd }) => {
+export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdit, onDelete, onAdd, onTogglePresence }) => {
     const [searchQuery, setSearchQuery] = useState("");
 
     const getAvatarUrl = (worker: Worker) => {
@@ -130,20 +131,31 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
                                 </div>
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex gap-1">
-                                <button
-                                    onClick={() => onEdit(worker)}
-                                    className="p-2 text-slate-400 hover:text-blue-500 transition-colors"
-                                >
-                                    <EditIcon className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={() => onDelete(worker.id)}
-                                    className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                                >
-                                    <TrashIcon className="w-5 h-5" />
-                                </button>
+                            {/* Presence + Actions */}
+                            <div className="flex flex-col items-end gap-2 ml-auto">
+                                <label className="flex items-center gap-2 text-xs text-slate-600 select-none cursor-pointer">
+                                    <span className="font-medium">Presente</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={worker.present !== false}
+                                        onChange={(e) => onTogglePresence(worker.id, e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-300 cursor-pointer"
+                                    />
+                                </label>
+                                <div className="flex gap-1">
+                                    <button
+                                        onClick={() => onEdit(worker)}
+                                        className="p-2 text-slate-400 hover:text-blue-500 transition-colors"
+                                    >
+                                        <EditIcon className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => onDelete(worker.id)}
+                                        className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                                    >
+                                        <TrashIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))

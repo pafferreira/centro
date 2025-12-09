@@ -95,6 +95,7 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
             roles,
             isCoordinator,
             avatarUrl: selectedAvatar,
+            present: worker?.present !== false,
             assignedRoomId: worker?.assignedRoomId || null,
         };
 

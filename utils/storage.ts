@@ -21,7 +21,12 @@ export function loadWorkers(): Worker[] {
     try {
         const stored = localStorage.getItem(STORAGE_KEYS.WORKERS);
         if (stored) {
-            return JSON.parse(stored) as Worker[];
+            const parsed = JSON.parse(stored) as Worker[];
+            return parsed.map(w => ({
+                ...w,
+                present: w.present !== false, // default to true when missing
+                assignedRoomId: w.present === false ? null : w.assignedRoomId ?? null,
+            }));
         }
     } catch (error) {
         console.error('Erro ao carregar trabalhadores:', error);

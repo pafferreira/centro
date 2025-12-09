@@ -1,17 +1,17 @@
 import { Worker, Room, RoomType, WorkerRole } from "../types";
 
 export const initialWorkers: Worker[] = [
-    { id: '1', name: 'Ana Silva', roles: [WorkerRole.Coordenador], isCoordinator: true, assignedRoomId: 'room1' },
-    { id: '2', name: 'Carlos Souza', roles: [WorkerRole.Medium], isCoordinator: false, assignedRoomId: 'room1' },
-    { id: '3', name: 'Beatriz Lima', roles: [WorkerRole.Dialogo], isCoordinator: false, assignedRoomId: 'room1' },
-    { id: '4', name: 'Davi Rocha', roles: [WorkerRole.Sustentacao], isCoordinator: false, assignedRoomId: 'room1' },
-    { id: '5', name: 'Elisa Costa', roles: [WorkerRole.Coordenador], isCoordinator: true, assignedRoomId: 'room2' },
-    { id: '6', name: 'Felipe Almeida', roles: [WorkerRole.Medium], isCoordinator: false, assignedRoomId: 'room2' },
-    { id: '7', name: 'Gabriela Dias', roles: [WorkerRole.Sustentacao], isCoordinator: false, assignedRoomId: 'room2' },
-    { id: '8', name: 'Heitor Pereira', roles: [WorkerRole.Sustentacao], isCoordinator: false, assignedRoomId: 'loc1' },
-    { id: '9', name: 'Isabela Gomes', roles: [WorkerRole.Sustentacao], isCoordinator: false, assignedRoomId: 'loc1' },
-    { id: '10', name: 'Júlia Martins', roles: [WorkerRole.Dialogo], isCoordinator: false, assignedRoomId: 'loc2' },
-    { id: '11', name: 'Lucas Fernandes', roles: [WorkerRole.Sustentacao], isCoordinator: false, assignedRoomId: null },
+    { id: '1', name: 'Ana Silva', roles: [WorkerRole.Coordenador], isCoordinator: true, assignedRoomId: 'room1', present: true },
+    { id: '2', name: 'Carlos Souza', roles: [WorkerRole.Medium], isCoordinator: false, assignedRoomId: 'room1', present: true },
+    { id: '3', name: 'Beatriz Lima', roles: [WorkerRole.Dialogo], isCoordinator: false, assignedRoomId: 'room1', present: true },
+    { id: '4', name: 'Davi Rocha', roles: [WorkerRole.Sustentacao], isCoordinator: false, assignedRoomId: 'room1', present: true },
+    { id: '5', name: 'Elisa Costa', roles: [WorkerRole.Coordenador], isCoordinator: true, assignedRoomId: 'room2', present: true },
+    { id: '6', name: 'Felipe Almeida', roles: [WorkerRole.Medium], isCoordinator: false, assignedRoomId: 'room2', present: true },
+    { id: '7', name: 'Gabriela Dias', roles: [WorkerRole.Sustentacao], isCoordinator: false, assignedRoomId: 'room2', present: true },
+    { id: '8', name: 'Heitor Pereira', roles: [WorkerRole.Sustentacao], isCoordinator: false, assignedRoomId: 'loc1', present: true },
+    { id: '9', name: 'Isabela Gomes', roles: [WorkerRole.Sustentacao], isCoordinator: false, assignedRoomId: 'loc1', present: true },
+    { id: '10', name: 'Júlia Martins', roles: [WorkerRole.Dialogo], isCoordinator: false, assignedRoomId: 'loc2', present: true },
+    { id: '11', name: 'Lucas Fernandes', roles: [WorkerRole.Sustentacao], isCoordinator: false, assignedRoomId: null, present: true },
 ];
 
 export const initialRooms: Room[] = [
