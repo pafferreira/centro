@@ -20,10 +20,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ active, onChange }) => {
 
     return (
         <nav
-            className={`absolute bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-xl border-t border-white/60 pt-2 px-2 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.05)] rounded-t-3xl transition-transform duration-300 translate-y-0`}
+            className={`absolute bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-xl border-t border-white/60 pt-1.5 px-2 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.05)] rounded-t-3xl transition-transform duration-300 translate-y-0`}
             // className={`absolute bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-xl border-t border-white/60 pt-2 px-2 shadow-[0_-4px_20px_-2px_rgba(0,0,0,0.05)] rounded-t-3xl transition-transform duration-300 ${barsVisible ? 'translate-y-0' : 'translate-y-full'}`}
             style={{
-                paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
+                paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
                 bottom: 'env(safe-area-inset-bottom, 0px)',
             }}
         >

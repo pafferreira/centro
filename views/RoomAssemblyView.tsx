@@ -92,6 +92,36 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
     );
     const unassignedWorkers = activeWorkers.filter(w => !w.assignedRoomId);
 
+    const handleShareWhatsApp = () => {
+        const dateStr = new Date().toLocaleDateString("pt-BR");
+        const lines: string[] = [`Dia: ${dateStr}`, ""];
+
+        const sortedRooms = [...rooms].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+
+        sortedRooms.forEach(room => {
+            const occupants = activeWorkers.filter(w => w.assignedRoomId === room.id);
+            const sortedOccupants = sortWorkersByRole(occupants);
+
+            lines.push(room.name);
+            if (sortedOccupants.length === 0) {
+                lines.push("—");
+            } else {
+                sortedOccupants.forEach(w => lines.push(w.name));
+            }
+            lines.push("");
+        });
+
+        if (unassignedWorkers.length) {
+            lines.push("Não Alocados");
+            unassignedWorkers.forEach(w => lines.push(w.name));
+            lines.push("");
+        }
+
+        const message = encodeURIComponent(lines.join("\n"));
+        const whatsappUrl = `https://wa.me/?text=${message}`;
+        window.open(whatsappUrl, "_blank");
+    };
+
     // Create rooms list with "Não Alocados" option
     const roomsWithUnassigned = [
         { id: 'unassigned', name: '❌ Não Alocados' },
@@ -102,7 +132,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         <PageContainer>
             <Header
                 title="Montagem das Salas"
-                action={<button className="px-3 py-1 bg-blue-400 text-white text-sm font-bold rounded-lg shadow-sm">Salvar</button>}
+                action={<button onClick={handleShareWhatsApp} className="px-3 py-1 bg-blue-400 text-white text-sm font-bold rounded-lg shadow-sm">Salvar</button>}
             />
 
             <div className="mt-4 mb-6">
@@ -116,7 +146,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                     ) : (
                         <SparklesIcon className="w-5 h-5 text-slate-700" />
                     )}
-                    {isGenerating ? "Gerando..." : "Gerar Automaticamente"}
+                    {isGenerating ? "Gerando..." : "Montar Salas Automaticamente"}
                 </button>
             </div>
 
