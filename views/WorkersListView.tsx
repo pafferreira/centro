@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Worker } from "../types";
 import { Header } from "../components/shared/Header";
 import { PageContainer } from "../components/shared/PageContainer";
@@ -15,6 +15,19 @@ interface WorkersListViewProps {
 export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdit, onDelete, onAdd, onTogglePresence }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [presenceFilter, setPresenceFilter] = useState<"all" | "present" | "absent">("all");
+    const [showPresenceOptions, setShowPresenceOptions] = useState(false);
+    const presenceRef = useRef<HTMLDivElement>(null);
+
+    // Close presence dropdown on outside click
+    useEffect(() => {
+        const handler = (event: MouseEvent) => {
+            if (presenceRef.current && !presenceRef.current.contains(event.target as Node)) {
+                setShowPresenceOptions(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
 
     const getAvatarUrl = (worker: Worker) => {
         return worker.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(worker.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
@@ -88,18 +101,41 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
                     </div>
                 </label>
 
-                <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600 w-28 shrink-0 sm:w-32">
-                    <span>Presença</span>
-                    <select
-                        value={presenceFilter}
-                        onChange={(e) => setPresenceFilter(e.target.value as "all" | "present" | "absent")}
-                        className="px-3 py-2 bg-white rounded-xl border border-card-border/60 text-slate-800 shadow-soft focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50"
+                <div ref={presenceRef} className="flex flex-col gap-1 text-xs font-semibold text-slate-600 w-28 shrink-0 sm:w-32 relative">
+                    <span>Presente/Ausente</span>
+                    <button
+                        type="button"
+                        onClick={() => setShowPresenceOptions(prev => !prev)}
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-card-border/60 text-slate-800 shadow-soft flex items-center justify-between text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50"
                     >
-                        <option value="all">Todos</option>
-                        <option value="present">Presentes</option>
-                        <option value="absent">Ausentes</option>
-                    </select>
-                </label>
+                        {presenceFilter === "all" && "Todos"}
+                        {presenceFilter === "present" && "Presentes"}
+                        {presenceFilter === "absent" && "Ausentes"}
+                        <span className="text-slate-400">▾</span>
+                    </button>
+                    {showPresenceOptions && (
+                        <div className="absolute top-[70px] right-0 w-full bg-white rounded-xl border border-card-border/60 shadow-lg overflow-hidden z-20">
+                            {[
+                                { value: "all", label: "Todos" },
+                                { value: "present", label: "Presentes" },
+                                { value: "absent", label: "Ausentes" },
+                            ].map(opt => (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => {
+                                        setPresenceFilter(opt.value as "all" | "present" | "absent");
+                                        setShowPresenceOptions(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 ${
+                                        presenceFilter === opt.value ? "font-semibold text-blue-600" : "text-slate-700"
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Workers List */}

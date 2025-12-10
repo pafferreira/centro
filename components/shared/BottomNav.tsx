@@ -13,7 +13,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ active, onChange }) => {
     const items = [
         { id: 'DASHBOARD', label: 'Início', icon: HomeIcon, color: 'text-cyan-500', bg: 'bg-cyan-50' },
     { id: 'ROOM_ASSEMBLY', label: 'Montagem', icon: LegoIcon, color: 'text-green-600', bg: 'bg-green-50' },
-        { id: 'WORKERS', label: 'Equipe', icon: UsersIcon, color: 'text-blue-500', bg: 'bg-blue-50' },
+        { id: 'WORKERS', label: 'Trabalhadores', icon: UsersIcon, color: 'text-blue-500', bg: 'bg-blue-50' },
         // Removed 'ROOMS' menu item per request; keep 'LOCATIONS' as the place for both rooms and other locations
         { id: 'LOCATIONS', label: 'Locais', icon: MapPinIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
     ];
