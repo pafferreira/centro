@@ -3,6 +3,7 @@ import { ViewState } from "../types";
 import { Header } from "../components/shared/Header";
 import { BottomNav } from "../components/shared/BottomNav";
 import { LegoIcon, UsersIcon, DoorIcon, MapPinIcon } from "../components/Icons";
+import { MainBackground } from "../components/shared/MainBackground";
 
 interface DashboardViewProps {
     onNavigate: (v: ViewState) => void;
@@ -12,32 +13,39 @@ import { PageContainer } from "../components/shared/PageContainer";
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const menuItems = [
-        { id: 'ROOM_ASSEMBLY', label: 'Montagem das Salas', icon: LegoIcon, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
-        { id: 'WORKERS', label: 'Cadastro de Trabalhadores', icon: UsersIcon, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' },
-        { id: 'ROOMS', label: 'Cadastro de Salas de Passe', icon: DoorIcon, color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-100' },
-        { id: 'LOCATIONS', label: 'Cadastro de Locais de Trabalho', icon: MapPinIcon, color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' },
+        { id: 'ROOM_ASSEMBLY', label: 'Montagem das Salas', icon: LegoIcon },
+        { id: 'WORKERS', label: 'Cadastro de Trabalhadores', icon: UsersIcon },
+        { id: 'ROOMS', label: 'Cadastro de Salas de Passe', icon: DoorIcon },
+        { id: 'LOCATIONS', label: 'Cadastro de Locais de Trabalho', icon: MapPinIcon },
     ];
 
     return (
-        <PageContainer>
-            <Header title="Início" showSettings onSettingsClick={() => onNavigate('SETTINGS')} />
+        <div className="relative h-full">
+            <MainBackground />
+            <PageContainer backgroundClassName="bg-transparent" className="relative z-10 text-white">
+                <Header title="Início" showSettings onSettingsClick={() => onNavigate('SETTINGS')} variant="glass" />
 
-            <div className="mt-4 grid gap-4">
-                {menuItems.map((item, idx) => (
-                    <button
-                        key={item.id}
-                        onClick={() => onNavigate(item.id as ViewState)}
-                        className={`group relative flex items-center p-4 rounded-2xl shadow-soft border border-card-border/60 bg-white transition-all active:scale-[0.98] text-left hover:border-primary/30`}
-                    >
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border ${item.bg} ${item.border} ${item.color}`}>
-                            <item.icon className="w-8 h-8" />
-                        </div>
-                        <div className="ml-4 flex-1 relative z-10">
-                            <h3 className="font-medium text-slate-700 text-lg">{item.label}</h3>
-                        </div>
-                    </button>
-                ))}
-            </div>
-        </PageContainer>
+                <div className="mt-6 mb-3 px-1">
+                    <h2 className="text-2xl font-bold drop-shadow-md">Navegação</h2>
+                </div>
+
+                <div className="grid gap-4">
+                    {menuItems.map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => onNavigate(item.id as ViewState)}
+                            className="group relative flex items-center p-4 rounded-2xl border border-white/35 bg-gradient-to-r from-white/18 via-white/12 to-[#f2c8ae]/18 backdrop-blur-lg shadow-[0_15px_45px_rgba(46,84,120,0.35)] active:scale-[0.98] text-left transition-all hover:border-white/50"
+                        >
+                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner border border-white/30 bg-white/15 text-white">
+                                <item.icon className="w-8 h-8" />
+                            </div>
+                            <div className="ml-4 flex-1 relative z-10">
+                                <h3 className="font-semibold text-lg text-white drop-shadow-sm">{item.label}</h3>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            </PageContainer>
+        </div>
     );
 };
