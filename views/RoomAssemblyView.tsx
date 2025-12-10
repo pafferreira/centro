@@ -1,10 +1,16 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { Worker, Room, RoomType, WorkerRole } from "../types";
 import { Header } from "../components/shared/Header";
 import { WorkerCard } from "../components/shared/WorkerCardFixed";
 import { SparklesIcon } from "../components/Icons";
 import { generateAssembly } from "../services/assemblyService";
 import { PageContainer } from "../components/shared/PageContainer";
+
+type AssemblyWorker = Worker & {
+    isReplica?: boolean;
+    originalId?: string;
+    originRoomName?: string;
+};
 
 interface RoomAssemblyViewProps {
     workers: Worker[];
@@ -15,8 +21,7 @@ interface RoomAssemblyViewProps {
 
 export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, rooms, setWorkers, onBack }) => {
     const [isGenerating, setIsGenerating] = useState(false);
-    const [isSharingImage, setIsSharingImage] = useState(false);
-    const captureRef = useRef<HTMLDivElement>(null);
+    const [replicaAssignments, setReplicaAssignments] = useState<Record<string, string | null>>({});
 
     // Helper to get role priority for sorting (lower = higher priority)
     const getRolePriority = (worker: Worker): number => {
@@ -40,6 +45,16 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         return roleOrder.length;
     };
 
+    const findRoomById = (roomId?: string | null) => rooms.find(r => r.id === roomId);
+    const isPasseRoom = (room?: Room) => room ? (room.type === RoomType.Passe || room.name.toLowerCase().includes('passe')) : false;
+    const isReplicableRoom = (room?: Room) => {
+        if (!room) return false;
+        const name = room.name.toLowerCase();
+        return name.includes('palestra') || name.includes('aulinha');
+    };
+    const getReplicaId = (worker: Worker) => `replica:${worker.id}:${worker.assignedRoomId ?? 'none'}`;
+    const isReplicaId = (workerId: string) => workerId.startsWith('replica:');
+
     // Helper to sort workers by role priority
     const sortWorkersByRole = (workersList: Worker[]): Worker[] => {
         return [...workersList].sort((a, b) => getRolePriority(a) - getRolePriority(b));
@@ -59,6 +74,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
             });
 
             setWorkers(newWorkers);
+            setReplicaAssignments({});
         } catch (e) {
             alert("Falha ao gerar automaticamente.");
         } finally {
@@ -68,6 +84,20 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
 
     // Move worker to a specific room or unassign
     const handleMoveWorker = (workerId: string, roomId: string) => {
+        if (isReplicaId(workerId)) {
+            const targetRoom = roomId === 'unassigned' ? null : findRoomById(roomId);
+            if (roomId !== 'unassigned' && !isPasseRoom(targetRoom)) {
+                alert("Trabalhadores replicados de Palestra/Aulinha só podem ser usados nas Salas de Passe.");
+                return;
+            }
+
+            setReplicaAssignments(prev => ({
+                ...prev,
+                [workerId]: roomId === 'unassigned' ? null : roomId
+            }));
+            return;
+        }
+
         setWorkers((prev: Worker[]) =>
             prev.map(w => w.id === workerId ? { ...w, assignedRoomId: roomId === 'unassigned' ? null : roomId } : w)
         );
@@ -78,11 +108,25 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         e.preventDefault();
         const workerId = e.dataTransfer.getData('text/plain');
         if (!workerId) return;
-        setWorkers((prev: Worker[]) => prev.map(w => w.id === workerId ? { ...w, assignedRoomId: roomId } : w));
+        const target = roomId ?? 'unassigned';
+        handleMoveWorker(workerId, target);
     };
     const onDragOver = (e: React.DragEvent) => e.preventDefault();
 
     const activeWorkers = workers.filter(w => w.present !== false);
+
+    const replicableWorkers = activeWorkers.filter(w => isReplicableRoom(findRoomById(w.assignedRoomId ?? null)));
+    const replicaWorkers: AssemblyWorker[] = replicableWorkers.map(w => {
+        const replicaId = getReplicaId(w);
+        return {
+            ...w,
+            id: replicaId,
+            assignedRoomId: replicaAssignments[replicaId] ?? null,
+            isReplica: true,
+            originalId: w.id,
+            originRoomName: findRoomById(w.assignedRoomId ?? null)?.name,
+        };
+    });
 
     const passeRooms = rooms.filter(r =>
         r.type === RoomType.Passe ||
@@ -92,7 +136,19 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         r.type !== RoomType.Passe &&
         !r.name.toLowerCase().includes('passe')
     );
-    const unassignedWorkers = activeWorkers.filter(w => !w.assignedRoomId);
+    const unassignedWorkers = sortWorkersByRole([
+        ...activeWorkers.filter(w => !w.assignedRoomId),
+        ...replicaWorkers.filter(w => !w.assignedRoomId),
+    ]);
+
+    const getRoomOccupants = (roomId: string): AssemblyWorker[] => {
+        const room = findRoomById(roomId);
+        const baseOccupants = activeWorkers.filter(w => w.assignedRoomId === roomId);
+        const replicaOccupants = isPasseRoom(room)
+            ? replicaWorkers.filter(w => w.assignedRoomId === roomId)
+            : [];
+        return sortWorkersByRole([...(baseOccupants as AssemblyWorker[]), ...replicaOccupants]);
+    };
 
     const buildAssemblyText = () => {
         const dateStr = new Date().toLocaleDateString("pt-BR");
@@ -101,21 +157,20 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         const sortedRooms = [...rooms].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
         sortedRooms.forEach(room => {
-            const occupants = activeWorkers.filter(w => w.assignedRoomId === room.id);
-            const sortedOccupants = sortWorkersByRole(occupants);
+            const occupants = getRoomOccupants(room.id);
 
             lines.push(room.name);
-            if (sortedOccupants.length === 0) {
+            if (occupants.length === 0) {
                 lines.push("—");
             } else {
-                sortedOccupants.forEach(w => lines.push(w.name));
+                occupants.forEach(w => lines.push(w.name + (w.isReplica && w.originRoomName ? " (extra " + w.originRoomName + ")" : "")));
             }
             lines.push("");
         });
 
         if (unassignedWorkers.length) {
             lines.push("Não Alocados");
-            unassignedWorkers.forEach(w => lines.push(w.name));
+            unassignedWorkers.forEach(w => lines.push(w.name + (w.isReplica && w.originRoomName ? " (extra " + w.originRoomName + ")" : "")));
             lines.push("");
         }
 
@@ -131,76 +186,28 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         window.open(whatsappUrl, "_blank");
     };
 
-    const handleShareImage = async () => {
-        if (isSharingImage) return;
-        setIsSharingImage(true);
-        try {
-            const { default: html2canvas } = await import("html2canvas");
-            if (!captureRef.current) throw new Error("Nada para capturar.");
-
-            const canvas = await html2canvas(captureRef.current, { scale: 2, useCORS: true });
-            const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-            if (!blob) throw new Error("Falha ao gerar imagem.");
-
-            const file = new File([blob], "montagem-salas.png", { type: "image/png" });
-
-            const downloadFallback = () => {
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = "montagem-salas.png";
-                link.click();
-                setTimeout(() => URL.revokeObjectURL(url), 1500);
-                alert("Imagem salva. Anexe manualmente no WhatsApp.");
-            };
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({ files: [file], title: "Montagem das Salas" });
-                    return;
-                } catch (shareError) {
-                    console.warn("Compartilhamento nativo falhou, usando download:", shareError);
-                    downloadFallback();
-                    return;
-                }
-            }
-
-            downloadFallback();
-        } catch (error) {
-            console.error(error);
-            alert("Não foi possível gerar a imagem. Tente novamente.");
-        } finally {
-            setIsSharingImage(false);
-        }
-    };
-
     // Create rooms list with "Não Alocados" option
     const roomsWithUnassigned = [
         { id: 'unassigned', name: '❌ Não Alocados' },
         ...rooms
     ];
+    const passeRoomsWithUnassigned = [
+        { id: 'unassigned', name: '❌ Não Alocados' },
+        ...passeRooms
+    ];
 
     return (
         <PageContainer>
-            <div ref={captureRef}>
+            <div>
                 <Header
                     title="Montagem das Salas"
                     action={
-                        <div className="flex gap-2">
-                            <button
-                                onClick={handleShareText}
-                                className="px-3 py-1 bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-sm"
-                            >
-                                Texto
-                            </button>
-                            <button
-                                onClick={handleShareImage}
-                                disabled={isSharingImage}
-                                className="px-3 py-1 bg-blue-400 text-white text-sm font-bold rounded-lg shadow-sm disabled:opacity-70"
-                            >
-                                {isSharingImage ? "Salvando..." : "Imagem"}
-                            </button>
-                        </div>
+                        <button
+                            onClick={handleShareText}
+                            className="px-3 py-1 bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-sm"
+                        >
+                            Texto
+                        </button>
                     }
                 />
 
@@ -224,8 +231,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                         <h3 className="text-lg font-medium text-slate-500 px-1">Salas de Passe</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {passeRooms.map(room => {
-                            const occupants = activeWorkers.filter(w => w.assignedRoomId === room.id);
-                            const sortedOccupants = sortWorkersByRole(occupants);
+                            const occupants = getRoomOccupants(room.id);
 
                             return (
                                 <div
@@ -246,16 +252,19 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                                 Arraste aqui
                                             </div>
                                         )}
-                                        {sortedOccupants.map(w => (
+                                        {occupants.map(w => {
+                                            const roomOptions = w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned;
+                                            return (
                                             <div key={w.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', w.id)}>
                                                 <WorkerCard
                                                     worker={w}
                                                     roleLabel={w.isCoordinator ? 'Coordenador' : undefined}
-                                                    rooms={roomsWithUnassigned}
+                                                    rooms={roomOptions}
                                                     onMove={handleMoveWorker}
                                                 />
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             );
@@ -267,8 +276,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                     <h3 className="text-lg font-medium text-slate-500 px-1">Outros Locais</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {otherRooms.map(room => {
-                            const occupants = activeWorkers.filter(w => w.assignedRoomId === room.id);
-                            const sortedOccupants = sortWorkersByRole(occupants);
+                            const occupants = getRoomOccupants(room.id);
 
                             return (
                                 <div
@@ -285,7 +293,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                     </div>
                                     <div className="space-y-2">
                                         {occupants.length === 0 && <p className="text-xs text-stone-300 italic px-1">Vazio</p>}
-                                        {sortedOccupants.map(w => (
+                                        {occupants.map(w => (
                                             <div key={w.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', w.id)}>
                                                 <WorkerCard
                                                     worker={w}
@@ -318,7 +326,8 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                 <div key={w.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', w.id)}>
                                     <WorkerCard
                                         worker={w}
-                                        rooms={roomsWithUnassigned}
+                                        roleLabel={w.isReplica && w.originRoomName ? `Extra ${w.originRoomName}` : undefined}
+                                        rooms={w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned}
                                         onMove={handleMoveWorker}
                                     />
                                 </div>

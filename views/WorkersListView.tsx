@@ -14,6 +14,7 @@ interface WorkersListViewProps {
 
 export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdit, onDelete, onAdd, onTogglePresence }) => {
     const [searchQuery, setSearchQuery] = useState("");
+    const [presenceFilter, setPresenceFilter] = useState<"all" | "present" | "absent">("all");
 
     const getAvatarUrl = (worker: Worker) => {
         return worker.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(worker.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
@@ -34,30 +35,26 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
     const filteredAndSortedWorkers = useMemo(() => {
         const query = searchQuery.toLowerCase().trim();
 
-        if (!query) {
-            // No search query, return all workers sorted alphabetically
-            return [...workers].sort((a, b) => a.name.localeCompare(b.name));
-        }
+        const matchesPresence = (worker: Worker) =>
+            presenceFilter === "all" ||
+            (presenceFilter === "present" && worker.present !== false) ||
+            (presenceFilter === "absent" && worker.present === false);
 
-        // Filter by name, roles (skills), or email
-        const filtered = workers.filter((worker) => {
-            // Search in name
-            const nameMatch = worker.name.toLowerCase().includes(query);
+        const base = workers.filter(matchesPresence);
 
-            // Search in roles (skills)
-            const rolesMatch = worker.roles.some(role =>
-                role.toLowerCase().includes(query)
-            );
+        const filtered = query
+            ? base.filter((worker) => {
+                const nameMatch = worker.name.toLowerCase().includes(query);
+                const rolesMatch = worker.roles.some(role =>
+                    role.toLowerCase().includes(query)
+                );
+                const emailMatch = worker.contact?.toLowerCase().includes(query) || false;
+                return nameMatch || rolesMatch || emailMatch;
+            })
+            : base;
 
-            // Search in email/contact
-            const emailMatch = worker.contact?.toLowerCase().includes(query) || false;
-
-            return nameMatch || rolesMatch || emailMatch;
-        });
-
-        // Sort filtered results alphabetically
         return filtered.sort((a, b) => a.name.localeCompare(b.name));
-    }, [workers, searchQuery]);
+    }, [workers, searchQuery, presenceFilter]);
 
     return (
         <PageContainer>
@@ -67,24 +64,42 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
                 <span>Filtrados: <strong className="text-slate-800">{filteredAndSortedWorkers.length}</strong></span>
             </div>
 
-            {/* Search Bar */}
-            <div className="mt-6 relative">
-                <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                    type="text"
-                    placeholder="Buscar por nome, habilidade ou email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-white rounded-2xl shadow-soft border border-card-border/60 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all"
-                />
-                {searchQuery && (
-                    <button
-                        onClick={() => setSearchQuery("")}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors text-sm font-medium"
+            {/* Search Bar + Presence Filter */}
+            <div className="mt-6 flex flex-row flex-nowrap items-end gap-2">
+                <label className="relative flex-1 min-w-0 text-xs font-semibold text-slate-600 flex flex-col gap-1">
+                    <span>Busca</span>
+                    <div className="relative">
+                        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Nome, habilidade ou email..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-12 pr-4 py-2 bg-white rounded-2xl shadow-soft border border-card-border/60 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all sm:text-sm"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery("")}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors text-sm font-medium"
+                            >
+                                Limpar
+                            </button>
+                        )}
+                    </div>
+                </label>
+
+                <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600 w-28 shrink-0 sm:w-32">
+                    <span>Presença</span>
+                    <select
+                        value={presenceFilter}
+                        onChange={(e) => setPresenceFilter(e.target.value as "all" | "present" | "absent")}
+                        className="px-3 py-2 bg-white rounded-xl border border-card-border/60 text-slate-800 shadow-soft focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50"
                     >
-                        Limpar
-                    </button>
-                )}
+                        <option value="all">Todos</option>
+                        <option value="present">Presentes</option>
+                        <option value="absent">Ausentes</option>
+                    </select>
+                </label>
             </div>
 
             {/* Workers List */}
