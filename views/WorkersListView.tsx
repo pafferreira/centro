@@ -10,9 +10,10 @@ interface WorkersListViewProps {
     onDelete: (workerId: string) => void;
     onAdd: () => void;
     onTogglePresence: (workerId: string, present: boolean) => void;
+    onHome?: () => void;
 }
 
-export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdit, onDelete, onAdd, onTogglePresence }) => {
+export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdit, onDelete, onAdd, onTogglePresence, onHome }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [presenceFilter, setPresenceFilter] = useState<"all" | "present" | "absent">("all");
     const [showPresenceOptions, setShowPresenceOptions] = useState(false);
@@ -71,7 +72,7 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
 
     return (
         <PageContainer>
-            <Header title="Trabalhadores" />
+            <Header title="Trabalhadores" onHome={onHome} hideBack />
             <div className="mt-2 flex items-center justify-between text-sm text-slate-600 px-1">
                 <span>Total: <strong className="text-slate-800">{workers.length}</strong></span>
                 <span>Filtrados: <strong className="text-slate-800">{filteredAndSortedWorkers.length}</strong></span>
@@ -88,7 +89,7 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
                             placeholder="Nome, habilidade ou email..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-2 bg-white rounded-2xl shadow-soft border border-card-border/60 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all sm:text-sm"
+                            className="w-full pl-12 pr-4 py-3 bg-white rounded-2xl shadow-soft border border-card-border/60 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all sm:text-sm"
                         />
                         {searchQuery && (
                             <button
@@ -106,7 +107,7 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
                     <button
                         type="button"
                         onClick={() => setShowPresenceOptions(prev => !prev)}
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-card-border/60 text-slate-800 shadow-soft flex items-center justify-between text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50"
+                        className="w-full px-3 py-3 bg-white rounded-xl border border-card-border/60 text-slate-800 shadow-soft flex items-center justify-between text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50"
                     >
                         {presenceFilter === "all" && "Todos"}
                         {presenceFilter === "present" && "Presentes"}
@@ -114,7 +115,7 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
                         <span className="text-slate-400">▾</span>
                     </button>
                     {showPresenceOptions && (
-                        <div className="absolute top-[70px] right-0 w-full bg-white rounded-xl border border-card-border/60 shadow-lg overflow-hidden z-20">
+                        <div className="absolute top-full mt-2 right-0 w-full bg-white rounded-xl border border-card-border/60 shadow-lg overflow-hidden z-20">
                             {[
                                 { value: "all", label: "Todos" },
                                 { value: "present", label: "Presentes" },

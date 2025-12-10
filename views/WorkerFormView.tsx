@@ -7,9 +7,10 @@ interface WorkerFormViewProps {
     worker?: Worker | null;
     onSave: (worker: Worker) => void;
     onCancel: () => void;
+    onHome?: () => void;
 }
 
-export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, onCancel }) => {
+export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, onCancel, onHome }) => {
     const [name, setName] = useState(worker?.name || "");
     const [contact, setContact] = useState(worker?.contact || "");
     const [selectedAvatar, setSelectedAvatar] = useState(worker?.avatarUrl || "");
@@ -104,7 +105,7 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
 
     return (
         <PageContainer>
-            <Header title={worker ? "Editar Trabalhador" : "Novo Trabalhador"} />
+            <Header title={worker ? "Editar Trabalhador" : "Novo Trabalhador"} onHome={onHome} />
 
             <div className="space-y-4 mt-6">
                 {/* Nome com Avatar ao lado */}

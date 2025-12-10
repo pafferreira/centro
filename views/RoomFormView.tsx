@@ -13,9 +13,10 @@ interface RoomFormViewProps {
      * If not provided, falls back to RoomType.Passe for backward compatibility.
      */
     defaultType?: RoomType;
+    onHome?: () => void;
 }
 
-export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCancel, defaultType }) => {
+export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCancel, defaultType, onHome }) => {
     const [name, setName] = useState(room?.name || "");
     const [capacity, setCapacity] = useState(room?.capacity?.toString() || "4");
     const [description, setDescription] = useState(room?.description || "");
@@ -91,7 +92,7 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
 
     return (
         <PageContainer>
-            <Header title={room ? "Editar Sala" : "Nova Sala"} />
+            <Header title={room ? "Editar Sala" : "Nova Sala"} onHome={onHome} />
 
             <div className="space-y-4 mt-6">
                 {/* Nome com Avatar ao lado */}

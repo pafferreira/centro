@@ -4,14 +4,15 @@ import { DoorIcon, EditIcon, TrashIcon } from "../components/Icons";
 
 interface RoomListViewProps {
     onBack: () => void;
+    onHome?: () => void;
 }
 
 import { PageContainer } from "../components/shared/PageContainer";
 
-export const RoomListView: React.FC<RoomListViewProps> = ({ onBack }) => {
+export const RoomListView: React.FC<RoomListViewProps> = ({ onBack, onHome }) => {
     return (
         <PageContainer>
-            <Header title="Salas de Passe" />
+            <Header title="Salas de Passe" onBack={onBack} onHome={onHome} />
 
             <div className="mt-6 mb-8">
                 <div className="bg-white p-1 rounded-2xl border border-card-border/60 shadow-soft flex items-center mb-4">

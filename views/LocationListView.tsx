@@ -10,9 +10,10 @@ interface LocationListViewProps {
     onEdit: (room: Room) => void;
     onDelete: (roomId: string) => void;
     onAdd: () => void;
+    onHome?: () => void;
 }
 
-export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, rooms, onEdit, onDelete, onAdd }) => {
+export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, rooms, onEdit, onDelete, onAdd, onHome }) => {
     // Show all rooms but keep the "Locais de Trabalho" visual
     const sorted = [...rooms].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -39,7 +40,7 @@ export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, room
 
     return (
         <PageContainer>
-            <Header title="Locais de Trabalho" />
+            <Header title="Locais de Trabalho" onBack={onBack} onHome={onHome} hideBack />
 
             <div className="mt-6 space-y-4">
                 {sorted.map((loc) => (

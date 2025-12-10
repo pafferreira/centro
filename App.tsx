@@ -178,6 +178,7 @@ export default function App() {
                 setWorkers={setWorkers}
                 setRooms={setRooms}
                 onBack={handleBack}
+                onHome={() => handleNavigate('DASHBOARD')}
               />
             )}
 
@@ -190,6 +191,7 @@ export default function App() {
                 onTogglePresence={(workerId, present) => {
                   setWorkers(prev => prev.map(w => w.id === workerId ? { ...w, present, assignedRoomId: present ? w.assignedRoomId ?? null : null } : w));
                 }}
+                onHome={() => handleNavigate('DASHBOARD')}
               />
             )}
 
@@ -198,6 +200,7 @@ export default function App() {
                 worker={editingWorker}
                 onSave={handleSaveWorker}
                 onCancel={handleCancelWorkerForm}
+                onHome={() => handleNavigate('DASHBOARD')}
               />
             )}
 
@@ -207,6 +210,7 @@ export default function App() {
                 onEdit={handleEditRoom}
                 onDelete={handleDeleteRoom}
                 onAdd={handleAddRoom}
+                onHome={() => handleNavigate('DASHBOARD')}
               />
             )}
 
@@ -216,12 +220,14 @@ export default function App() {
                 onSave={handleSaveRoom}
                 onCancel={handleCancelRoomForm}
                 defaultType={view === 'LOCATIONS' ? RoomType.Outros : undefined}
+                onHome={() => handleNavigate('DASHBOARD')}
               />
             )}
 
             {view === 'LOCATIONS' && !showRoomForm && (
               <LocationListView
                 onBack={handleBack}
+                onHome={() => handleNavigate('DASHBOARD')}
                 rooms={rooms}
                 onEdit={handleEditRoom}
                 onDelete={handleDeleteRoom}
@@ -230,7 +236,7 @@ export default function App() {
             )}
 
             {view === 'SETTINGS' && (
-              <SettingsView onDataImported={handleDataImported} />
+              <SettingsView onDataImported={handleDataImported} onHome={() => handleNavigate('DASHBOARD')} />
             )}
           </div>
 

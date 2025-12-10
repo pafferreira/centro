@@ -6,9 +6,10 @@ import { exportData, importData, clearAllData, getLastModified, getStorageSize, 
 
 interface SettingsViewProps {
     onDataImported: (workers: any[], rooms: any[]) => void;
+    onHome?: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported, onHome }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const lastModified = getLastModified();
     const storageSize = getStorageSize();
@@ -91,7 +92,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported }) =>
 
     return (
         <PageContainer>
-            <Header title="Configurações" />
+            <Header title="Configurações" onHome={onHome} />
 
             <div className="mt-6 space-y-4">
                 {/* Info Card */}

@@ -10,9 +10,10 @@ interface RoomsListViewProps {
     onEdit: (room: Room) => void;
     onDelete: (roomId: string) => void;
     onAdd: () => void;
+    onHome?: () => void;
 }
 
-export const RoomsListView: React.FC<RoomsListViewProps> = ({ rooms, onEdit, onDelete, onAdd }) => {
+export const RoomsListView: React.FC<RoomsListViewProps> = ({ rooms, onEdit, onDelete, onAdd, onHome }) => {
     const getRoomAvatarUrl = (room: Room) => {
         // Prefer an explicitly set avatar, otherwise use the same DiceBear style used for workers
         return room.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(room.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
@@ -23,7 +24,7 @@ export const RoomsListView: React.FC<RoomsListViewProps> = ({ rooms, onEdit, onD
 
     return (
         <PageContainer>
-            <Header title="Salas de Passe" />
+            <Header title="Salas de Passe" onHome={onHome} />
 
             <div className="mt-6 space-y-3">
                 {sortedRooms.map((room) => (

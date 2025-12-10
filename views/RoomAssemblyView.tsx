@@ -17,9 +17,10 @@ interface RoomAssemblyViewProps {
     rooms: Room[];
     setWorkers: any;
     onBack: () => void;
+    onHome?: () => void;
 }
 
-export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, rooms, setWorkers, onBack }) => {
+export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, rooms, setWorkers, onBack, onHome }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [replicaAssignments, setReplicaAssignments] = useState<Record<string, string | null>>({});
 
@@ -201,6 +202,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
             <div>
                 <Header
                     title="Montagem das Salas"
+                    onHome={onHome}
                     action={
                         <button
                             onClick={handleShareText}
