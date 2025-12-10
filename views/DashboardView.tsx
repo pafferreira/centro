@@ -22,6 +22,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     return (
         <div className="relative h-full">
             <MainBackground />
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/40 via-white/15 to-white/5 z-[1]" />
             <PageContainer backgroundClassName="bg-transparent" className="relative z-10 text-white">
                 <Header title="Início" showSettings onSettingsClick={() => onNavigate('SETTINGS')} variant="glass" />
 

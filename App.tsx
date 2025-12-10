@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { ViewState, Worker, Room } from "./types";
 import { BottomNav } from "./components/shared/BottomNav";
 import { LoginView } from "./views/LoginView";
@@ -56,6 +56,41 @@ export default function App() {
     setShowRoomForm(false);
     setEditingRoom(null);
   }
+
+  // Native/back button support (Android / browser back)
+  const handlePopState = useCallback((event: PopStateEvent) => {
+    event.preventDefault();
+
+    // If forms are open, close them first
+    if (showWorkerForm || showRoomForm) {
+      handleCancelWorkerForm();
+      handleCancelRoomForm();
+      return;
+    }
+
+    if (view === 'LOGIN') return; // do nothing on login
+
+    if (previousView) {
+      setView(previousView);
+      setPreviousView(null);
+      return;
+    }
+
+    // Fallback to dashboard
+    setView('DASHBOARD');
+  }, [previousView, showWorkerForm, showRoomForm, view]);
+
+  useEffect(() => {
+    // push a new history entry when navigating to an internal view (not login)
+    if (view !== 'LOGIN') {
+      window.history.pushState({ view }, "");
+    }
+  }, [view]);
+
+  useEffect(() => {
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [handlePopState]);
 
   // Worker handlers
   const handleAddWorker = () => {
