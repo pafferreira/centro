@@ -206,7 +206,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                             onClick={handleShareText}
                             className="px-3 py-1 bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-sm"
                         >
-                            Texto
+                            Enviar ZAP
                         </button>
                     }
                 />
