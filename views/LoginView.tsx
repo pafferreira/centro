@@ -13,7 +13,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
             <div className="relative w-full flex flex-col items-center mb-6 z-10">
                 <div className="mb-4 drop-shadow-2xl">
-                    <img src="/logo.png" alt="GFA Logo" className="w-32 h-32 object-contain drop-shadow-[0_10px_30px_rgba(255,255,255,0.35)]" />
+                    <img src="/logo.png" alt="GFA Logo" className="w-32 h-32 object-contain drop-shadow-[0_10px_30px_rgba(255,255,255,0.35)] filter brightness-0 invert" />
                 </div>
                 <h1 className="text-white text-3xl font-bold tracking-tight drop-shadow-md text-center">GFA - Grupo Fraterno de Assistência</h1>
             </div>
