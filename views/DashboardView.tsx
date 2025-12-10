@@ -15,7 +15,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const menuItems = [
         { id: 'ROOM_ASSEMBLY', label: 'Montagem das Salas', icon: LegoIcon },
         { id: 'WORKERS', label: 'Cadastro de Trabalhadores', icon: UsersIcon },
-        { id: 'ROOMS', label: 'Cadastro de Salas de Passe', icon: DoorIcon },
         { id: 'LOCATIONS', label: 'Cadastro de Locais de Trabalho', icon: MapPinIcon },
     ];
 
