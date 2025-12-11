@@ -21,17 +21,16 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
     const [capacity, setCapacity] = useState(room?.capacity?.toString() || "4");
     const [description, setDescription] = useState(room?.description || "");
     const [selectedAvatar, setSelectedAvatar] = useState(room?.avatarUrl || "");
-    const [selectedIcon, setSelectedIcon] = useState<string | null>(room?.avatarIcon || null);
-    const [avatarLocked, setAvatarLocked] = useState(!!room?.avatarUrl || !!room?.avatarIcon);
+    const [selectedIcon, setSelectedIcon] = useState<string | null>(room?.avatarIcon ?? "DoorIcon");
+    const [avatarLocked, setAvatarLocked] = useState(true);
 
-    // Generate avatar suggestions using DiceBear 'avataaars' to match worker avatars style
-    // This makes room avatars visually consistent with other lists.
+    // Location-themed avatar suggestions (door/pin shapes) to avoid person avatars
     const avatarSuggestions = [
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name || 'Sala 1')}&backgroundColor=b6e3f4,c0aede,d1d4f9`,
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent((name || 'Sala 2') + 'a')}&backgroundColor=d1f4d1,c0f0c0,b8e6b8`,
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent((name || 'Sala 3') + 'b')}&backgroundColor=a8dda8,98d498,8fd0a8`,
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent((name || 'Sala 4') + 'c')}&backgroundColor=fde68a,fcc58b,ffd6a5`,
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent((name || 'Sala 5') + 'd')}&backgroundColor=e4c1f9,d1d4f9,c0e8f2`,
+        "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'><defs><linearGradient id='g1' x1='0' x2='1' y1='0' y2='1'><stop offset='0%' stop-color='%23d9f2e6'/><stop offset='100%' stop-color='%23bde0c7'/></linearGradient></defs><rect rx='16' width='80' height='80' fill='url(%23g1)'/><rect x='26' y='14' width='28' height='52' rx='6' fill='%2348a86d'/><circle cx='48' cy='40' r='3' fill='%23fefefe'/></svg>",
+        "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'><defs><linearGradient id='g2' x1='0' x2='1' y1='0' y2='1'><stop offset='0%' stop-color='%23e8f0ff'/><stop offset='100%' stop-color='%23c8dcff'/></linearGradient></defs><rect rx='16' width='80' height='80' fill='url(%23g2)'/><rect x='28' y='16' width='24' height='48' rx='6' fill='%23367eea'/><circle cx='46' cy='40' r='3' fill='%23fefefe'/></svg>",
+        "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'><defs><linearGradient id='g3' x1='0' x2='1' y1='0' y2='1'><stop offset='0%' stop-color='%23fff0e0'/><stop offset='100%' stop-color='%23ffd6a5'/></linearGradient></defs><rect rx='16' width='80' height='80' fill='url(%23g3)'/><rect x='26' y='14' width='28' height='52' rx='6' fill='%23e4983b'/><circle cx='48' cy='40' r='3' fill='%23fefefe'/></svg>",
+        "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'><defs><linearGradient id='g4' x1='0' x2='1' y1='0' y2='1'><stop offset='0%' stop-color='%23f4e8ff'/><stop offset='100%' stop-color='%23d8c6ff'/></linearGradient></defs><rect rx='16' width='80' height='80' fill='url(%23g4)'/><rect x='26' y='14' width='28' height='52' rx='6' fill='%235d48c7'/><circle cx='48' cy='40' r='3' fill='%23fefefe'/></svg>",
+        "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'><defs><linearGradient id='g5' x1='0' x2='1' y1='0' y2='1'><stop offset='0%' stop-color='%23eef2f7'/><stop offset='100%' stop-color='%23d6dde7'/></linearGradient></defs><rect rx='16' width='80' height='80' fill='url(%23g5)'/><rect x='26' y='14' width='28' height='52' rx='6' fill='%234a6673'/><circle cx='48' cy='40' r='3' fill='%23fefefe'/></svg>",
     ];
 
     useEffect(() => {
@@ -40,8 +39,8 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
             setCapacity(room.capacity.toString());
             setDescription(room.description || "");
             setSelectedAvatar(room.avatarUrl || "");
-            setSelectedIcon(room.avatarIcon || null);
-            setAvatarLocked(!!room.avatarUrl || !!room.avatarIcon);
+            setSelectedIcon(room.avatarIcon || "DoorIcon");
+            setAvatarLocked(true);
         }
     }, [room]);
 
@@ -73,7 +72,7 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
             capacity: parseInt(capacity) || 4,
             description: description.trim(),
             avatarUrl: selectedAvatar || undefined,
-            avatarIcon: selectedIcon || undefined,
+            avatarIcon: selectedIcon || "DoorIcon",
         };
 
         onSave(newRoom);

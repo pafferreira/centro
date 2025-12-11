@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Worker } from "../types";
 import { Header } from "../components/shared/Header";
 import { PageContainer } from "../components/shared/PageContainer";
-import { PlusIcon, EditIcon, TrashIcon, SearchIcon } from "../components/Icons";
+import { PlusIcon, TrashIcon, SearchIcon } from "../components/Icons";
 
 interface WorkersListViewProps {
     workers: Worker[];
@@ -17,6 +17,7 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
     const [searchQuery, setSearchQuery] = useState("");
     const [presenceFilter, setPresenceFilter] = useState<"all" | "present" | "absent">("all");
     const [showPresenceOptions, setShowPresenceOptions] = useState(false);
+    const [workerToDelete, setWorkerToDelete] = useState<Worker | null>(null);
     const presenceRef = useRef<HTMLDivElement>(null);
 
     // Close presence dropdown on outside click
@@ -153,7 +154,8 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
                     filteredAndSortedWorkers.map((worker) => (
                         <div
                             key={worker.id}
-                            className="bg-white p-4 rounded-2xl shadow-soft border border-card-border/60 flex items-center gap-4 group"
+                            onClick={() => onEdit(worker)}
+                            className="bg-white p-4 rounded-2xl shadow-soft border border-card-border/60 flex items-center gap-4 group cursor-pointer hover:border-blue-200 transition"
                         >
                             {/* Avatar */}
                             <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 border-2 border-blue-100 shadow-sm">
@@ -188,28 +190,29 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
                             </div>
 
                             {/* Presence + Actions */}
-                            <div className="flex flex-col items-end gap-2 ml-auto">
-                                <label className="flex items-center gap-2 text-xs text-slate-600 select-none cursor-pointer">
-                                    <span className="font-medium">Presente</span>
+                            <div className="flex flex-col items-end gap-3 ml-auto">
+                                <label
+                                    className="flex items-center gap-2 text-sm font-semibold text-slate-700 select-none cursor-pointer"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <span>Presente</span>
                                     <input
                                         type="checkbox"
                                         checked={worker.present !== false}
                                         onChange={(e) => onTogglePresence(worker.id, e.target.checked)}
-                                        className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-300 cursor-pointer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-5 h-5 rounded border-slate-300 text-blue-500 focus:ring-blue-300 cursor-pointer"
                                     />
                                 </label>
                                 <div className="flex gap-1">
                                     <button
-                                        onClick={() => onEdit(worker)}
-                                        className="p-2 text-slate-400 hover:text-blue-500 transition-colors"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setWorkerToDelete(worker);
+                                        }}
+                                        className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                                     >
-                                        <EditIcon className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={() => onDelete(worker.id)}
-                                        className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                                    >
-                                        <TrashIcon className="w-5 h-5" />
+                                        <TrashIcon className="w-6 h-6" />
                                     </button>
                                 </div>
                             </div>
@@ -225,6 +228,41 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
             >
                 <PlusIcon className="w-8 h-8 stroke-[3]" />
             </button>
+
+            {workerToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-6">
+                    <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 space-y-4">
+                        <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+                                <TrashIcon className="w-6 h-6" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold text-slate-800">Confirmar exclusão</h3>
+                                <p className="text-sm text-slate-600">
+                                    Deseja remover <span className="font-semibold text-slate-800">{workerToDelete.name}</span> da lista?
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <button
+                                onClick={() => setWorkerToDelete(null)}
+                                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    onDelete(workerToDelete.id);
+                                    setWorkerToDelete(null);
+                                }}
+                                className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold shadow hover:bg-red-600 transition"
+                            >
+                                Excluir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </PageContainer>
     );
 };

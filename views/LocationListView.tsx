@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Header } from "../components/shared/Header";
-import { UsersIcon, BookIcon, MicrophoneIcon, MoreDotsIcon, PlusIcon, DoorIcon, MapPinIcon, EditIcon, TrashIcon } from "../components/Icons";
+import { UsersIcon, BookIcon, MicrophoneIcon, PlusIcon, DoorIcon, MapPinIcon, TrashIcon } from "../components/Icons";
 import { PageContainer } from "../components/shared/PageContainer";
 import { Room, RoomType } from "../types";
 
@@ -14,6 +14,8 @@ interface LocationListViewProps {
 }
 
 export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, rooms, onEdit, onDelete, onAdd, onHome }) => {
+    const [locationToDelete, setLocationToDelete] = useState<Room | null>(null);
+
     // Show all rooms but keep the "Locais de Trabalho" visual
     const sorted = [...rooms].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -44,9 +46,17 @@ export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, room
 
             <div className="mt-6 space-y-4">
                 {sorted.map((loc) => (
-                    <div key={loc.id} className="bg-white p-4 rounded-2xl shadow-soft border border-card-border/60 flex items-center gap-4 relative overflow-hidden">
+                    <div
+                        key={loc.id}
+                        onClick={() => onEdit(loc)}
+                        className="bg-white p-4 rounded-2xl shadow-soft border border-card-border/60 flex items-center gap-4 relative overflow-hidden cursor-pointer hover:border-blue-200 transition"
+                    >
                         <div className={`w-16 h-16 rounded-2xl ${loc.type === RoomType.Passe ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'} overflow-hidden flex items-center justify-center text-3xl shadow-sm border`}> 
-                            {getIconFor(loc)}
+                            {loc.avatarUrl ? (
+                                <img src={loc.avatarUrl} alt={loc.name} className="w-full h-full object-cover" />
+                            ) : (
+                                getIconFor(loc)
+                            )}
                         </div>
 
                         {/* Only icon/avatar visual + name (clean view) */}
@@ -56,8 +66,15 @@ export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, room
 
                         {/* Keep actions available for CRUD but keep them small */}
                         <div className="flex gap-1 z-10">
-                            <button onClick={() => onEdit(loc)} className="p-2 text-slate-400 hover:text-blue-500"><EditIcon className="w-5 h-5" /></button>
-                            <button onClick={() => onDelete(loc.id)} className="p-2 text-slate-400 hover:text-red-500"><TrashIcon className="w-5 h-5" /></button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLocationToDelete(loc);
+                                }}
+                                className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                            >
+                                <TrashIcon className="w-6 h-6" />
+                            </button>
                         </div>
                     </div>
                 ))}
@@ -66,6 +83,41 @@ export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, room
             <button onClick={onAdd} className="absolute bottom-24 right-6 w-16 h-16 bg-white rounded-full shadow-2xl flex items-center justify-center text-[#d4a45a] border border-[#f0e6d2] hover:scale-105 transition-transform z-40">
                 <PlusIcon className="w-8 h-8 stroke-[3]" />
             </button>
+
+            {locationToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-6">
+                    <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 space-y-4">
+                        <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+                                <TrashIcon className="w-6 h-6" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold text-slate-800">Confirmar exclusão</h3>
+                                <p className="text-sm text-slate-600">
+                                    Deseja remover <span className="font-semibold text-slate-800">{locationToDelete.name}</span> da lista?
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <button
+                                onClick={() => setLocationToDelete(null)}
+                                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    onDelete(locationToDelete.id);
+                                    setLocationToDelete(null);
+                                }}
+                                className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold shadow hover:bg-red-600 transition"
+                            >
+                                Excluir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </PageContainer>
     );
 };

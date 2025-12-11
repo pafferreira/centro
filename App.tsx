@@ -114,9 +114,7 @@ export default function App() {
   };
 
   const handleDeleteWorker = (workerId: string) => {
-    if (confirm('Tem certeza que deseja excluir este trabalhador?')) {
-      setWorkers(prev => prev.filter(w => w.id !== workerId));
-    }
+    setWorkers(prev => prev.filter(w => w.id !== workerId));
   };
 
   const handleCancelWorkerForm = () => {
@@ -146,9 +144,7 @@ export default function App() {
   };
 
   const handleDeleteRoom = (roomId: string) => {
-    if (confirm('Tem certeza que deseja excluir esta sala?')) {
-      setRooms(prev => prev.filter(r => r.id !== roomId));
-    }
+    setRooms(prev => prev.filter(r => r.id !== roomId));
   };
 
   const handleCancelRoomForm = () => {
@@ -176,7 +172,6 @@ export default function App() {
                 workers={workers}
                 rooms={rooms}
                 setWorkers={setWorkers}
-                setRooms={setRooms}
                 onBack={handleBack}
                 onHome={() => handleNavigate('DASHBOARD')}
               />

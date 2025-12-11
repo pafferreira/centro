@@ -63,6 +63,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
 
     const handleAutoGenerate = async () => {
         setIsGenerating(true);
+        const start = Date.now();
         try {
             // First, clear all room assignments
             const clearedWorkers = workers.map(w => ({ ...w, assignedRoomId: null }));
@@ -79,6 +80,11 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         } catch (e) {
             alert("Falha ao gerar automaticamente.");
         } finally {
+            const elapsed = Date.now() - start;
+            const minDuration = 2000;
+            if (elapsed < minDuration) {
+                await new Promise(resolve => setTimeout(resolve, minDuration - elapsed));
+            }
             setIsGenerating(false);
         }
     };
@@ -199,6 +205,29 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
 
     return (
         <PageContainer>
+            {isGenerating && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-6">
+                    <div className="relative bg-white/95 rounded-2xl shadow-2xl border border-white/70 px-6 py-5 w-full max-w-sm overflow-hidden">
+                        <div className="absolute -left-6 -top-6 w-24 h-24 bg-cyan-100 rounded-full blur-3xl opacity-60" />
+                        <div className="absolute -right-4 -bottom-6 w-28 h-28 bg-amber-100 rounded-full blur-3xl opacity-60" />
+                        <div className="relative flex items-center gap-3">
+                            <SparklesIcon className="w-8 h-8 text-amber-500 animate-spin" />
+                            <div>
+                                <p className="text-base font-bold text-slate-800">Montando salas...</p>
+                                <p className="text-sm text-slate-500">Aguarde, distribuindo trabalhadores.</p>
+                            </div>
+                        </div>
+                        <div className="mt-4 grid grid-cols-3 gap-3">
+                            {[0, 1, 2].map((i) => (
+                                <div key={i} className="h-12 rounded-xl bg-gradient-to-br from-cyan-50 to-amber-50 border border-white shadow-inner flex items-center justify-center animate-bounce" style={{ animationDelay: `${i * 120}ms` }}>
+                                    <SparklesIcon className="w-6 h-6 text-amber-500" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div>
                 <Header
                     title="Montagem das Salas"

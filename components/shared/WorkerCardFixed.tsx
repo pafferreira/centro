@@ -74,10 +74,10 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowMove(!showMove)}
-              className="p-1.5 rounded-lg hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200"
+              className="p-2 rounded-xl hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200"
               title="Mover para outra sala"
             >
-              <MoveIcon className="w-4 h-4 text-slate-400 hover:text-blue-500" />
+              <MoveIcon className="w-5 h-5 text-slate-400 hover:text-blue-500" />
             </button>
             {showMove && (
               <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
