@@ -22,11 +22,25 @@ export function loadWorkers(): Worker[] {
         const stored = localStorage.getItem(STORAGE_KEYS.WORKERS);
         if (stored) {
             const parsed = JSON.parse(stored) as Worker[];
-            return parsed.map(w => ({
-                ...w,
-                present: w.present !== false, // default to true when missing
-                assignedRoomId: w.present === false ? null : w.assignedRoomId ?? null,
-            }));
+
+            // Deduplicate IDs to fix potential data corruption
+            const seenIds = new Set<string>();
+
+            return parsed.map(w => {
+                let id = w.id;
+                // If ID is duplicate or missing, generate a new one
+                if (!id || seenIds.has(id)) {
+                    id = `fixed-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                }
+                seenIds.add(id);
+
+                return {
+                    ...w,
+                    id,
+                    present: w.present !== false, // default to true when missing
+                    assignedRoomId: w.present === false ? null : w.assignedRoomId ?? null,
+                };
+            });
         }
     } catch (error) {
         console.error('Erro ao carregar trabalhadores:', error);
