@@ -11,11 +11,12 @@ interface HeaderProps {
     variant?: 'default' | 'glass';
     onHome?: () => void;
     hideBack?: boolean;
+    titleClassName?: string;
 }
 
 import { useLayout } from "../../context/LayoutContext";
 
-export const Header: React.FC<HeaderProps> = ({ title, onBack, showSettings, onSettingsClick, action, variant = 'default', onHome, hideBack = false }) => {
+export const Header: React.FC<HeaderProps> = ({ title, onBack, showSettings, onSettingsClick, action, variant = 'default', onHome, hideBack = false, titleClassName = "" }) => {
     const { barsVisible } = useLayout();
     const isGlass = variant === 'glass';
 
@@ -54,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({ title, onBack, showSettings, onS
                     <button onClick={handleHomeClick} className="p-1 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30">
                         <img src={logo} alt="GFA Logo" className="w-8 h-8 object-contain" />
                     </button>
-                    <h1 className={`text-xl font-bold tracking-tight ${titleClasses}`}>{title}</h1>
+                    <h1 className={`text-xl font-bold tracking-tight ${titleClasses} ${titleClassName}`}>{title}</h1>
                 </div>
             </div>
             <div className="flex items-center gap-2">

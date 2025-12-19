@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   let appVersion = 'dev';
   try {
-    appVersion = execSync('git describe --tags --always', { cwd: __dirname })
+    appVersion = execSync('git describe --tags --abbrev=0', { cwd: __dirname })
       .toString()
       .trim();
   } catch {
