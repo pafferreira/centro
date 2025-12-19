@@ -1,17 +1,36 @@
 import path from 'path';
 import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
-  let appVersion = 'dev';
+  const formatVersion = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return 'v0.0.0';
+    return trimmed.startsWith('v') ? trimmed : `v${trimmed}`;
+  };
+
+  let appVersion = 'v0.0.0';
   try {
-    appVersion = execSync('git describe --tags --abbrev=0', { cwd: __dirname })
+    const tag = execSync('git describe --tags --abbrev=0', { cwd: __dirname })
       .toString()
       .trim();
+    if (tag) {
+      appVersion = formatVersion(tag);
+    } else {
+      throw new Error('No git tag found');
+    }
   } catch {
-    appVersion = 'dev';
+    try {
+      const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')) as { version?: string };
+      if (pkg.version) {
+        appVersion = formatVersion(pkg.version);
+      }
+    } catch {
+      appVersion = 'v0.0.0';
+    }
   }
   return {
     server: {
