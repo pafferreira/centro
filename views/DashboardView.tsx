@@ -27,6 +27,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
                 <div className="mt-6 mb-3 px-1">
                     <h2 className="text-2xl font-bold drop-shadow-md">Navegação</h2>
+                    <p className="text-sm text-slate-600/90 font-medium mt-1">Versão: {__APP_VERSION__}</p>
                 </div>
 
                 <div className="grid gap-4">
