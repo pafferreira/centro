@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ title, onBack, showSettings, onS
 
     const titleClasses = isGlass ? 'text-white' : 'text-text-main';
     const iconButtonClasses = isGlass
-        ? 'text-white/80 hover:text-white'
+        ? 'text-white/95 hover:text-white'
         : 'text-slate-400 hover:text-slate-600';
     const backButtonClasses = isGlass
         ? 'text-white hover:bg-white/10'
