@@ -5,10 +5,12 @@ type Assignment = { workerId: string; roomId: string };
 /**
  * Generate room assignments according to rules:
  * - Distribute workers only to 'Passe' rooms and 'Recepção' using only workers marked as present.
+ * - Handle 'Entrevista' first, using only workers with the Entrevista skill.
  * - Handle 'Recepção' first, using only workers with the Recepção skill.
  * - For each 'Passe' room, assign workers in order: Coordenador, Médium, Diálogo, Psicografa, Sustentação.
- * - If there are not enough workers for a role, leave remaining workers unassigned instead of overfilling rooms.
- * - Do not exceed room capacity.
+ * - A 'Passe' room only receives workers if it has a Coordenador assigned.
+ * - If there are not enough workers for a role, fill remaining Passe slots with any available workers.
+ * - Do not exceed room capacity for Recepção; Passe rooms can receive extra workers to avoid unassigned people.
  */
 export function generateAssembly(workers: Worker[], rooms: Room[]): Assignment[] {
   const assignments: Assignment[] = [];
@@ -52,7 +54,17 @@ export function generateAssembly(workers: Worker[], rooms: Room[]): Assignment[]
     return roleOrder.length; // No matching role
   };
 
-  // 1) Handle Recepção room (identified by name) before other rooms to preserve the specialized skill
+  // 1) Handle Entrevista room (identified by name) before other rooms to preserve the specialized skill
+  const entrevistaRooms = rooms.filter(r => r.name.toLowerCase().includes('entrevista'));
+  for (const room of entrevistaRooms) {
+    // Use only workers with Entrevista skill
+    while (assignments.filter(a => a.roomId === room.id).length < room.capacity) {
+      const filled = findAndAssign(w => hasRole(w, WorkerRole.Entrevista), room.id);
+      if (!filled) break;
+    }
+  }
+
+  // 2) Handle Recepção room (identified by name) before other rooms to preserve the specialized skill
   const recepcaoRooms = rooms.filter(r => r.name.toLowerCase().includes('recepção') || r.name.toLowerCase().includes('recepcao'));
   for (const room of recepcaoRooms) {
     // Use only workers with Recepção skill
@@ -65,30 +77,48 @@ export function generateAssembly(workers: Worker[], rooms: Room[]): Assignment[]
     }
   }
 
-  // 2) Handle Passe rooms (by type or name containing "Passe")
+  // 3) Handle Passe rooms (by type or name containing "Passe")
   const passeRooms = rooms.filter(r =>
     r.type === RoomType.Passe ||
     r.name.toLowerCase().includes('passe')
   );
+  const passeRoomsWithCoordinator = new Set<string>();
+
+  // 2.1) Coordenador: one per room, in room order
   for (const room of passeRooms) {
-    // Assign in priority order: Coordenador, Médium, Diálogo, Psicografa, Sustentação
+    const hasCoordinator = findAndAssign(w => w.isCoordinator === true, room.id);
+    if (hasCoordinator) {
+      passeRoomsWithCoordinator.add(room.id);
+    }
+  }
 
-    // 1. Coordenador
-    findAndAssign(w => w.isCoordinator === true, room.id);
+  const eligiblePasseRooms = passeRooms.filter(room => passeRoomsWithCoordinator.has(room.id));
 
-    // 2. Médium
-    findAndAssign(w => hasRole(w, WorkerRole.Medium), room.id);
-
-    // 3. Diálogo
-    findAndAssign(w => hasRole(w, WorkerRole.Dialogo), room.id);
-
-    // 4. Psicografa
-    findAndAssign(w => hasRole(w, WorkerRole.Psicografa), room.id);
-
-    // 5. Fill remaining slots with Sustentação (do not overfill with other roles)
-    while (assignments.filter(a => a.roomId === room.id).length < room.capacity) {
-      const filled = findAndAssign(w => hasRole(w, WorkerRole.Sustentacao), room.id);
+  const assignRoleRoundRobin = (role: WorkerRole) => {
+    if (eligiblePasseRooms.length === 0) return;
+    let roomIndex = 0;
+    while (true) {
+      const targetRoom = eligiblePasseRooms[roomIndex % eligiblePasseRooms.length];
+      const filled = findAndAssign(w => hasRole(w, role), targetRoom.id);
       if (!filled) break;
+      roomIndex += 1;
+    }
+  };
+
+  // 2.2) Médium -> Diálogo -> Psicografa -> Sustentação (round-robin across rooms)
+  assignRoleRoundRobin(WorkerRole.Medium);
+  assignRoleRoundRobin(WorkerRole.Dialogo);
+  assignRoleRoundRobin(WorkerRole.Psicografa);
+  assignRoleRoundRobin(WorkerRole.Sustentacao);
+
+  // 3) Ensure no present worker remains unassigned: spread extras across Passe rooms
+  if (passeRoomsWithCoordinator.size > 0) {
+    let roomIndex = 0;
+    for (const worker of avail.filter(w => !w.assigned)) {
+      const room = eligiblePasseRooms[roomIndex % eligiblePasseRooms.length];
+      worker.assigned = true;
+      assignments.push({ workerId: worker.id, roomId: room.id });
+      roomIndex += 1;
     }
   }
 

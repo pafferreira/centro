@@ -228,6 +228,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                 </div>
             )}
 
+
             <div>
                 <Header
                     title="Montagem das Salas"
