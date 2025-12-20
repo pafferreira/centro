@@ -32,6 +32,58 @@ const readPackageVersion = () => {
   return pkg.version || '0.0.0';
 };
 
+const parseSemver = (value) => {
+  const match = String(value || '').trim().match(/^v?(\d+)\.(\d+)\.(\d+)$/);
+  if (!match) return null;
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+};
+
+const formatSemver = (parts) => `${parts[0]}.${parts[1]}.${parts[2]}`;
+
+const bumpSemver = (base, bump) => {
+  const parts = parseSemver(base);
+  if (!parts) return null;
+  const next = [...parts];
+  if (bump === 'major') {
+    next[0] += 1;
+    next[1] = 0;
+    next[2] = 0;
+  } else if (bump === 'minor') {
+    next[1] += 1;
+    next[2] = 0;
+  } else {
+    next[2] += 1;
+  }
+  return formatSemver(next);
+};
+
+const listSemverTags = () => {
+  try {
+    const output = runQuiet('git tag --list');
+    return output
+      .split('\n')
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .filter((tag) => parseSemver(tag));
+  } catch {
+    return [];
+  }
+};
+
+const getLatestTag = (tags) => {
+  const parsed = tags
+    .map((tag) => ({ tag, parts: parseSemver(tag) }))
+    .filter((entry) => entry.parts);
+  if (!parsed.length) return null;
+  parsed.sort((a, b) => {
+    for (let i = 0; i < 3; i += 1) {
+      if (a.parts[i] !== b.parts[i]) return b.parts[i] - a.parts[i];
+    }
+    return 0;
+  });
+  return parsed[0].tag;
+};
+
 const ask = (rl, question) =>
   new Promise((resolve) => rl.question(question, (answer) => resolve(answer.trim())));
 
@@ -53,7 +105,14 @@ const main = async () => {
   ensureCleanTree();
 
   const currentVersion = readPackageVersion();
+  const tags = listSemverTags();
+  const latestTag = getLatestTag(tags);
+  const baseVersion = latestTag ? latestTag.replace(/^v/, '') : currentVersion;
+
   console.log(`Current version: ${currentVersion}`);
+  if (latestTag) {
+    console.log(`Latest tag: ${latestTag}`);
+  }
   console.log('Select bump: 1) patch 2) minor 3) major 4) custom 5) cancel');
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -78,6 +137,27 @@ const main = async () => {
       process.exit(1);
     }
     versionArg = custom;
+  } else {
+    const next = bumpSemver(baseVersion, selection);
+    if (!next) {
+      console.log(`Unable to determine next version from ${baseVersion}.`);
+      rl.close();
+      process.exit(1);
+    }
+    versionArg = next;
+  }
+
+  if (selection !== 'custom') {
+    const tagSet = new Set(tags.map((tag) => tag.replace(/^v/, '')));
+    let candidate = versionArg;
+    while (tagSet.has(candidate)) {
+      candidate = bumpSemver(candidate, 'patch');
+      if (!candidate) break;
+    }
+    if (candidate && candidate !== versionArg) {
+      console.log(`Tag ${versionArg} already exists. Using next available: ${candidate}`);
+      versionArg = candidate;
+    }
   }
 
   const runBuild = (await ask(rl, 'Run `npm run build` first? (y/N): ')).toLowerCase();
