@@ -146,7 +146,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
     const unassignedWorkers = sortWorkersByRole([
         ...activeWorkers.filter(w => !w.assignedRoomId),
         ...replicaWorkers.filter(w => !w.assignedRoomId),
-    ]);
+    ]) as AssemblyWorker[];
 
     const getRoomOccupants = (roomId: string): AssemblyWorker[] => {
         const room = findRoomById(roomId);

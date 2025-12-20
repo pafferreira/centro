@@ -1,6 +1,5 @@
 import React from "react";
 import { ChevronLeftIcon, SettingsIcon } from "../Icons";
-import logo from "/logo.png";
 
 interface HeaderProps {
     title: string;
@@ -53,7 +52,7 @@ export const Header: React.FC<HeaderProps> = ({ title, onBack, showSettings, onS
                 )}
                 <div className="flex items-center gap-2">
                     <button onClick={handleHomeClick} className="p-1 rounded-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30">
-                        <img src={logo} alt="GFA Logo" className="w-8 h-8 object-contain" />
+                        <img src="/logo.png" alt="GFA Logo" className="w-8 h-8 object-contain" />
                     </button>
                     <h1 className={`text-xl font-bold tracking-tight ${titleClasses} ${titleClassName}`}>{title}</h1>
                 </div>

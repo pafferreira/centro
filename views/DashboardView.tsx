@@ -8,7 +8,7 @@ interface DashboardViewProps {
     onNavigate: (v: ViewState) => void;
 }
 
-import { PageContainer } from "../components/shared/PageContainer";
+import { PageContainer } from "../components/shared/PageContainer" ;
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const menuItems = [

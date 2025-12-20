@@ -20,3 +20,15 @@ View your app in AI Studio: https://ai.studio/apps/drive/1fpBpdMNddwh6JAoBsDA28n
    - Vercel: add an Environment Variable `GEMINI_API_KEY` in the project settings
 3. Run the app:
    `npm run dev`
+
+## Release (npm)
+
+1. Ensure a clean working tree and the correct branch.
+2. Optional: run `npm run build`.
+3. Run the guided release command:
+   `npm run release`
+4. Push the commit and tag:
+   `git push --follow-tags`
+
+Version sync checks (optional):
+`npm run version:check`
