@@ -42,4 +42,5 @@ export type ViewState =
   | 'WORKERS'
   | 'ROOMS'
   | 'LOCATIONS'
-  | 'SETTINGS';
+  | 'SETTINGS'
+  | 'ASSISTANCE';

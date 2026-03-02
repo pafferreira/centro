@@ -2,19 +2,20 @@ import React from "react";
 import { ViewState } from "../types";
 import { Header } from "../components/shared/Header";
 import { BottomNav } from "../components/shared/BottomNav";
-import { LegoIcon, UsersIcon, DoorIcon, MapPinIcon } from "../components/Icons";
+import { LegoIcon, UsersIcon, DoorIcon, MapPinIcon, BookIcon } from "../components/Icons";
 
 interface DashboardViewProps {
     onNavigate: (v: ViewState) => void;
 }
 
-import { PageContainer } from "../components/shared/PageContainer" ;
+import { PageContainer } from "../components/shared/PageContainer";
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const menuItems = [
         { id: 'ROOM_ASSEMBLY', label: 'Montagem das Salas', icon: LegoIcon },
         { id: 'WORKERS', label: 'Cadastro de Trabalhadores', icon: UsersIcon },
         { id: 'LOCATIONS', label: 'Cadastro de Locais de Trabalho', icon: MapPinIcon },
+        { id: 'ASSISTANCE', label: 'Ficha de Assistência', icon: BookIcon },
     ];
 
     return (

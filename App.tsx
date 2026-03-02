@@ -10,12 +10,17 @@ import { RoomsListView } from "./views/RoomsListView";
 import { RoomFormView } from "./views/RoomFormView";
 import { LocationListView } from "./views/LocationListView";
 import { SettingsView } from "./views/SettingsView";
+import { AssistanceView } from "./views/AssistanceView";
 import { RoomType } from "./types";
 import { loadWorkers, loadRooms, saveWorkers, saveRooms } from "./utils/storage";
 import { LayoutProvider } from "./context/LayoutContext";
 
 export default function App() {
-  const [view, setView] = useState<ViewState>('LOGIN');
+  const [view, setView] = useState<ViewState>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view') as ViewState;
+    return viewParam || 'LOGIN';
+  });
   const [workers, setWorkers] = useState<Worker[]>(loadWorkers());
   const [rooms, setRooms] = useState<Room[]>(loadRooms());
   const [previousView, setPreviousView] = useState<ViewState | null>(null);
@@ -232,6 +237,10 @@ export default function App() {
 
             {view === 'SETTINGS' && (
               <SettingsView onDataImported={handleDataImported} onHome={() => handleNavigate('DASHBOARD')} />
+            )}
+
+            {view === 'ASSISTANCE' && (
+              <AssistanceView workers={workers} />
             )}
           </div>
 
