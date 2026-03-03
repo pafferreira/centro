@@ -1,0 +1,255 @@
+# Planejamento do Banco de Dados Supabase (Inventário)
+
+Este documento descreve a estrutura sugerida para o banco de dados da solução, com todas as tabelas utilizando o prefixo `gfa_`, os campos traduzidos para o Português do Brasil de forma mais legível, a presença da nova tabela de Assistidos e o Script SQL de criação pronto para uso no Supabase.
+
+## User Review Required
+
+> [!IMPORTANT]
+> Verifique a inserção da tabela `gfa_assistidos` e como `gfa_fichas_assistencia` se conecta a ela. As datas de sessões que antes eram um array, agora vão gerar os registros individuais na nova estrutura da tabela `gfa_atendimentos_passe`. Confirme se o Script SQL no final do documento atende a todos os requisitos para rodarmos no banco de dados "Inventario".
+
+## Arquitetura de Dados (Schema)
+
+```mermaid
+erDiagram
+    gfa_assistidos ||--o{ gfa_fichas_assistencia : possui
+    gfa_fichas_assistencia ||--o{ gfa_atendimentos_passe : agenda
+    gfa_salas ||--o{ gfa_trabalhadores : aloca
+    gfa_salas ||--o{ gfa_atendimentos_passe : recebe
+    gfa_trabalhadores ||--o{ gfa_fichas_assistencia : conduz
+
+    gfa_salas {
+        uuid id PK
+        text nome_sala
+        text tipo_sala
+        integer capacidade
+        text descricao
+        text url_avatar
+        text icone_avatar
+        timestamptz criado_em
+    }
+
+    gfa_trabalhadores {
+        uuid id PK
+        text nome_trabalhador
+        text contato
+        text[] papeis
+        boolean coordenador
+        boolean presente
+        uuid id_sala_alocada FK
+        text url_avatar
+        timestamptz criado_em
+    }
+
+    gfa_assistidos {
+        uuid id PK
+        text nome_assistido
+        text telefone
+        date data_nascimento
+        text observacoes
+        timestamptz criado_em
+    }
+
+    gfa_fichas_assistencia {
+        uuid id PK
+        uuid id_assistido FK
+        uuid id_entrevistador FK
+        date data_entrevista
+        integer qtd_a2
+        integer qtd_a1
+        text tipo_ficha
+        text status_ficha
+        timestamptz criado_em
+    }
+
+    gfa_atendimentos_passe {
+        uuid id PK
+        uuid id_ficha_assistencia FK
+        uuid id_assistido FK
+        uuid id_sala_alocada FK
+        date data_atendimento
+        text tipo_passe
+        text fase_atendimento
+        text status_atendimento
+        timestamptz criado_em
+    }
+```
+
+## Estrutura Detalhada das Tabelas
+
+As tabelas abaixo descrevem todos os campos, incluindo as renomeações e a nova estrutura de `gfa_assistidos` e o desmembramento de `gfa_atendimentos_passe`.
+
+### 1. `gfa_salas` (Salas do Centro)
+Armazena as salas disponíveis (Passe, Palestra, etc).
+
+| Campo | Tipo | Restrições | Descrição |
+|-------|------|------------|-----------|
+| [id](file:///c:/Users/153886/OneDrive/Documentos/DEV/centro/views/AssistanceView.tsx#5-10) | `UUID` | Chave Primária | Identificador único da sala. |
+| `nome_sala` | `TEXT` | Obrigatório | Nome descritivo da sala (ex: "Sala de Passe 1"). |
+| `tipo_sala` | `TEXT` | Obrigatório | Categoria da sala ("Passe", "Outros"). |
+| `capacidade` | `INTEGER` | Obrigatório | Ocupação máxima de trabalhadores/médiuns. |
+| `descricao` | `TEXT` | Opcional | Texto informativo opcional sobre a sala. |
+| `url_avatar` | `TEXT` | Opcional | Link para uma imagem representativa da sala. |
+| `icone_avatar` | `TEXT` | Opcional | Nome da variante do ícone vetorial se usado no frontend. |
+| `criado_em` | `TIMESTAMPTZ` | Padrão: `now()` | Data e hora em que a sala foi registrada. |
+
+### 2. `gfa_trabalhadores` (Trabalhadores e Médiuns)
+Mantém o cadastro dos voluntários e as competências cadastradas.
+
+| Campo | Tipo | Restrições | Descrição |
+|-------|------|------------|-----------|
+| [id](file:///c:/Users/153886/OneDrive/Documentos/DEV/centro/views/AssistanceView.tsx#5-10) | `UUID` | Chave Primária | Identificador único do voluntário. |
+| `nome_trabalhador` | `TEXT` | Obrigatório | Nome completo da pessoa. |
+| `contato` | `TEXT` | Opcional | Número de telefone ou e-mail de contato do voluntário. |
+| `papeis` | `TEXT[]` | Obrigatório | Quais papéis o voluntário executa (ex: `['Médium', 'Diálogo']`). |
+| `coordenador` | `BOOLEAN` | Padrão: `false` | Indica se este trabalhador é o Coordenador chefe de uma sala. |
+| `presente` | `BOOLEAN` | Padrão: `true` | Identificador de presença no dia para o painel de distribuição. |
+| `id_sala_alocada` | `UUID` | Chave Estrangeira | Aponta para qual sala (`gfa_salas.id`) o voluntário foi escalado no dia vigente. Pode ser nulo ("Sem Sala"). |
+| `url_avatar` | `TEXT` | Opcional | URL da foto de perfil. |
+| `criado_em` | `TIMESTAMPTZ` | Padrão: `now()` | Criação de registro. |
+
+### 3. `gfa_assistidos` (Assistidos - Cadastro Único)
+Nova tabela para unificar o registro civil e contato dos assistidos de forma independente de suas fichas, garantindo integridade.
+
+| Campo | Tipo | Restrições | Descrição |
+|-------|------|------------|-----------|
+| [id](file:///c:/Users/153886/OneDrive/Documentos/DEV/centro/views/AssistanceView.tsx#5-10) | `UUID` | Chave Primária | Identificador único do paciente/assistido. |
+| `nome_assistido` | `TEXT` | Obrigatório | Nome do paciente que solicitou ajuda. |
+| `telefone` | `TEXT` | Opcional | Telefone para eventuais contatos. |
+| `data_nascimento` | `DATE` | Opcional | Ajuda a distinguir pessoas com o mesmo nome na base. |
+| `observacoes` | `TEXT` | Opcional | Campo para notas clínicas superficiais do cadastro base. |
+| `criado_em` | `TIMESTAMPTZ` | Padrão: `now()` | Histórico de entrada na instituição. |
+
+### 4. `gfa_fichas_assistencia` (Fichas de Planejamento)
+Onde acontece a "Abertura de Tratamento" na entrevista. Em vez de datas em array, essa tabela define as sessões que vão ser criadas em "Atendimentos".
+
+| Campo | Tipo | Restrições | Descrição |
+|-------|------|------------|-----------|
+| [id](file:///c:/Users/153886/OneDrive/Documentos/DEV/centro/views/AssistanceView.tsx#5-10) | `UUID` | Chave Primária | Identificador único da Ficha Médica/Tratamento. |
+| `id_assistido` | `UUID` | Chave Estrangeira | Referencia `gfa_assistidos.id` (Dono da Ficha). |
+| `id_entrevistador` | `UUID` | Chave Estrangeira | Referencia quem atendeu (o médium do Diálogo) via `gfa_trabalhadores.id`. |
+| `data_entrevista` | `DATE` | Obrigatório | A data que originou esta etapa inicial. |
+| `qtd_a2` | `INTEGER` | Obrigatório | Quantidade de sessões focadas como "A2" recomendadas (de 0 a 8). |
+| `qtd_a1` | `INTEGER` | Obrigatório | Quantidade de sessões focadas como "A1" recomendadas (de 0 a 8). |
+| `tipo_ficha` | `TEXT` | Padrão: `'Inicial'` | Categoria da ficha (ex: "Inicial", "Acompanhamento"). |
+| `status_ficha` | `TEXT` | Padrão: `'Ativa'` | Categoria da ficha (ex: "Ativa", "Finalizada", "Interrompida"). |
+| `criado_em` | `TIMESTAMPTZ` | Padrão: `now()` | Histórico. |
+
+### 5. `gfa_atendimentos_passe` (Sessões e Fila de Distribuição)
+Ganha o papel das datas em "Array" e as distribui individualmente. Um assistido com uma Ficha de 8 sessões ganha 8 linhas aqui. Estas linhas vão sendo alocadas nas salas.
+
+| Campo | Tipo | Restrições | Descrição |
+|-------|------|------------|-----------|
+| [id](file:///c:/Users/153886/OneDrive/Documentos/DEV/centro/views/AssistanceView.tsx#5-10) | `UUID` | Chave Primária | Identificador único desta Sessão/Fila especifica. |
+| `id_ficha_assistencia` | `UUID` | Chave Estrangeira | Vincula à Ficha de Planejamento `gfa_fichas_assistencia.id`. |
+| `id_assistido` | `UUID` | Chave Estrangeira | Atalho para o paciente `gfa_assistidos.id` de forma a facilitar querys. |
+| `id_sala_alocada` | `UUID` | Chave Estrangeira | Qual sala `gfa_salas.id` esse paciente tomará o passe nesta data específica. |
+| `data_atendimento` | `DATE` | Obrigatório | Data agendada da sessão deste ciclo. É este campo que os painéis leem na aba de distribuição de passistas do dia. |
+| `tipo_passe` | `TEXT` | Obrigatório | Variante do passe no dia (ex: "A1" ou "A2"). |
+| `fase_atendimento` | `TEXT` | Obrigatório | Textual para visualização (ex: "Sessão 1", "Primeira Vez"). |
+| `status_atendimento` | `TEXT` | Padrão: `'Aguardando'`| Situação da sessão pontual (ex: "Aguardando", "Atendido", "Ausente"). |
+| `criado_em` | `TIMESTAMPTZ` | Padrão: `now()` | Hora que a sessão foi gerada. |
+
+---
+
+## Script Completo de Criação (SQL)
+
+Você pode rodar este bloco diretamente no **SQL Editor** do Supabase dentro do projeto *Inventario*. Ele criará as extensões e tabelas na ordem de dependências, além dos índices de busca.
+
+```sql
+-- Ativa extensão para geração de chaves primárias uuid usando uuid_generate_v4()
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ==============================================================================
+-- 1. TABELA DE SALAS
+-- ==============================================================================
+CREATE TABLE public.gfa_salas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome_sala TEXT NOT NULL,
+    tipo_sala TEXT NOT NULL,
+    capacidade INTEGER NOT NULL DEFAULT 0,
+    descricao TEXT,
+    url_avatar TEXT,
+    icone_avatar TEXT,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ==============================================================================
+-- 2. TABELA DE TRABALHADORES
+-- ==============================================================================
+CREATE TABLE public.gfa_trabalhadores (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome_trabalhador TEXT NOT NULL,
+    contato TEXT,
+    papeis TEXT[] NOT NULL DEFAULT '{}',
+    coordenador BOOLEAN NOT NULL DEFAULT false,
+    presente BOOLEAN NOT NULL DEFAULT true,
+    id_sala_alocada UUID REFERENCES public.gfa_salas(id) ON DELETE SET NULL,
+    url_avatar TEXT,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ==============================================================================
+-- 3. TABELA DE ASSISTIDOS
+-- ==============================================================================
+CREATE TABLE public.gfa_assistidos (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome_assistido TEXT NOT NULL,
+    telefone TEXT,
+    data_nascimento DATE,
+    observacoes TEXT,
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ==============================================================================
+-- 4. TABELA DE FICHAS DE ASSISTÊNCIA
+-- ==============================================================================
+CREATE TABLE public.gfa_fichas_assistencia (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id_assistido UUID NOT NULL REFERENCES public.gfa_assistidos(id) ON DELETE CASCADE,
+    id_entrevistador UUID REFERENCES public.gfa_trabalhadores(id) ON DELETE SET NULL,
+    data_entrevista DATE NOT NULL,
+    qtd_a2 INTEGER NOT NULL DEFAULT 0,
+    qtd_a1 INTEGER NOT NULL DEFAULT 0,
+    tipo_ficha TEXT NOT NULL DEFAULT 'Inicial',
+    status_ficha TEXT NOT NULL DEFAULT 'Ativa',
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ==============================================================================
+-- 5. TABELA DE ATENDIMENTOS DE PASSE (Sessões)
+-- ==============================================================================
+CREATE TABLE public.gfa_atendimentos_passe (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id_ficha_assistencia UUID REFERENCES public.gfa_fichas_assistencia(id) ON DELETE CASCADE,
+    id_assistido UUID NOT NULL REFERENCES public.gfa_assistidos(id) ON DELETE CASCADE,
+    id_sala_alocada UUID REFERENCES public.gfa_salas(id) ON DELETE SET NULL,
+    data_atendimento DATE NOT NULL,
+    tipo_passe TEXT NOT NULL,
+    fase_atendimento TEXT NOT NULL,
+    status_atendimento TEXT NOT NULL DEFAULT 'Aguardando',
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ==============================================================================
+-- ÍNDICES (Para melhorar velocidade de buscas em Listagens Diárias)
+-- ==============================================================================
+CREATE INDEX idx_trabalhadores_sala ON public.gfa_trabalhadores (id_sala_alocada);
+
+CREATE INDEX idx_atend_passe_data ON public.gfa_atendimentos_passe (data_atendimento);
+CREATE INDEX idx_atend_passe_sala ON public.gfa_atendimentos_passe (id_sala_alocada);
+CREATE INDEX idx_atend_passe_ficha ON public.gfa_atendimentos_passe (id_ficha_assistencia);
+
+CREATE INDEX idx_fichas_assistido ON public.gfa_fichas_assistencia (id_assistido);
+CREATE INDEX idx_fichas_entrevistador ON public.gfa_fichas_assistencia (id_entrevistador);
+
+```
+
+## Verification Plan
+
+### Manual Verification
+Revise o plan e o Script (em Documentos de Artefatos) e valide:
+- Nomes dos campos explícitos sugeridos (ex: `data_atendimento`, `nome_trabalhador`).
+- Tabela e fluxo do `gfa_assistidos`.
+- As chaves estrangeiras entre Assistidos, Ficha e Atendimentos e Salas.
+
+Se o Script SQL acima estiver aderente às suas expectativas, basta aprovar!

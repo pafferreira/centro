@@ -11,7 +11,9 @@ interface WorkerCardProps {
 
 export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms, onMove }) => {
   const [showMove, setShowMove] = useState(false);
+  const [openUpwards, setOpenUpwards] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const roleStylesMap: Record<WorkerRole, string> = {
     [WorkerRole.Coordenador]: "bg-blue-200 text-blue-800",
@@ -25,25 +27,45 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms
 
   const avatarUrl = worker.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(worker.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
-  const handleMove = (roomId: string) => {
+  const handleMove = (e: React.MouseEvent, roomId: string) => {
+    e.stopPropagation();
     setShowMove(false);
     if (onMove) onMove(worker.id, roomId);
   };
 
+  const toggleMove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!showMove && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 250) {
+        setOpenUpwards(true);
+      } else {
+        setOpenUpwards(false);
+      }
+    }
+    setShowMove(!showMove);
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowMove(false);
-      }
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      // allow some delay to process taps before closing
+      setTimeout(() => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setShowMove(false);
+        }
+      }, 50);
     };
 
     if (showMove) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [showMove]);
 
@@ -73,21 +95,23 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms
         {onMove && rooms && (
           <div className="relative" ref={dropdownRef}>
             <button
-              onClick={() => setShowMove(!showMove)}
+              ref={buttonRef}
+              onClick={toggleMove}
+              onTouchStart={(e) => e.stopPropagation()}
               className="p-2 rounded-xl hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200"
               title="Mover para outra sala"
             >
-              <MoveIcon className="w-5 h-5 text-slate-400 hover:text-blue-500" />
+              <MoveIcon className="w-5 h-5 text-slate-400 hover:text-blue-500 cursor-pointer" />
             </button>
             {showMove && (
-              <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
+              <div className={`absolute right-0 ${openUpwards ? "bottom-full mb-2 origin-bottom-right" : "top-full mt-1 origin-top-right"} bg-white border border-slate-200 rounded-xl shadow-lg z-[100] min-w-[200px] max-h-[300px] overflow-y-auto`}>
                 <div className="p-2">
                   <p className="text-xs font-semibold text-slate-500 px-2 py-1">Mover para:</p>
                   {rooms.map(r => (
                     <button
                       key={r.id}
-                      onClick={() => handleMove(r.id)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 rounded-lg transition-colors text-slate-700 hover:text-blue-600"
+                      onClick={(e) => handleMove(e, r.id)}
+                      className="w-full text-left px-3 py-3 text-sm hover:bg-blue-50 rounded-lg transition-colors text-slate-700 hover:text-blue-600 active:bg-blue-100"
                     >
                       {r.name}
                     </button>

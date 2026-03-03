@@ -1,0 +1,27 @@
+
+Me ajude a criar uma ou mais telas para controle de distribuição dos assistidos nas salas de passe.
+
+Temos as salas de passe já definidas na tela Locais
+Temos pessoas que já fizeram entrevistas e possuem suas fichas de Assistência preenchidas com passe A2 ou A1, dependendo da data que comparecem, que serão nossos dias de passe no centro.
+Precisamos distribuir os assistidos nas salas de passe disponíveis e montar uma fila de distribuição e sequência conforme forem atendidos.
+Por exemplo: no dia 02/03/2026 temos 30 pessoas e 4 salas de passe , portanto temos que distribuir nas salas.
+Regras de distribuição dos assistidos:
+A regra de prioridade:
+1) Assistidos cadastrados como primeira vêz ou Retorno ou Acompanhamento, a sala precisa ter ao menos um médium
+2) Passes A2 , são mais demorados, a sala precisa ter médium + diálogo
+3) Passes A1 , são mais rápidos, pode ser alocado em qualquer sala livre
+
+Então temos que desenvolver uma regra para calcular a distribuição dos atendimentos que atenda a regra acima
+
+Para registrar todos os assistidos no dia do passe, precisamos criar uma tela de cadastro do dia de passe que inclua:
+- Dia de Passe
+- o nome do assistido, 
+- o tipo de passe (A2 ou A1) que está registrado na ficha de Assistência, a sequência de sessões de passe 
+
+Como saída precisamos apresentar um relatório em tela da distribuição de assistidos por sala, com a seguinte regra:
+- Se for 1a vêz ou Retorno, a sala deve ter um médium
+- Se A2, a sala deve ter um médium e um diálogo
+- Se for A1 pode ser em qualquer sala
+
+A tela de relatório pode ser alterada conforme os assistidos forem sendo marcados (check box) como Atendidos
+

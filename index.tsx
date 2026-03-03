@@ -1,6 +1,17 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { polyfill } from "mobile-drag-drop";
+import { scrollBehaviourDragImageTranslateOverride } from "mobile-drag-drop/scroll-behaviour";
+import "mobile-drag-drop/default.css";
+
+// apply polyfill
+polyfill({
+  dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride
+});
+
+// Polyfill requires an empty listener on touchmove to prevent default scroll while dragging
+window.addEventListener('touchmove', function () { }, { passive: false });
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

@@ -1,91 +1,274 @@
-import { Worker, Room } from "../types";
-import { initialWorkers, initialRooms } from "../data/initialData";
+import { Worker, Room, PasseAttendance, RoomType, WorkerRole } from "../types";
+import { supabase } from "../services/supabaseClient";
 
-const STORAGE_KEYS = {
-    WORKERS: 'centro-workers',
-    ROOMS: 'centro-rooms',
-    LAST_MODIFIED: 'centro-last-modified',
-} as const;
+// ============================================================================
+// MAPEAMENTO: TypeScript (camelCase) <-> Supabase (snake_case PT-BR)
+// ============================================================================
 
-// Workers
-export function saveWorkers(workers: Worker[]): void {
+// --- ROOMS ---
+function roomFromDb(row: any): Room {
+    return {
+        id: row.id,
+        name: row.nome_sala,
+        type: row.tipo_sala as RoomType,
+        capacity: row.capacidade,
+        description: row.descricao ?? undefined,
+        avatarUrl: row.url_avatar ?? undefined,
+        avatarIcon: row.icone_avatar ?? undefined,
+    };
+}
+
+function roomToDb(room: Room): Record<string, any> {
+    return {
+        id: room.id,
+        nome_sala: room.name,
+        tipo_sala: room.type,
+        capacidade: room.capacity,
+        descricao: room.description ?? null,
+        url_avatar: room.avatarUrl ?? null,
+        icone_avatar: room.avatarIcon ?? null,
+    };
+}
+
+// --- WORKERS ---
+function workerFromDb(row: any): Worker {
+    return {
+        id: row.id,
+        name: row.nome_trabalhador,
+        contact: row.contato ?? undefined,
+        roles: (row.papeis ?? []) as WorkerRole[],
+        isCoordinator: row.coordenador ?? false,
+        present: row.presente ?? true,
+        assignedRoomId: row.id_sala_alocada ?? null,
+        avatarUrl: row.url_avatar ?? undefined,
+    };
+}
+
+function workerToDb(worker: Worker): Record<string, any> {
+    return {
+        id: worker.id,
+        nome_trabalhador: worker.name,
+        contato: worker.contact ?? null,
+        papeis: worker.roles,
+        coordenador: worker.isCoordinator,
+        presente: worker.present ?? true,
+        id_sala_alocada: worker.assignedRoomId ?? null,
+        url_avatar: worker.avatarUrl ?? null,
+    };
+}
+
+// --- PASSE ATTENDANCES ---
+function attendanceFromDb(row: any): PasseAttendance {
+    return {
+        id: row.id,
+        date: row.data_atendimento,
+        assistidoName: row.nome_assistido_cache ?? '',
+        passeType: row.tipo_passe,
+        attendancePhase: row.fase_atendimento,
+        status: row.status_atendimento,
+        allocatedRoomId: row.id_sala_alocada ?? null,
+    };
+}
+
+function attendanceToDb(att: PasseAttendance): Record<string, any> {
+    return {
+        id: att.id,
+        data_atendimento: att.date,
+        tipo_passe: att.passeType,
+        fase_atendimento: att.attendancePhase,
+        status_atendimento: att.status,
+        id_sala_alocada: att.allocatedRoomId ?? null,
+    };
+}
+
+// ============================================================================
+// FUNÇÕES CRUD – ROOMS (gfa_salas)
+// ============================================================================
+
+export async function loadRooms(): Promise<Room[]> {
     try {
-        localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(workers));
-        localStorage.setItem(STORAGE_KEYS.LAST_MODIFIED, new Date().toISOString());
+        const { data, error } = await supabase
+            .from('gfa_salas')
+            .select('*')
+            .order('criado_em', { ascending: true });
+
+        if (error) throw error;
+        return (data ?? []).map(roomFromDb);
     } catch (error) {
-        console.error('Erro ao salvar trabalhadores:', error);
+        console.error('Erro ao carregar salas do Supabase:', error);
+        return [];
     }
 }
 
-export function loadWorkers(): Worker[] {
+export async function saveRooms(rooms: Room[]): Promise<void> {
     try {
-        const stored = localStorage.getItem(STORAGE_KEYS.WORKERS);
-        if (stored) {
-            const parsed = JSON.parse(stored) as Worker[];
+        const rows = rooms.map(roomToDb);
+        const { error } = await supabase
+            .from('gfa_salas')
+            .upsert(rows, { onConflict: 'id' });
 
-            // Deduplicate IDs to fix potential data corruption
-            const seenIds = new Set<string>();
-
-            return parsed.map(w => {
-                let id = w.id;
-                // If ID is duplicate or missing, generate a new one
-                if (!id || seenIds.has(id)) {
-                    id = `fixed-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                }
-                seenIds.add(id);
-
-                return {
-                    ...w,
-                    id,
-                    present: w.present !== false, // default to true when missing
-                    assignedRoomId: w.present === false ? null : w.assignedRoomId ?? null,
-                };
-            });
-        }
+        if (error) throw error;
     } catch (error) {
-        console.error('Erro ao carregar trabalhadores:', error);
-    }
-    return initialWorkers;
-}
-
-// Rooms
-export function saveRooms(rooms: Room[]): void {
-    try {
-        localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(rooms));
-        localStorage.setItem(STORAGE_KEYS.LAST_MODIFIED, new Date().toISOString());
-    } catch (error) {
-        console.error('Erro ao salvar salas:', error);
+        console.error('Erro ao salvar salas no Supabase:', error);
     }
 }
 
-export function loadRooms(): Room[] {
+export async function saveRoom(room: Room): Promise<void> {
     try {
-        const stored = localStorage.getItem(STORAGE_KEYS.ROOMS);
-        if (stored) {
-            return JSON.parse(stored) as Room[];
-        }
+        const { error } = await supabase
+            .from('gfa_salas')
+            .upsert(roomToDb(room), { onConflict: 'id' });
+
+        if (error) throw error;
     } catch (error) {
-        console.error('Erro ao carregar salas:', error);
+        console.error('Erro ao salvar sala no Supabase:', error);
     }
-    return initialRooms;
 }
 
-// Export/Import
-export function exportData(): string {
+export async function deleteRoom(roomId: string): Promise<void> {
+    try {
+        const { error } = await supabase
+            .from('gfa_salas')
+            .delete()
+            .eq('id', roomId);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao deletar sala no Supabase:', error);
+    }
+}
+
+// ============================================================================
+// FUNÇÕES CRUD – WORKERS (gfa_trabalhadores)
+// ============================================================================
+
+export async function loadWorkers(): Promise<Worker[]> {
+    try {
+        const { data, error } = await supabase
+            .from('gfa_trabalhadores')
+            .select('*')
+            .order('criado_em', { ascending: true });
+
+        if (error) throw error;
+        return (data ?? []).map(workerFromDb);
+    } catch (error) {
+        console.error('Erro ao carregar trabalhadores do Supabase:', error);
+        return [];
+    }
+}
+
+export async function saveWorkers(workers: Worker[]): Promise<void> {
+    try {
+        const rows = workers.map(workerToDb);
+        const { error } = await supabase
+            .from('gfa_trabalhadores')
+            .upsert(rows, { onConflict: 'id' });
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao salvar trabalhadores no Supabase:', error);
+    }
+}
+
+export async function saveWorker(worker: Worker): Promise<void> {
+    try {
+        const { error } = await supabase
+            .from('gfa_trabalhadores')
+            .upsert(workerToDb(worker), { onConflict: 'id' });
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao salvar trabalhador no Supabase:', error);
+    }
+}
+
+export async function deleteWorker(workerId: string): Promise<void> {
+    try {
+        const { error } = await supabase
+            .from('gfa_trabalhadores')
+            .delete()
+            .eq('id', workerId);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao deletar trabalhador no Supabase:', error);
+    }
+}
+
+// ============================================================================
+// FUNÇÕES CRUD – ATTENDANCES (gfa_atendimentos_passe)
+// ============================================================================
+
+export async function loadAttendances(): Promise<PasseAttendance[]> {
+    try {
+        // Join with gfa_assistidos to get the name
+        const { data, error } = await supabase
+            .from('gfa_atendimentos_passe')
+            .select('*, gfa_assistidos(nome_assistido)')
+            .order('criado_em', { ascending: true });
+
+        if (error) throw error;
+
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            date: row.data_atendimento,
+            assistidoName: row.gfa_assistidos?.nome_assistido ?? '',
+            passeType: row.tipo_passe,
+            attendancePhase: row.fase_atendimento,
+            status: row.status_atendimento,
+            allocatedRoomId: row.id_sala_alocada ?? null,
+        }));
+    } catch (error) {
+        console.error('Erro ao carregar atendimentos do Supabase:', error);
+        return [];
+    }
+}
+
+export async function saveAttendances(attendances: PasseAttendance[]): Promise<void> {
+    try {
+        const rows = attendances.map(attendanceToDb);
+        const { error } = await supabase
+            .from('gfa_atendimentos_passe')
+            .upsert(rows, { onConflict: 'id' });
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao salvar atendimentos no Supabase:', error);
+    }
+}
+
+export async function saveAttendance(att: PasseAttendance): Promise<void> {
+    try {
+        const { error } = await supabase
+            .from('gfa_atendimentos_passe')
+            .upsert(attendanceToDb(att), { onConflict: 'id' });
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao salvar atendimento no Supabase:', error);
+    }
+}
+
+// ============================================================================
+// FUNÇÕES UTILITÁRIAS (Export / Import / Clear)
+// ============================================================================
+
+export async function exportData(): Promise<string> {
+    const workers = await loadWorkers();
+    const rooms = await loadRooms();
     const data = {
-        workers: loadWorkers(),
-        rooms: loadRooms(),
+        workers,
+        rooms,
         exportedAt: new Date().toISOString(),
-        version: '1.0',
+        version: '2.0-supabase',
     };
     return JSON.stringify(data, null, 2);
 }
 
-export function importData(jsonString: string): { workers: Worker[]; rooms: Room[] } | null {
+export async function importData(jsonString: string): Promise<{ workers: Worker[]; rooms: Room[] } | null> {
     try {
         const data = JSON.parse(jsonString);
 
-        // Validação básica
         if (!data.workers || !Array.isArray(data.workers)) {
             throw new Error('Dados de trabalhadores inválidos');
         }
@@ -103,38 +286,32 @@ export function importData(jsonString: string): { workers: Worker[]; rooms: Room
     }
 }
 
-export function clearAllData(): void {
+export async function clearAllData(): Promise<void> {
     try {
-        localStorage.removeItem(STORAGE_KEYS.WORKERS);
-        localStorage.removeItem(STORAGE_KEYS.ROOMS);
-        localStorage.removeItem(STORAGE_KEYS.LAST_MODIFIED);
+        await supabase.from('gfa_atendimentos_passe').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('gfa_fichas_assistencia').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('gfa_assistidos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('gfa_trabalhadores').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('gfa_salas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     } catch (error) {
         console.error('Erro ao limpar dados:', error);
     }
 }
 
 export function getLastModified(): string | null {
-    try {
-        return localStorage.getItem(STORAGE_KEYS.LAST_MODIFIED);
-    } catch (error) {
-        console.error('Erro ao obter data de modificação:', error);
-        return null;
-    }
+    // Não é mais necessário com Supabase (ele gerencia timestamps com criado_em)
+    return new Date().toISOString();
 }
 
-export function getStorageSize(): string {
+export async function getStorageSize(): Promise<string> {
+    // No Supabase, não temos um conceito simples de "tamanho do storage local"
+    // Retornamos uma estimativa baseada na contagem de registros
     try {
-        const workers = localStorage.getItem(STORAGE_KEYS.WORKERS) || '';
-        const rooms = localStorage.getItem(STORAGE_KEYS.ROOMS) || '';
-        const totalBytes = workers.length + rooms.length;
+        const { count: wCount } = await supabase.from('gfa_trabalhadores').select('*', { count: 'exact', head: true });
+        const { count: rCount } = await supabase.from('gfa_salas').select('*', { count: 'exact', head: true });
+        const { count: aCount } = await supabase.from('gfa_atendimentos_passe').select('*', { count: 'exact', head: true });
 
-        if (totalBytes < 1024) {
-            return `${totalBytes} bytes`;
-        } else if (totalBytes < 1024 * 1024) {
-            return `${(totalBytes / 1024).toFixed(2)} KB`;
-        } else {
-            return `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
-        }
+        return `${(wCount ?? 0)} trabalhadores, ${(rCount ?? 0)} salas, ${(aCount ?? 0)} atendimentos`;
     } catch (error) {
         console.error('Erro ao calcular tamanho:', error);
         return 'Desconhecido';

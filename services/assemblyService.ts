@@ -97,10 +97,26 @@ export function generateAssembly(workers: Worker[], rooms: Room[]): Assignment[]
   const assignRoleRoundRobin = (role: WorkerRole) => {
     if (eligiblePasseRooms.length === 0) return;
     let roomIndex = 0;
+    let fullRoomsCount = 0;
+
     while (true) {
+      if (fullRoomsCount >= eligiblePasseRooms.length) {
+        break; // break if all rooms are full
+      }
+
       const targetRoom = eligiblePasseRooms[roomIndex % eligiblePasseRooms.length];
+      const currentCount = assignments.filter(a => a.roomId === targetRoom.id).length;
+
+      if (currentCount >= targetRoom.capacity) {
+        fullRoomsCount++;
+        roomIndex += 1;
+        continue;
+      }
+
       const filled = findAndAssign(w => hasRole(w, role), targetRoom.id);
-      if (!filled) break;
+      if (!filled) break; // no more non-assigned workers with this role
+
+      fullRoomsCount = 0; // reset because we found a room that accepted a worker
       roomIndex += 1;
     }
   };
@@ -110,17 +126,6 @@ export function generateAssembly(workers: Worker[], rooms: Room[]): Assignment[]
   assignRoleRoundRobin(WorkerRole.Dialogo);
   assignRoleRoundRobin(WorkerRole.Psicografa);
   assignRoleRoundRobin(WorkerRole.Sustentacao);
-
-  // 3) Ensure no present worker remains unassigned: spread extras across Passe rooms
-  if (passeRoomsWithCoordinator.size > 0) {
-    let roomIndex = 0;
-    for (const worker of avail.filter(w => !w.assigned)) {
-      const room = eligiblePasseRooms[roomIndex % eligiblePasseRooms.length];
-      worker.assigned = true;
-      assignments.push({ workerId: worker.id, roomId: room.id });
-      roomIndex += 1;
-    }
-  }
 
   // Sort assignments to maintain role order within each room
   const sortedAssignments = assignments.map(assignment => {

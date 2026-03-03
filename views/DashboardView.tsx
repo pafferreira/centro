@@ -13,6 +13,8 @@ import { PageContainer } from "../components/shared/PageContainer";
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     const menuItems = [
         { id: 'ROOM_ASSEMBLY', label: 'Montagem das Salas', icon: LegoIcon },
+        { id: 'PASSE_REGISTRATION', label: 'Cadastro Dia de Passe', icon: UsersIcon },
+        { id: 'PASSE_DISTRIBUTION', label: 'Distribuição e Relatório', icon: MapPinIcon },
         { id: 'WORKERS', label: 'Cadastro de Trabalhadores', icon: UsersIcon },
         { id: 'LOCATIONS', label: 'Cadastro de Locais de Trabalho', icon: MapPinIcon },
         { id: 'ASSISTANCE', label: 'Ficha de Assistência', icon: BookIcon },

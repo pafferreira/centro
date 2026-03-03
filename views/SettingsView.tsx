@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Header } from "../components/shared/Header";
 import { PageContainer } from "../components/shared/PageContainer";
 import { TrashIcon, CheckIcon } from "../components/Icons";
@@ -12,11 +12,15 @@ interface SettingsViewProps {
 export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported, onHome }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const lastModified = getLastModified();
-    const storageSize = getStorageSize();
+    const [storageSize, setStorageSize] = useState<string>('Calculando...');
 
-    const handleExport = () => {
+    useEffect(() => {
+        getStorageSize().then(size => setStorageSize(size));
+    }, []);
+
+    const handleExport = async () => {
         try {
-            const jsonData = exportData();
+            const jsonData = await exportData();
             const blob = new Blob([jsonData], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -43,14 +47,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported, onHo
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const jsonString = e.target?.result as string;
-                const data = importData(jsonString);
+                const data = await importData(jsonString);
 
                 if (data) {
-                    saveWorkers(data.workers);
-                    saveRooms(data.rooms);
+                    await saveWorkers(data.workers);
+                    await saveRooms(data.rooms);
                     onDataImported(data.workers, data.rooms);
 
                     alert('✅ Dados importados com sucesso!\n\nRecarregue a página para ver as mudanças.');
@@ -66,14 +70,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported, onHo
         event.target.value = '';
     };
 
-    const handleClearData = () => {
+    const handleClearData = async () => {
         const confirm1 = confirm('⚠️ ATENÇÃO: Isso irá apagar TODOS os dados permanentemente!\n\nDeseja continuar?');
         if (!confirm1) return;
 
         const confirm2 = confirm('🚨 Última confirmação!\n\nTem certeza absoluta?\n\nRecomendamos exportar um backup antes.');
         if (!confirm2) return;
 
-        clearAllData();
+        await clearAllData();
         alert('✅ Dados limpos com sucesso!\n\nRecarregue a página.');
         window.location.reload();
     };
@@ -100,7 +104,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported, onHo
                     <h3 className="font-bold text-lg text-slate-800 mb-2">📊 Informações</h3>
                     <div className="space-y-1 text-sm text-slate-600">
                         <p><strong>Última modificação:</strong> {formatDate(lastModified)}</p>
-                        <p><strong>Tamanho dos dados:</strong> {storageSize}</p>
+                        <p><strong>Dados no banco:</strong> {storageSize}</p>
                     </div>
                 </div>
 
@@ -156,8 +160,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported, onHo
                 {/* Help Text */}
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-6">
                     <p className="text-sm text-amber-800">
-                        <strong>💡 Dica:</strong> Exporte seus dados semanalmente e guarde o arquivo JSON em local seguro
-                        (Google Drive, email, etc). Os dados só existem neste dispositivo.
+                        <strong>💡 Dica:</strong> Os dados agora são armazenados no banco de dados Supabase na nuvem.
+                        Exporte seus dados periodicamente para manter um backup local em JSON.
                     </p>
                 </div>
             </div>

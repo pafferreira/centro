@@ -23,6 +23,7 @@ interface RoomAssemblyViewProps {
 export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, rooms, setWorkers, onBack, onHome }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [replicaAssignments, setReplicaAssignments] = useState<Record<string, string | null>>({});
+    const [draggedWorkerId, setDraggedWorkerId] = useState<string | null>(null);
 
     // Helper to get role priority for sorting (lower = higher priority)
     const getRolePriority = (worker: Worker): number => {
@@ -113,12 +114,18 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
     // Drag and drop handlers
     const onDropToRoom = (e: React.DragEvent, roomId: string | null) => {
         e.preventDefault();
-        const workerId = e.dataTransfer.getData('text/plain');
+        const workerId = e.dataTransfer.getData('text/plain') || draggedWorkerId;
         if (!workerId) return;
         const target = roomId ?? 'unassigned';
         handleMoveWorker(workerId, target);
+        setDraggedWorkerId(null);
     };
-    const onDragOver = (e: React.DragEvent) => e.preventDefault();
+    const onDragOver = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
+    const onDragEnter = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
+    const handleDragStart = (e: React.DragEvent, id: string) => {
+        e.dataTransfer.setData('text/plain', id);
+        setDraggedWorkerId(id);
+    };
 
     const activeWorkers = workers.filter(w => w.present !== false);
 
@@ -263,111 +270,114 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                         <h3 className="text-lg font-medium text-slate-500 px-1">Salas de Passe</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {passeRooms.map(room => {
-                            const occupants = getRoomOccupants(room.id);
+                                const occupants = getRoomOccupants(room.id);
 
-                            return (
-                                <div
-                                    key={room.id}
-                                    className="bg-white rounded-2xl p-3 shadow-soft border border-card-border/60"
-                                    onDragOver={onDragOver}
-                                    onDrop={(e) => onDropToRoom(e, room.id)}
-                                >
-                                    <div className="flex justify-between items-center mb-3 px-1">
-                                        <h4 className="font-bold text-text-main text-base">{room.name}</h4>
-                                        <span className="px-3 py-1 rounded-full text-sm font-bold bg-blue-100 text-blue-600">
-                                            {occupants.length}
-                                        </span>
+                                return (
+                                    <div
+                                        key={room.id}
+                                        className="bg-white rounded-2xl p-3 shadow-soft border border-card-border/60"
+                                        onDragOver={onDragOver}
+                                        onDragEnter={onDragEnter}
+                                        onDrop={(e) => onDropToRoom(e, room.id)}
+                                    >
+                                        <div className="flex justify-between items-center mb-3 px-1">
+                                            <h4 className="font-bold text-text-main text-base">{room.name}</h4>
+                                            <span className="px-3 py-1 rounded-full text-sm font-bold bg-blue-100 text-blue-600">
+                                                {occupants.length}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2 min-h-[60px]">
+                                            {occupants.length === 0 && (
+                                                <div className="h-20 border-2 border-dashed border-slate-100 rounded-xl flex items-center justify-center bg-slate-50 text-slate-400 text-sm">
+                                                    Arraste aqui
+                                                </div>
+                                            )}
+                                            {occupants.map(w => {
+                                                const roomOptions = w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned;
+                                                return (
+                                                    <div key={w.id} draggable onDragStart={(e) => handleDragStart(e, w.id)} onDragEnd={() => setDraggedWorkerId(null)}>
+                                                        <WorkerCard
+                                                            worker={w}
+                                                            roleLabel={w.isCoordinator ? 'Coordenador' : undefined}
+                                                            rooms={roomOptions}
+                                                            onMove={handleMoveWorker}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                    <div className="space-y-2 min-h-[60px]">
-                                        {occupants.length === 0 && (
-                                            <div className="h-20 border-2 border-dashed border-slate-100 rounded-xl flex items-center justify-center bg-slate-50 text-slate-400 text-sm">
-                                                Arraste aqui
-                                            </div>
-                                        )}
-                                        {occupants.map(w => {
-                                            const roomOptions = w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned;
-                                            return (
-                                            <div key={w.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', w.id)}>
-                                                <WorkerCard
-                                                    worker={w}
-                                                    roleLabel={w.isCoordinator ? 'Coordenador' : undefined}
-                                                    rooms={roomOptions}
-                                                    onMove={handleMoveWorker}
-                                                />
-                                            </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                <div className="space-y-3">
-                    <h3 className="text-lg font-medium text-slate-500 px-1">Outros Locais</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {otherRooms.map(room => {
-                            const occupants = getRoomOccupants(room.id);
-
-                            return (
-                                <div
-                                    key={room.id}
-                                    className="bg-white rounded-2xl p-3 shadow-soft border border-card-border/60"
-                                    onDragOver={onDragOver}
-                                    onDrop={(e) => onDropToRoom(e, room.id)}
-                                >
-                                    <div className="flex justify-between items-center mb-3 px-1">
-                                        <h4 className="font-bold text-text-main text-base">{room.name}</h4>
-                                        <span className="px-3 py-1 rounded-full text-sm font-bold bg-slate-100 text-slate-600">
-                                            {occupants.length}
-                                        </span>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {occupants.length === 0 && <p className="text-xs text-stone-300 italic px-1">Vazio</p>}
-                                        {occupants.map(w => (
-                                            <div key={w.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', w.id)}>
-                                                <WorkerCard
-                                                    worker={w}
-                                                    rooms={roomsWithUnassigned}
-                                                    onMove={handleMoveWorker}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {unassignedWorkers.length > 0 && (
-                    <div
-                        className="bg-white rounded-2xl p-4 border border-card-border/60 shadow-soft"
-                        onDragOver={onDragOver}
-                        onDrop={(e) => onDropToRoom(e, null)}
-                    >
-                        <div className="flex justify-between items-center mb-3">
-                            <h3 className="text-text-main font-bold text-base">Não Alocados</h3>
-                            <span className="px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-600">
-                                {unassignedWorkers.length}
-                            </span>
-                        </div>
-                        <div className="space-y-2">
-                            {unassignedWorkers.map(w => (
-                                <div key={w.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', w.id)}>
-                                    <WorkerCard
-                                        worker={w}
-                                        roleLabel={w.isReplica && w.originRoomName ? `Extra ${w.originRoomName}` : undefined}
-                                        rooms={w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned}
-                                        onMove={handleMoveWorker}
-                                    />
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
-                )}
-            </div>
+
+                    <div className="space-y-3">
+                        <h3 className="text-lg font-medium text-slate-500 px-1">Outros Locais</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {otherRooms.map(room => {
+                                const occupants = getRoomOccupants(room.id);
+
+                                return (
+                                    <div
+                                        key={room.id}
+                                        className="bg-white rounded-2xl p-3 shadow-soft border border-card-border/60"
+                                        onDragOver={onDragOver}
+                                        onDragEnter={onDragEnter}
+                                        onDrop={(e) => onDropToRoom(e, room.id)}
+                                    >
+                                        <div className="flex justify-between items-center mb-3 px-1">
+                                            <h4 className="font-bold text-text-main text-base">{room.name}</h4>
+                                            <span className="px-3 py-1 rounded-full text-sm font-bold bg-slate-100 text-slate-600">
+                                                {occupants.length}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {occupants.length === 0 && <p className="text-xs text-stone-300 italic px-1">Vazio</p>}
+                                            {occupants.map(w => (
+                                                <div key={w.id} draggable onDragStart={(e) => handleDragStart(e, w.id)} onDragEnd={() => setDraggedWorkerId(null)}>
+                                                    <WorkerCard
+                                                        worker={w}
+                                                        rooms={roomsWithUnassigned}
+                                                        onMove={handleMoveWorker}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {unassignedWorkers.length > 0 && (
+                        <div
+                            className="bg-white rounded-2xl p-4 border border-card-border/60 shadow-soft"
+                            onDragOver={onDragOver}
+                            onDragEnter={onDragEnter}
+                            onDrop={(e) => onDropToRoom(e, null)}
+                        >
+                            <div className="flex justify-between items-center mb-3">
+                                <h3 className="text-text-main font-bold text-base">Não Alocados</h3>
+                                <span className="px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-600">
+                                    {unassignedWorkers.length}
+                                </span>
+                            </div>
+                            <div className="space-y-2">
+                                {unassignedWorkers.map(w => (
+                                    <div key={w.id} draggable onDragStart={(e) => handleDragStart(e, w.id)} onDragEnd={() => setDraggedWorkerId(null)}>
+                                        <WorkerCard
+                                            worker={w}
+                                            roleLabel={w.isReplica && w.originRoomName ? `Extra ${w.originRoomName}` : undefined}
+                                            rooms={w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned}
+                                            onMove={handleMoveWorker}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </PageContainer>
     );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { ViewState, Worker, Room } from "./types";
+import { ViewState, Worker, Room, PasseAttendance } from "./types";
 import { BottomNav } from "./components/shared/BottomNav";
 import { LoginView } from "./views/LoginView";
 import { DashboardView } from "./views/DashboardView";
@@ -11,8 +11,17 @@ import { RoomFormView } from "./views/RoomFormView";
 import { LocationListView } from "./views/LocationListView";
 import { SettingsView } from "./views/SettingsView";
 import { AssistanceView } from "./views/AssistanceView";
+import { PasseRegistrationView } from "./views/PasseRegistrationView";
+import { PasseDistributionView } from "./views/PasseDistributionView";
 import { RoomType } from "./types";
-import { loadWorkers, loadRooms, saveWorkers, saveRooms } from "./utils/storage";
+import {
+  loadWorkers,
+  loadRooms,
+  saveWorkers,
+  saveRooms,
+  loadAttendances,
+  saveAttendances,
+} from "./utils/storage";
 import { LayoutProvider } from "./context/LayoutContext";
 
 export default function App() {
@@ -21,22 +30,62 @@ export default function App() {
     const viewParam = params.get('view') as ViewState;
     return viewParam || 'LOGIN';
   });
-  const [workers, setWorkers] = useState<Worker[]>(loadWorkers());
-  const [rooms, setRooms] = useState<Room[]>(loadRooms());
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [attendances, setAttendances] = useState<PasseAttendance[]>([]);
   const [previousView, setPreviousView] = useState<ViewState | null>(null);
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
   const [showWorkerForm, setShowWorkerForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [showRoomForm, setShowRoomForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Auto-save to localStorage whenever data changes
+  // Carregamento inicial assíncrono do Supabase
   useEffect(() => {
-    saveWorkers(workers);
-  }, [workers]);
+    async function loadInitialData() {
+      try {
+        const [loadedWorkers, loadedRooms, loadedAttendances] = await Promise.all([
+          loadWorkers(),
+          loadRooms(),
+          loadAttendances(),
+        ]);
+        setWorkers(loadedWorkers);
+        setRooms(loadedRooms);
+        setAttendances(loadedAttendances);
+      } catch (error) {
+        console.error('Erro ao carregar dados iniciais do Supabase:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadInitialData();
+  }, []);
+
+  // Auto-save to Supabase whenever data changes (skip initial empty state)
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  useEffect(() => {
+    if (!isLoading) {
+      setInitialLoadDone(true);
+    }
+  }, [isLoading]);
 
   useEffect(() => {
-    saveRooms(rooms);
-  }, [rooms]);
+    if (initialLoadDone) {
+      saveWorkers(workers);
+    }
+  }, [workers, initialLoadDone]);
+
+  useEffect(() => {
+    if (initialLoadDone) {
+      saveRooms(rooms);
+    }
+  }, [rooms, initialLoadDone]);
+
+  useEffect(() => {
+    if (initialLoadDone) {
+      saveAttendances(attendances);
+    }
+  }, [attendances, initialLoadDone]);
 
   const handleNavigate = (newView: ViewState) => {
     if (view !== 'LOGIN') {
@@ -163,6 +212,22 @@ export default function App() {
     setRooms(newRooms);
   };
 
+  // Loading screen
+  if (isLoading) {
+    return (
+      <LayoutProvider>
+        <div className="font-sans text-text-main selection:bg-primary/20 bg-gray-100 h-screen flex justify-center overflow-hidden">
+          <div className="w-full max-w-md bg-[#fdfbf7] h-full relative shadow-2xl overflow-hidden flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+              <p className="text-slate-500 font-medium text-sm">Carregando dados...</p>
+            </div>
+          </div>
+        </div>
+      </LayoutProvider>
+    );
+  }
+
   return (
     <LayoutProvider>
       <div className="font-sans text-text-main selection:bg-primary/20 bg-gray-100 h-screen flex justify-center overflow-hidden">
@@ -241,6 +306,24 @@ export default function App() {
 
             {view === 'ASSISTANCE' && (
               <AssistanceView workers={workers} />
+            )}
+
+            {view === 'PASSE_REGISTRATION' && (
+              <PasseRegistrationView
+                attendances={attendances}
+                onAddAttendance={(att) => setAttendances(prev => [...prev, att])}
+                onNavigate={handleNavigate}
+              />
+            )}
+
+            {view === 'PASSE_DISTRIBUTION' && (
+              <PasseDistributionView
+                attendances={attendances}
+                rooms={rooms}
+                workers={workers}
+                onUpdateAttendance={(updated) => setAttendances(prev => prev.map(a => a.id === updated.id ? updated : a))}
+                onNavigate={handleNavigate}
+              />
             )}
           </div>
 

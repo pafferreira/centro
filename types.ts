@@ -43,4 +43,33 @@ export type ViewState =
   | 'ROOMS'
   | 'LOCATIONS'
   | 'SETTINGS'
-  | 'ASSISTANCE';
+  | 'ASSISTANCE'
+  | 'PASSE_REGISTRATION'
+  | 'PASSE_DISTRIBUTION';
+
+export enum PasseType {
+  A1 = "A1",
+  A2 = "A2"
+}
+
+export enum AttendancePhase {
+  PrimeiraVez = "Primeira Vez",
+  Retorno = "Retorno",
+  Normal = "Normal"
+}
+
+export enum AttendanceStatus {
+  Aguardando = "Aguardando",
+  Atendido = "Atendido"
+}
+
+export interface PasseAttendance {
+  id: string;
+  date: string; // ISO format YYYY-MM-DD
+  assistidoName: string;
+  passeType: PasseType;
+  attendancePhase: AttendancePhase;
+  status: AttendanceStatus;
+  allocatedRoomId?: string | null;
+}
+
