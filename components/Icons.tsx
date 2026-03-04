@@ -251,3 +251,39 @@ export const PuzzleOverlapIcon = ({ className }: { className?: string }) => (
     <circle cx="12.6" cy="11.6" r="0.9" />
   </svg>
 );
+
+// A puzzle assembly icon: two intersecting jigsaw puzzle pieces sliding together
+// A custom jigsaw puzzle icon matching the user's reference: two connected and two separated pieces
+export const MontagemIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {/* TR and BR pieces (United) */}
+    <g transform="translate(1, 0)">
+      {/* Top-Right */}
+      <path d="M 12 2 H 22 V 12 H 19 A 2 2 0 0 1 15 12 H 12 V 9 A 2 2 0 0 0 12 5 V 2 Z" fill="currentColor" fillOpacity="0.05" />
+      {/* Bottom-Right */}
+      <path d="M 12 12 H 15 A 2 2 0 0 0 19 12 H 22 V 22 H 12 V 19 A 2 2 0 0 0 12 15 V 12 Z" fill="currentColor" fillOpacity="0.05" />
+    </g>
+
+    {/* TL piece (Detached - up and left) */}
+    <g transform="translate(-1, -1.5)">
+      <path d="M 2 2 H 12 V 5 A 2 2 0 0 1 12 9 V 12 H 9 A 2 2 0 0 0 5 12 H 2 Z" fill="currentColor" fillOpacity="0.05" />
+    </g>
+
+    {/* BL piece (Detached - down and left) */}
+    <g transform="translate(-1, 1.5)">
+      <path d="M 2 12 H 5 A 2 2 0 0 1 9 12 H 12 V 15 A 2 2 0 0 1 12 19 V 22 H 2 Z" fill="currentColor" fillOpacity="0.05" />
+    </g>
+  </svg>
+);
+
+export const ChevronUpIconInline = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+  </svg>
+);
+
+export const ChevronDownIconInline = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+  </svg>
+);

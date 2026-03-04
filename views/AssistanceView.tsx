@@ -32,9 +32,11 @@ import { Worker, WorkerRole } from '../types';
 
 interface AssistanceViewProps {
     workers: Worker[];
+    onBack?: () => void;
+    onHome?: () => void;
 }
 
-export const AssistanceView: React.FC<AssistanceViewProps> = ({ workers }) => {
+export const AssistanceView: React.FC<AssistanceViewProps> = ({ workers, onBack, onHome }) => {
     const [setupMode, setSetupMode] = useState<'INITIAL' | 'FOLLOWUP' | null>('INITIAL');
     const [formInput, setFormInput] = useState<SetupForm>({
         nome: '',
@@ -68,7 +70,7 @@ export const AssistanceView: React.FC<AssistanceViewProps> = ({ workers }) => {
     if (setupMode) {
         return (
             <PageContainer>
-                <Header title={setupMode === 'INITIAL' ? "Registro do Assistido" : "Entrevista de Acompanhamento"} hideBack />
+                <Header title={setupMode === 'INITIAL' ? "Registro do Assistido" : "Entrevista de Acompanhamento"} onBack={onBack} onHome={onHome} />
                 <form onSubmit={handleSetupSubmit} className="mt-4 flex flex-col gap-5 px-1 pb-10">
                     <p className="text-sm text-slate-600 mb-2">
                         {setupMode === 'INITIAL'
@@ -311,7 +313,7 @@ export const AssistanceView: React.FC<AssistanceViewProps> = ({ workers }) => {
 
     return (
         <PageContainer>
-            <Header title="Ficha de Assistência" hideBack />
+            <Header title="Ficha de Assistência" onBack={onBack} onHome={onHome} />
 
             <div className="mt-4 flex flex-col gap-4 sm:gap-5 px-1 pb-10">
                 {/* Assistido Info */}

@@ -8,6 +8,14 @@ export enum WorkerRole {
   Recepção = "Recepção"
 }
 
+export interface Assistido {
+  id: string;
+  nome: string;
+  telefone?: string;
+  dataNascimento?: string;
+  observacoes?: string;
+}
+
 export interface Worker {
   id: string;
   name: string;
@@ -21,6 +29,9 @@ export interface Worker {
 
 export enum RoomType {
   Passe = "Passe",
+  Palestra = "Palestra",
+  Aulinha = "Aulinha",
+  Recepcao = "Recepção",
   Outros = "Outros",
 }
 
@@ -49,7 +60,8 @@ export type ViewState =
 
 export enum PasseType {
   A1 = "A1",
-  A2 = "A2"
+  A2 = "A2",
+  Nenhum = "-"
 }
 
 export enum AttendancePhase {

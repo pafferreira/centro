@@ -10,10 +10,11 @@ interface WorkersListViewProps {
     onDelete: (workerId: string) => void;
     onAdd: () => void;
     onTogglePresence: (workerId: string, present: boolean) => void;
+    onBack?: () => void;
     onHome?: () => void;
 }
 
-export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdit, onDelete, onAdd, onTogglePresence, onHome }) => {
+export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdit, onDelete, onAdd, onTogglePresence, onBack, onHome }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [presenceFilter, setPresenceFilter] = useState<"all" | "present" | "absent">("all");
     const [showPresenceOptions, setShowPresenceOptions] = useState(false);
@@ -73,7 +74,7 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
 
     return (
         <PageContainer>
-            <Header title="Trabalhadores" onHome={onHome} hideBack />
+            <Header title="Trabalhadores" onBack={onBack} onHome={onHome} />
             <div className="mt-2 flex items-center justify-between text-sm text-slate-600 px-1">
                 <span>Total: <strong className="text-slate-800">{workers.length}</strong></span>
                 <span>Filtrados: <strong className="text-slate-800">{filteredAndSortedWorkers.length}</strong></span>
@@ -128,9 +129,8 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
                                         setPresenceFilter(opt.value as "all" | "present" | "absent");
                                         setShowPresenceOptions(false);
                                     }}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 ${
-                                        presenceFilter === opt.value ? "font-semibold text-blue-600" : "text-slate-700"
-                                    }`}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 ${presenceFilter === opt.value ? "font-semibold text-blue-600" : "text-slate-700"
+                                        }`}
                                 >
                                     {opt.label}
                                 </button>

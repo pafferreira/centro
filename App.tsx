@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { ViewState, Worker, Room, PasseAttendance } from "./types";
+import { ViewState, Worker, Room, PasseAttendance, Assistido } from "./types";
 import { BottomNav } from "./components/shared/BottomNav";
 import { LoginView } from "./views/LoginView";
 import { DashboardView } from "./views/DashboardView";
@@ -10,7 +10,8 @@ import { RoomsListView } from "./views/RoomsListView";
 import { RoomFormView } from "./views/RoomFormView";
 import { LocationListView } from "./views/LocationListView";
 import { SettingsView } from "./views/SettingsView";
-import { AssistanceView } from "./views/AssistanceView";
+import { AssistidosListView } from "./views/AssistidosListView";
+import { AssistidoFormView } from "./views/AssistidoFormView";
 import { PasseRegistrationView } from "./views/PasseRegistrationView";
 import { PasseDistributionView } from "./views/PasseDistributionView";
 import { RoomType } from "./types";
@@ -19,6 +20,9 @@ import {
   loadRooms,
   saveWorkers,
   saveRooms,
+  loadAssistidos,
+  saveAssistido,
+  deleteAssistido,
   loadAttendances,
   saveAttendances,
 } from "./utils/storage";
@@ -38,19 +42,24 @@ export default function App() {
   const [showWorkerForm, setShowWorkerForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [showRoomForm, setShowRoomForm] = useState(false);
+  const [assistidos, setAssistidos] = useState<Assistido[]>([]);
+  const [editingAssistido, setEditingAssistido] = useState<Assistido | null>(null);
+  const [showAssistidoForm, setShowAssistidoForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Carregamento inicial assíncrono do Supabase
   useEffect(() => {
     async function loadInitialData() {
       try {
-        const [loadedWorkers, loadedRooms, loadedAttendances] = await Promise.all([
+        const [loadedWorkers, loadedRooms, loadedAssistidos, loadedAttendances] = await Promise.all([
           loadWorkers(),
           loadRooms(),
+          loadAssistidos(),
           loadAttendances(),
         ]);
         setWorkers(loadedWorkers);
         setRooms(loadedRooms);
+        setAssistidos(loadedAssistidos);
         setAttendances(loadedAttendances);
       } catch (error) {
         console.error('Erro ao carregar dados iniciais do Supabase:', error);
@@ -109,6 +118,8 @@ export default function App() {
     setEditingWorker(null);
     setShowRoomForm(false);
     setEditingRoom(null);
+    setShowAssistidoForm(false);
+    setEditingAssistido(null);
   }
 
   // Native/back button support (Android / browser back)
@@ -116,9 +127,10 @@ export default function App() {
     event.preventDefault();
 
     // If forms are open, close them first
-    if (showWorkerForm || showRoomForm) {
+    if (showWorkerForm || showRoomForm || showAssistidoForm) {
       handleCancelWorkerForm();
       handleCancelRoomForm();
+      if (showAssistidoForm) handleCancelAssistidoForm();
       return;
     }
 
@@ -132,7 +144,31 @@ export default function App() {
 
     // Fallback to dashboard
     setView('DASHBOARD');
-  }, [previousView, showWorkerForm, showRoomForm, view]);
+  }, [previousView, showWorkerForm, showRoomForm, showAssistidoForm, view]);
+
+  // Global ESC key to go back
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // If focusing an input/textarea, do not intercept if we want to allow native behavior, 
+        // but typically escaping out of it is fine.
+        if (view === 'LOGIN') return;
+
+        if (showWorkerForm || showRoomForm || showAssistidoForm) {
+          handleCancelWorkerForm();
+          handleCancelRoomForm();
+          if (showAssistidoForm) handleCancelAssistidoForm();
+          return;
+        }
+
+        if (previousView || view !== 'DASHBOARD') {
+          handleBack();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [view, previousView, showWorkerForm, showRoomForm, showAssistidoForm]);
 
   useEffect(() => {
     // push a new history entry when navigating to an internal view (not login)
@@ -206,6 +242,33 @@ export default function App() {
     setEditingRoom(null);
   };
 
+  // Assistido handlers
+  const handleAddAssistido = () => {
+    setEditingAssistido(null);
+    setShowAssistidoForm(true);
+  };
+
+  const handleEditAssistido = (assistido: Assistido) => {
+    setEditingAssistido(assistido);
+    setShowAssistidoForm(true);
+  };
+
+  const handleSaveAssistidoForm = async (assistido: Assistido) => {
+    if (editingAssistido) {
+      setAssistidos(prev => prev.map(a => a.id === assistido.id ? assistido : a));
+    } else {
+      setAssistidos(prev => [...prev, assistido]);
+    }
+    await saveAssistido(assistido);
+    setShowAssistidoForm(false);
+    setEditingAssistido(null);
+  };
+
+  const handleCancelAssistidoForm = () => {
+    setShowAssistidoForm(false);
+    setEditingAssistido(null);
+  };
+
   // Settings handler
   const handleDataImported = (newWorkers: Worker[], newRooms: Room[]) => {
     setWorkers(newWorkers);
@@ -256,6 +319,7 @@ export default function App() {
                 onTogglePresence={(workerId, present) => {
                   setWorkers(prev => prev.map(w => w.id === workerId ? { ...w, present, assignedRoomId: present ? w.assignedRoomId ?? null : null } : w));
                 }}
+                onBack={handleBack}
                 onHome={() => handleNavigate('DASHBOARD')}
               />
             )}
@@ -275,6 +339,7 @@ export default function App() {
                 onEdit={handleEditRoom}
                 onDelete={handleDeleteRoom}
                 onAdd={handleAddRoom}
+                onBack={handleBack}
                 onHome={() => handleNavigate('DASHBOARD')}
               />
             )}
@@ -301,17 +366,34 @@ export default function App() {
             )}
 
             {view === 'SETTINGS' && (
-              <SettingsView onDataImported={handleDataImported} onHome={() => handleNavigate('DASHBOARD')} />
+              <SettingsView onDataImported={handleDataImported} onBack={handleBack} onHome={() => handleNavigate('DASHBOARD')} />
             )}
 
-            {view === 'ASSISTANCE' && (
-              <AssistanceView workers={workers} />
+            {view === 'ASSISTANCE' && !showAssistidoForm && (
+              <AssistidosListView
+                assistidos={assistidos}
+                onAdd={handleAddAssistido}
+                onEdit={handleEditAssistido}
+                onBack={handleBack}
+                onHome={() => handleNavigate('DASHBOARD')}
+              />
+            )}
+
+            {view === 'ASSISTANCE' && showAssistidoForm && (
+              <AssistidoFormView
+                assistido={editingAssistido}
+                history={editingAssistido ? attendances.filter(a => a.assistidoName === editingAssistido.nome) : []}
+                onSave={handleSaveAssistidoForm}
+                onCancel={handleCancelAssistidoForm}
+                onHome={() => handleNavigate('DASHBOARD')}
+              />
             )}
 
             {view === 'PASSE_REGISTRATION' && (
               <PasseRegistrationView
                 attendances={attendances}
                 onAddAttendance={(att) => setAttendances(prev => [...prev, att])}
+                onBack={handleBack}
                 onNavigate={handleNavigate}
               />
             )}
@@ -322,13 +404,14 @@ export default function App() {
                 rooms={rooms}
                 workers={workers}
                 onUpdateAttendance={(updated) => setAttendances(prev => prev.map(a => a.id === updated.id ? updated : a))}
+                onBack={handleBack}
                 onNavigate={handleNavigate}
               />
             )}
           </div>
 
           {/* Show Bottom Nav only on main internal screens */}
-          {view !== 'LOGIN' && !showWorkerForm && !showRoomForm && (
+          {view !== 'LOGIN' && !showWorkerForm && !showRoomForm && !showAssistidoForm && (
             <BottomNav active={view} onChange={handleNavigate} />
           )}
         </div>

@@ -1,4 +1,4 @@
-import { Worker, Room, PasseAttendance, RoomType, WorkerRole } from "../types";
+import { Worker, Room, PasseAttendance, RoomType, WorkerRole, Assistido } from "../types";
 import { supabase } from "../services/supabaseClient";
 
 // ============================================================================
@@ -135,6 +135,64 @@ export async function deleteRoom(roomId: string): Promise<void> {
         if (error) throw error;
     } catch (error) {
         console.error('Erro ao deletar sala no Supabase:', error);
+    }
+}
+
+// ============================================================================
+// FUNÇÕES CRUD – ASSISTIDOS (gfa_assistidos)
+// ============================================================================
+
+export async function loadAssistidos(): Promise<Assistido[]> {
+    try {
+        const { data, error } = await supabase
+            .from('gfa_assistidos')
+            .select('*')
+            .order('nome_assistido', { ascending: true });
+
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            nome: row.nome_assistido,
+            telefone: row.telefone ?? undefined,
+            dataNascimento: row.data_nascimento ?? undefined,
+            observacoes: row.observacoes ?? undefined,
+        }));
+    } catch (error) {
+        console.error('Erro ao carregar assistidos do Supabase:', error);
+        return [];
+    }
+}
+
+export async function saveAssistido(assistido: Assistido): Promise<void> {
+    try {
+        const row = {
+            id: assistido.id,
+            nome_assistido: assistido.nome,
+            telefone: assistido.telefone ?? null,
+            data_nascimento: assistido.dataNascimento ?? null,
+            observacoes: assistido.observacoes ?? null,
+        };
+
+        const { error } = await supabase
+            .from('gfa_assistidos')
+            .upsert(row, { onConflict: 'id' });
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao salvar assistido no Supabase:', error);
+    }
+}
+
+export async function deleteAssistido(assistidoId: string): Promise<void> {
+    try {
+        const { error } = await supabase
+            .from('gfa_assistidos')
+            .delete()
+            .eq('id', assistidoId);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao deletar assistido no Supabase:', error);
     }
 }
 

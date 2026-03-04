@@ -9,10 +9,11 @@ interface PasseDistributionViewProps {
     rooms: Room[];
     workers: Worker[];
     onUpdateAttendance: (att: PasseAttendance) => void;
+    onBack?: () => void;
     onNavigate: (v: ViewState) => void;
 }
 
-export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({ attendances, rooms, workers, onUpdateAttendance, onNavigate }) => {
+export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({ attendances, rooms, workers, onUpdateAttendance, onBack, onNavigate }) => {
     const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
 
     // Derived state for the distribution
@@ -30,7 +31,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({ at
 
     return (
         <PageContainer>
-            <Header title="Painel de Distribuição" onHome={() => onNavigate('DASHBOARD')} />
+            <Header title="Painel de Distribuição" onBack={onBack} onHome={() => onNavigate('DASHBOARD')} />
 
             <div className="mt-6 flex flex-col gap-6 px-1 pb-10">
                 <div className="flex flex-col gap-1.5 px-1">
@@ -71,8 +72,8 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({ at
                                                 <button
                                                     onClick={() => handleToggleStatus(att)}
                                                     className={`w-10 h-10 rounded-full flex justify-center items-center border transition-all ${att.status === 'Aguardando'
-                                                            ? 'border-slate-300 bg-white hover:bg-slate-50 text-slate-300'
-                                                            : 'border-green-500 bg-green-500 text-white'
+                                                        ? 'border-slate-300 bg-white hover:bg-slate-50 text-slate-300'
+                                                        : 'border-green-500 bg-green-500 text-white'
                                                         }`}
                                                 >
                                                     {att.status === 'Atendido' ? (

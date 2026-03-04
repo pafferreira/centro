@@ -18,6 +18,7 @@ interface RoomFormViewProps {
 
 export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCancel, defaultType, onHome }) => {
     const [name, setName] = useState(room?.name || "");
+    const [roomType, setRoomType] = useState<RoomType>(room?.type || defaultType || RoomType.Passe);
     const [capacity, setCapacity] = useState(room?.capacity?.toString() || "4");
     const [description, setDescription] = useState(room?.description || "");
     const [selectedAvatar, setSelectedAvatar] = useState(room?.avatarUrl || "");
@@ -36,6 +37,7 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
     useEffect(() => {
         if (room) {
             setName(room.name);
+            setRoomType(room.type);
             setCapacity(room.capacity.toString());
             setDescription(room.description || "");
             setSelectedAvatar(room.avatarUrl || "");
@@ -67,8 +69,7 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
         const newRoom: Room = {
             id: room?.id || `room-${Date.now()}`,
             name: name.trim(),
-            // preserve existing type when editing, otherwise use provided defaultType or fallback to Passe
-            type: room?.type || defaultType || RoomType.Passe,
+            type: roomType,
             capacity: parseInt(capacity) || 4,
             description: description.trim(),
             avatarUrl: selectedAvatar || undefined,
@@ -93,7 +94,7 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
         <PageContainer>
             <Header title={room ? "Editar Sala" : "Nova Sala"} onHome={onHome} />
 
-            <div className="space-y-4 mt-6">
+            <div className="space-y-4 mt-3">
                 {/* Nome com Avatar ao lado */}
                 <div>
                     <label className="block text-sm font-semibold text-text-main mb-2 ml-1">Nome e Ícone</label>
@@ -133,6 +134,26 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
                             className="flex-1 h-12 px-4 bg-green-50/80 border-none rounded-xl text-text-main placeholder:text-slate-400 focus:ring-2 focus:ring-green-300 outline-none"
                             placeholder="Nome da sala"
                         />
+                    </div>
+                </div>
+
+                {/* Tipo de Sala */}
+                <div>
+                    <label className="block text-sm font-semibold text-text-main mb-2 ml-1">Tipo de Sala</label>
+                    <div className="flex flex-wrap gap-2">
+                        {Object.values(RoomType).map((t) => (
+                            <button
+                                key={t}
+                                type="button"
+                                onClick={() => setRoomType(t)}
+                                className={`px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer ${roomType === t
+                                        ? 'bg-green-100 border-green-500 text-green-800 shadow-sm'
+                                        : 'bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:bg-green-50/50'
+                                    }`}
+                            >
+                                {t}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -186,8 +207,8 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
                                 type="button"
                                 onClick={() => handleAvatarSelect(avatarUrl)}
                                 className={`w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 border-3 transition-all bg-green-50 ${selectedAvatar === avatarUrl
-                                        ? 'border-green-500 ring-2 ring-green-300 scale-110'
-                                        : 'border-green-100 hover:border-green-300'
+                                    ? 'border-green-500 ring-2 ring-green-300 scale-110'
+                                    : 'border-green-100 hover:border-green-300'
                                     }`}
                             >
                                 <img

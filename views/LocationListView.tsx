@@ -42,7 +42,7 @@ export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, room
 
     return (
         <PageContainer>
-            <Header title="Locais de Trabalho" onBack={onBack} onHome={onHome} hideBack />
+            <Header title="Cadastro Salas" onBack={onBack} onHome={onHome} />
 
             <div className="mt-6 space-y-4">
                 {sorted.map((loc) => (
@@ -51,7 +51,7 @@ export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, room
                         onClick={() => onEdit(loc)}
                         className="bg-white p-4 rounded-2xl shadow-soft border border-card-border/60 flex items-center gap-4 relative overflow-hidden cursor-pointer hover:border-blue-200 transition"
                     >
-                        <div className={`w-16 h-16 rounded-2xl ${loc.type === RoomType.Passe ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'} overflow-hidden flex items-center justify-center text-3xl shadow-sm border`}> 
+                        <div className={`w-16 h-16 rounded-2xl ${loc.type === RoomType.Passe ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'} overflow-hidden flex items-center justify-center text-3xl shadow-sm border`}>
                             {loc.avatarUrl ? (
                                 <img src={loc.avatarUrl} alt={loc.name} className="w-full h-full object-cover" />
                             ) : (
