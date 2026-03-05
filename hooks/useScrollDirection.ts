@@ -6,6 +6,11 @@ export const useScrollDirection = (ref: RefObject<HTMLElement>) => {
     const [lastScrollTop, setLastScrollTop] = useState(0);
 
     useEffect(() => {
+        // Always restore the header when a new page/container mounts
+        setBarsVisible(true);
+    }, [setBarsVisible]);
+
+    useEffect(() => {
         const element = ref.current;
         if (!element) return;
 
