@@ -86,11 +86,11 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
         if (skills.dialogue) roles.push(WorkerRole.Dialogo);
         if (skills.psychography) roles.push(WorkerRole.Psicografa);
         if (skills.support) roles.push(WorkerRole.Sustentacao);
-    if (skills.interview) roles.push(WorkerRole.Entrevista);
-    if (skills.reception) roles.push(WorkerRole.Recepção);
+        if (skills.interview) roles.push(WorkerRole.Entrevista);
+        if (skills.reception) roles.push(WorkerRole.Recepção);
 
         const newWorker: Worker = {
-            id: worker?.id || `worker-${Date.now()}`,
+            id: worker?.id || crypto.randomUUID(),
             name: name.trim(),
             contact: contact.trim(),
             roles,
@@ -140,8 +140,8 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
                                 type="button"
                                 onClick={() => handleAvatarSelect(avatarUrl)}
                                 className={`w-14 h-14 rounded-full overflow-hidden flex-shrink-0 border-3 transition-all ${selectedAvatar === avatarUrl
-                                        ? 'border-blue-500 ring-2 ring-blue-300 scale-110'
-                                        : 'border-blue-100 hover:border-blue-300'
+                                    ? 'border-blue-500 ring-2 ring-blue-300 scale-110'
+                                    : 'border-blue-100 hover:border-blue-300'
                                     }`}
                             >
                                 <img

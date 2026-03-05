@@ -23,7 +23,7 @@ export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido,
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
         onSave({
-            id: assistido?.id || `assistido-${Date.now()}`,
+            id: assistido?.id || crypto.randomUUID(),
             nome: nome.trim(),
             telefone: telefone.trim() || undefined,
             dataNascimento: dataNascimento || undefined,

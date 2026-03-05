@@ -39,14 +39,14 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
         let ast = assistidos.find(a => a.nome.toLowerCase() === typedName.toLowerCase());
         if (!ast) {
             ast = {
-                id: `assistido-${Date.now()}`,
+                id: crypto.randomUUID(),
                 nome: typedName,
             };
             onAddAssistido(ast);
         }
 
         const newAttendance: PasseAttendance = {
-            id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            id: crypto.randomUUID(),
             date,
             assistidoName: ast.nome,
             assistidoId: ast.id,

@@ -67,7 +67,7 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
 
     const handleSave = () => {
         const newRoom: Room = {
-            id: room?.id || `room-${Date.now()}`,
+            id: room?.id || crypto.randomUUID(),
             name: name.trim(),
             type: roomType,
             capacity: parseInt(capacity) || 4,
@@ -147,8 +147,8 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
                                 type="button"
                                 onClick={() => setRoomType(t)}
                                 className={`px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer ${roomType === t
-                                        ? 'bg-green-100 border-green-500 text-green-800 shadow-sm'
-                                        : 'bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:bg-green-50/50'
+                                    ? 'bg-green-100 border-green-500 text-green-800 shadow-sm'
+                                    : 'bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:bg-green-50/50'
                                     }`}
                             >
                                 {t}
