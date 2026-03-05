@@ -82,7 +82,7 @@ export const RoomsListView: React.FC<RoomsListViewProps> = ({ rooms, onEdit, onD
             </div>
 
             {/* FAB button */}
-            <div className="absolute bottom-24 right-6 z-40">
+            <div className="fixed bottom-24 right-6 z-40">
                 <Tooltip text="Nova Sala" position="left">
                     <button
                         onClick={onAdd}

@@ -46,9 +46,9 @@ CREATE POLICY "Permitir exclusão pública" ON public.gfa_atendimentos_passe FOR
 INSERT INTO public.gfa_salas (id, nome_sala, tipo_sala, capacidade, descricao, url_avatar, icone_avatar) VALUES
   ('a0000001-0000-0000-0000-000000000001', 'Sala Passe 01', 'Passe', 5, 'Terreo', NULL, 'DoorIcon'),
   ('a0000001-0000-0000-0000-000000000002', 'Sala Passe 02', 'Passe', 5, '', NULL, 'DoorIcon'),
-  ('a0000001-0000-0000-0000-000000000003', 'Recepção', 'Outros', 5, NULL, NULL, NULL),
-  ('a0000001-0000-0000-0000-000000000004', 'Palestra', 'Outros', 1, '', NULL, NULL),
-  ('a0000001-0000-0000-0000-000000000005', 'Aulinha', 'Outros', 1, 'Atendimento para iniciantes', NULL, 'BookIcon'),
+  ('a0000001-0000-0000-0000-000000000003', 'Recepção', 'Entrevista', 5, NULL, NULL, NULL),
+  ('a0000001-0000-0000-0000-000000000004', 'Palestra', 'Entrevista', 1, '', NULL, NULL),
+  ('a0000001-0000-0000-0000-000000000005', 'Aulinha', 'Entrevista', 1, 'Atendimento para iniciantes', NULL, 'BookIcon'),
   ('a0000001-0000-0000-0000-000000000006', 'Sala Passe 09', 'Passe', 5, '', NULL, 'DoorIcon'),
   ('a0000001-0000-0000-0000-000000000007', 'Sala Passe 10', 'Passe', 5, '', NULL, 'DoorIcon');
 

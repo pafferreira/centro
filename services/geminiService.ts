@@ -56,7 +56,7 @@ export const autoAssignWorkers = async (workers: Worker[], rooms: Room[]) => {
     2. Distribute workers with the 'Médium' role evenly across 'Sala de Passe' rooms.
     3. Fill the remaining spots with 'Sustentação' or other roles.
     4. Ensure no room exceeds its capacity.
-    5. 'Outros' type rooms (like Reception) must be staffed only by workers who have the 'Recepção' skill.
+    5. 'Entrevista' type rooms (like Reception) must be staffed only by workers who have the 'Recepção' skill.
     6. Return a complete list of assignments. If a worker cannot be assigned, do not include them in the list (they will remain unassigned).
 
     Input Data:

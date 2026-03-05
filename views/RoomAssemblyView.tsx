@@ -313,7 +313,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                     </div>
 
                     <div className="space-y-3">
-                        <h3 className="text-lg font-medium text-slate-500 px-1">Outros Locais</h3>
+                        <h3 className="text-lg font-medium text-slate-500 px-1">Entrevista</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {otherRooms.map(room => {
                                 const occupants = getRoomOccupants(room.id);

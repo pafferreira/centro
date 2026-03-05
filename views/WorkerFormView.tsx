@@ -161,7 +161,7 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
                         value={contact}
                         onChange={(e) => setContact(e.target.value)}
                         className="w-full h-12 px-4 bg-blue-50/80 border-none rounded-xl text-text-main placeholder:text-slate-400 focus:ring-2 focus:ring-blue-300 outline-none"
-                        placeholder="Telefone ou email"
+                        placeholder="Telefone e/ou email"
                     />
                 </div>
 
@@ -180,7 +180,7 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
                 {/* Habilidades */}
                 <div>
                     <label className="block text-sm font-semibold text-text-main mb-2 ml-1">Habilidades</label>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
                         <label className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/50 transition-colors cursor-pointer">
                             <input
                                 type="checkbox"

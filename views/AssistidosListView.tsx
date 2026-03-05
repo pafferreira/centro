@@ -80,7 +80,7 @@ export const AssistidosListView: React.FC<AssistidosListViewProps> = ({ assistid
             </div>
 
             {/* Fab button */}
-            <div className="absolute bottom-24 right-6 z-40">
+            <div className="fixed bottom-24 right-6 z-40">
                 <Tooltip text="Novo Assistido" position="left">
                     <button
                         onClick={onAdd}

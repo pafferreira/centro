@@ -1,9 +1,10 @@
-import { useState, useEffect, RefObject } from 'react';
+import { useEffect, useRef, RefObject } from 'react';
 import { useLayout } from '../context/LayoutContext';
 
 export const useScrollDirection = (ref: RefObject<HTMLElement>) => {
     const { setBarsVisible } = useLayout();
-    const [lastScrollTop, setLastScrollTop] = useState(0);
+    const lastScrollTop = useRef(0);
+    const accumulatedScrollDown = useRef(0);
 
     useEffect(() => {
         // Always restore the header when a new page/container mounts
@@ -14,23 +15,31 @@ export const useScrollDirection = (ref: RefObject<HTMLElement>) => {
         const element = ref.current;
         if (!element) return;
 
+        lastScrollTop.current = element.scrollTop;
+
         const handleScroll = () => {
             const scrollTop = element.scrollTop;
+            const delta = scrollTop - lastScrollTop.current;
 
-            // Threshold to avoid jitter
-            if (Math.abs(scrollTop - lastScrollTop) < 10) return;
-
-            if (scrollTop > lastScrollTop && scrollTop > 50) {
-                // Scrolling Down
-                setBarsVisible(false);
-            } else {
-                // Scrolling Up
-                setBarsVisible(true);
+            if (delta > 0) {
+                // Scrolling down
+                accumulatedScrollDown.current += delta;
+                if (accumulatedScrollDown.current > 40 && scrollTop > 50) {
+                    setBarsVisible(false);
+                    accumulatedScrollDown.current = 0;
+                }
+            } else if (delta < 0) {
+                // Scrolling up
+                accumulatedScrollDown.current = 0; // Reset
+                if (delta < -3) { // minimum movement
+                    setBarsVisible(true);
+                }
             }
-            setLastScrollTop(scrollTop);
+
+            lastScrollTop.current = scrollTop;
         };
 
         element.addEventListener('scroll', handleScroll);
         return () => element.removeEventListener('scroll', handleScroll);
-    }, [ref, lastScrollTop, setBarsVisible]);
+    }, [ref, setBarsVisible]);
 };

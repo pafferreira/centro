@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Worker } from "../types";
 import { Header } from "../components/shared/Header";
 import { PageContainer } from "../components/shared/PageContainer";
-import { PlusIcon, TrashIcon, SearchIcon } from "../components/Icons";
+import { PlusIcon, TrashIcon, SearchIcon, StarIcon } from "../components/Icons";
 import { Tooltip } from "../components/shared/Tooltip";
 
 interface WorkersListViewProps {
@@ -169,24 +169,27 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
 
                             {/* Info */}
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-slate-800 text-base truncate">{worker.name}</h4>
+                                <div className="flex items-center gap-2">
+                                    <h4 className="font-bold text-slate-800 text-base truncate">{worker.name}</h4>
+                                    {worker.isCoordinator && (
+                                        <Tooltip text="Coordenador" position="top">
+                                            <StarIcon className="w-5 h-5 text-amber-500 fill-amber-500 drop-shadow-sm cursor-help" />
+                                        </Tooltip>
+                                    )}
+                                </div>
                                 {worker.contact && (
                                     <p className="text-xs text-slate-500 truncate">{worker.contact}</p>
                                 )}
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                    {worker.roles.slice(0, 2).map((role, idx) => (
+                                    {worker.roles.map((role, idx) => (
                                         <span
                                             key={idx}
-                                            className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${getRoleBadgeColor(role)}`}
+                                            title={role}
+                                            className={`px-2 py-0.5 rounded-md text-[10px] font-semibold truncate max-w-full ${getRoleBadgeColor(role)}`}
                                         >
                                             {role}
                                         </span>
                                     ))}
-                                    {worker.roles.length > 2 && (
-                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gray-100 text-gray-600">
-                                            +{worker.roles.length - 2}
-                                        </span>
-                                    )}
                                 </div>
                             </div>
 
@@ -225,7 +228,7 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
             </div>
 
             {/* FAB button */}
-            <div className="absolute bottom-24 right-6 z-40">
+            <div className="fixed bottom-24 right-6 z-40">
                 <Tooltip text="Novo Trabalhador" position="left">
                     <button
                         onClick={onAdd}

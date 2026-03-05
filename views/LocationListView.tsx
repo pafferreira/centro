@@ -3,6 +3,7 @@ import { Header } from "../components/shared/Header";
 import { UsersIcon, BookIcon, MicrophoneIcon, PlusIcon, DoorIcon, MapPinIcon, TrashIcon } from "../components/Icons";
 import { PageContainer } from "../components/shared/PageContainer";
 import { Room, RoomType } from "../types";
+import { Tooltip } from "../components/shared/Tooltip";
 
 interface LocationListViewProps {
     onBack?: () => void;
@@ -66,21 +67,23 @@ export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, room
 
                         {/* Keep actions available for CRUD but keep them small */}
                         <div className="flex gap-1 z-10">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setLocationToDelete(loc);
-                                }}
-                                className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                            >
-                                <TrashIcon className="w-6 h-6" />
-                            </button>
+                            <Tooltip text="Excluir sala" position="top">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setLocationToDelete(loc);
+                                    }}
+                                    className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                >
+                                    <TrashIcon className="w-6 h-6" />
+                                </button>
+                            </Tooltip>
                         </div>
                     </div>
                 ))}
             </div>
 
-            <button onClick={onAdd} className="absolute bottom-24 right-6 w-16 h-16 bg-white rounded-full shadow-2xl flex items-center justify-center text-[#d4a45a] border border-[#f0e6d2] hover:scale-105 transition-transform z-40">
+            <button onClick={onAdd} className="fixed bottom-24 right-6 w-16 h-16 bg-white rounded-full shadow-2xl flex items-center justify-center text-[#d4a45a] border border-[#f0e6d2] hover:scale-105 transition-transform z-40">
                 <PlusIcon className="w-8 h-8 stroke-[3]" />
             </button>
 

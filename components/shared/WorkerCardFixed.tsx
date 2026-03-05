@@ -83,7 +83,7 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms
               ? roleStylesMap[r as WorkerRole]
               : "bg-gray-100 text-gray-700";
             return (
-              <div key={idx} className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold ${classes}`}>
+              <div key={idx} title={r} className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold truncate max-w-full ${classes}`}>
                 {r}
               </div>
             );

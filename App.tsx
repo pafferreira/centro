@@ -390,7 +390,7 @@ export default function App() {
                 room={editingRoom}
                 onSave={handleSaveRoom}
                 onCancel={handleCancelRoomForm}
-                defaultType={view === 'LOCATIONS' ? RoomType.Outros : undefined}
+                defaultType={view === 'LOCATIONS' ? RoomType.Entrevista : undefined}
                 onHome={() => handleNavigate('DASHBOARD')}
               />
             )}

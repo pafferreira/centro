@@ -32,7 +32,7 @@ export enum RoomType {
   Palestra = "Palestra",
   Aulinha = "Aulinha",
   Recepcao = "Recepção",
-  Outros = "Outros",
+  Entrevista = "Entrevista",
 }
 
 export interface Room {

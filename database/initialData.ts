@@ -35,9 +35,9 @@ export const initialWorkers: Worker[] = [
 export const initialRooms: Room[] = [
     { id: 'room1', name: 'Sala Passe 01', type: RoomType.Passe, capacity: 5, description: 'Terreo', avatarIcon: 'DoorIcon' },
     { id: 'room2', name: 'Sala Passe 02', type: RoomType.Passe, capacity: 5, description: '', avatarIcon: 'DoorIcon' },
-    { id: 'loc1', name: 'Recepção', type: RoomType.Outros, capacity: 5 },
-    { id: 'loc2', name: 'Palestra', type: RoomType.Outros, capacity: 1, description: '' },
-    { id: 'roomA', name: 'Aulinha', type: RoomType.Outros, capacity: 1, description: 'Atendimento para iniciantes', avatarIcon: 'BookIcon' },
+    { id: 'loc1', name: 'Recepção', type: RoomType.Entrevista, capacity: 5 },
+    { id: 'loc2', name: 'Palestra', type: RoomType.Entrevista, capacity: 1, description: '' },
+    { id: 'roomA', name: 'Aulinha', type: RoomType.Entrevista, capacity: 1, description: 'Atendimento para iniciantes', avatarIcon: 'BookIcon' },
     { id: 'room9', name: 'Sala Passe 09', type: RoomType.Passe, capacity: 5, description: '', avatarIcon: 'DoorIcon' },
     { id: 'room10', name: 'Sala Passe 10', type: RoomType.Passe, capacity: 5, description: '', avatarIcon: 'DoorIcon' },
 ];
