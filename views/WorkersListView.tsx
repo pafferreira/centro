@@ -3,6 +3,7 @@ import { Worker } from "../types";
 import { Header } from "../components/shared/Header";
 import { PageContainer } from "../components/shared/PageContainer";
 import { PlusIcon, TrashIcon, SearchIcon } from "../components/Icons";
+import { Tooltip } from "../components/shared/Tooltip";
 
 interface WorkersListViewProps {
     workers: Worker[];
@@ -205,15 +206,17 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
                                     />
                                 </label>
                                 <div className="flex gap-1">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setWorkerToDelete(worker);
-                                        }}
-                                        className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                                    >
-                                        <TrashIcon className="w-6 h-6" />
-                                    </button>
+                                    <Tooltip text="Excluir trabalhador" position="left">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setWorkerToDelete(worker);
+                                            }}
+                                            className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                                        >
+                                            <TrashIcon className="w-6 h-6" />
+                                        </button>
+                                    </Tooltip>
                                 </div>
                             </div>
                         </div>
@@ -222,12 +225,14 @@ export const WorkersListView: React.FC<WorkersListViewProps> = ({ workers, onEdi
             </div>
 
             {/* Add Button */}
-            <button
-                onClick={onAdd}
-                className="absolute bottom-24 right-6 w-16 h-16 bg-blue-500 rounded-full shadow-2xl flex items-center justify-center text-white hover:bg-blue-600 transition-all hover:scale-105 z-40"
-            >
-                <PlusIcon className="w-8 h-8 stroke-[3]" />
-            </button>
+            <Tooltip text="Novo Trabalhador" position="left">
+                <button
+                    onClick={onAdd}
+                    className="absolute bottom-24 right-6 w-16 h-16 bg-blue-500 rounded-full shadow-2xl flex items-center justify-center text-white hover:bg-blue-600 transition-all hover:scale-105 z-40"
+                >
+                    <PlusIcon className="w-8 h-8 stroke-[3]" />
+                </button>
+            </Tooltip>
 
             {workerToDelete && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-6">

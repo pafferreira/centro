@@ -4,6 +4,7 @@ import { Header } from "../components/shared/Header";
 import { PageContainer } from "../components/shared/PageContainer";
 import { PlusIcon, EditIcon, TrashIcon, DoorIcon } from "../components/Icons";
 import { RoomType } from "../types";
+import { Tooltip } from "../components/shared/Tooltip";
 
 interface RoomsListViewProps {
     rooms: Room[];
@@ -61,30 +62,36 @@ export const RoomsListView: React.FC<RoomsListViewProps> = ({ rooms, onEdit, onD
 
                         {/* Actions */}
                         <div className="flex gap-1">
-                            <button
-                                onClick={() => onEdit(room)}
-                                className="p-2 text-slate-400 hover:text-blue-500 transition-colors"
-                            >
-                                <EditIcon className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={() => onDelete(room.id)}
-                                className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                            >
-                                <TrashIcon className="w-5 h-5" />
-                            </button>
+                            <Tooltip text="Editar sala" position="top">
+                                <button
+                                    onClick={() => onEdit(room)}
+                                    className="p-2 text-slate-400 hover:text-blue-500 transition-colors"
+                                >
+                                    <EditIcon className="w-5 h-5" />
+                                </button>
+                            </Tooltip>
+                            <Tooltip text="Excluir sala" position="top">
+                                <button
+                                    onClick={() => onDelete(room.id)}
+                                    className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                                >
+                                    <TrashIcon className="w-5 h-5" />
+                                </button>
+                            </Tooltip>
                         </div>
                     </div>
                 ))}
             </div>
 
             {/* Add Button */}
-            <button
-                onClick={onAdd}
-                className="absolute bottom-24 right-6 w-16 h-16 bg-green-500 rounded-full shadow-2xl flex items-center justify-center text-white hover:bg-green-600 transition-all hover:scale-105 z-40"
-            >
-                <PlusIcon className="w-8 h-8 stroke-[3]" />
-            </button>
+            <Tooltip text="Nova Sala" position="left">
+                <button
+                    onClick={onAdd}
+                    className="absolute bottom-24 right-6 w-16 h-16 bg-green-500 rounded-full shadow-2xl flex items-center justify-center text-white hover:bg-green-600 transition-all hover:scale-105 z-40"
+                >
+                    <PlusIcon className="w-8 h-8 stroke-[3]" />
+                </button>
+            </Tooltip>
         </PageContainer>
     );
 };

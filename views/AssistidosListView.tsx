@@ -4,6 +4,7 @@ import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
 import { SearchIcon } from '../components/Icons';
 import { PlusIcon } from '../components/Icons';
+import { Tooltip } from '../components/shared/Tooltip';
 
 interface AssistidosListViewProps {
     assistidos: Assistido[];
@@ -79,12 +80,14 @@ export const AssistidosListView: React.FC<AssistidosListViewProps> = ({ assistid
             </div>
 
             {/* Fab button */}
-            <button
-                onClick={onAdd}
-                className="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 flex items-center justify-center hover:bg-blue-700 hover:scale-105 transition-all z-40"
-            >
-                <PlusIcon className="w-8 h-8" />
-            </button>
+            <Tooltip text="Novo Assistido" position="left">
+                <button
+                    onClick={onAdd}
+                    className="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 flex items-center justify-center hover:bg-blue-700 hover:scale-105 transition-all z-40"
+                >
+                    <PlusIcon className="w-8 h-8" />
+                </button>
+            </Tooltip>
         </PageContainer>
     );
 };

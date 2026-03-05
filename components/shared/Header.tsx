@@ -1,5 +1,6 @@
 import React from "react";
 import { ChevronLeftIcon, SettingsIcon } from "../Icons";
+import { Tooltip } from "./Tooltip";
 
 interface HeaderProps {
     title: string;
@@ -60,9 +61,11 @@ export const Header: React.FC<HeaderProps> = ({ title, onBack, showSettings, onS
             <div className="flex items-center gap-2">
                 {action}
                 {showSettings && (
-                    <button onClick={onSettingsClick} className={`p-2 transition-colors ${iconButtonClasses}`}>
-                        <SettingsIcon className="w-6 h-6" />
-                    </button>
+                    <Tooltip text="Configurações" position="bottom">
+                        <button onClick={onSettingsClick} className={`p-2 transition-colors ${iconButtonClasses}`}>
+                            <SettingsIcon className="w-6 h-6" />
+                        </button>
+                    </Tooltip>
                 )}
             </div>
         </header>
