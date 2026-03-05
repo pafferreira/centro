@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { ViewState, Worker, Room, PasseAttendance, Assistido } from "./types";
 import { BottomNav } from "./components/shared/BottomNav";
 import { LoginView } from "./views/LoginView";
@@ -415,6 +416,7 @@ export default function App() {
             <BottomNav active={view} onChange={handleNavigate} />
           )}
         </div>
+        <SpeedInsights />
       </div>
     </LayoutProvider>
   );
