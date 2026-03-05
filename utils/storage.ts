@@ -62,6 +62,7 @@ function attendanceFromDb(row: any): PasseAttendance {
     return {
         id: row.id,
         date: row.data_atendimento,
+        assistidoId: row.id_assistido,
         assistidoName: row.nome_assistido_cache ?? '',
         passeType: row.tipo_passe,
         attendancePhase: row.fase_atendimento,
@@ -77,6 +78,7 @@ function attendanceToDb(att: PasseAttendance): Record<string, any> {
         tipo_passe: att.passeType,
         fase_atendimento: att.attendancePhase,
         status_atendimento: att.status,
+        id_assistido: att.assistidoId,
         id_sala_alocada: att.allocatedRoomId ?? null,
     };
 }
@@ -270,6 +272,7 @@ export async function loadAttendances(): Promise<PasseAttendance[]> {
         return (data ?? []).map((row: any) => ({
             id: row.id,
             date: row.data_atendimento,
+            assistidoId: row.id_assistido,
             assistidoName: row.gfa_assistidos?.nome_assistido ?? '',
             passeType: row.tipo_passe,
             attendancePhase: row.fase_atendimento,

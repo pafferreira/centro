@@ -269,6 +269,11 @@ export default function App() {
     setEditingAssistido(null);
   };
 
+  const handleQuickAddAssistido = async (assistido: Assistido) => {
+    setAssistidos(prev => [...prev, assistido]);
+    await saveAssistido(assistido);
+  };
+
   // Settings handler
   const handleDataImported = (newWorkers: Worker[], newRooms: Room[]) => {
     setWorkers(newWorkers);
@@ -392,7 +397,9 @@ export default function App() {
             {view === 'PASSE_REGISTRATION' && (
               <PasseRegistrationView
                 attendances={attendances}
+                assistidos={assistidos}
                 onAddAttendance={(att) => setAttendances(prev => [...prev, att])}
+                onAddAssistido={handleQuickAddAssistido}
                 onBack={handleBack}
                 onNavigate={handleNavigate}
               />

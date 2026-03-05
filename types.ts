@@ -79,6 +79,7 @@ export interface PasseAttendance {
   id: string;
   date: string; // ISO format YYYY-MM-DD
   assistidoName: string;
+  assistidoId: string;
   passeType: PasseType;
   attendancePhase: AttendancePhase;
   status: AttendanceStatus;

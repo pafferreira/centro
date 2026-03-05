@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { ViewState, PasseAttendance, AttendancePhase, PasseType, AttendanceStatus } from '../types';
+import { ViewState, PasseAttendance, AttendancePhase, PasseType, AttendanceStatus, Assistido } from '../types';
 import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
 
 interface PasseRegistrationViewProps {
     attendances: PasseAttendance[];
+    assistidos: Assistido[];
     onAddAttendance: (att: PasseAttendance) => void;
+    onAddAssistido: (ast: Assistido) => void;
     onBack?: () => void;
     onNavigate: (v: ViewState) => void;
 }
 
-export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ attendances, onAddAttendance, onBack, onNavigate }) => {
+export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ attendances, assistidos, onAddAttendance, onAddAssistido, onBack, onNavigate }) => {
     // Current date logic: We assume the user creates it for today
     const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
     const [assistidoName, setAssistidoName] = useState('');
@@ -33,10 +35,21 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        const typedName = assistidoName.trim();
+        let ast = assistidos.find(a => a.nome.toLowerCase() === typedName.toLowerCase());
+        if (!ast) {
+            ast = {
+                id: `assistido-${Date.now()}`,
+                nome: typedName,
+            };
+            onAddAssistido(ast);
+        }
+
         const newAttendance: PasseAttendance = {
             id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             date,
-            assistidoName,
+            assistidoName: ast.nome,
+            assistidoId: ast.id,
             passeType: isPasseTypeEnabled ? passeType : PasseType.Nenhum,
             attendancePhase,
             status: AttendanceStatus.Aguardando
@@ -74,11 +87,17 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                         <input
                             type="text"
                             required
+                            list="assistidos-list"
                             value={assistidoName}
                             onChange={e => setAssistidoName(e.target.value)}
                             placeholder="Ex: Maria"
-                            className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30"
+                            className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30 font-bold"
                         />
+                        <datalist id="assistidos-list">
+                            {assistidos.map(ast => (
+                                <option key={ast.id} value={ast.nome} />
+                            ))}
+                        </datalist>
                     </div>
 
                     {/* Fase de Atendimento PRIMEIRO */}
