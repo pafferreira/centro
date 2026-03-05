@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ViewState, PasseAttendance, AttendancePhase, PasseType, AttendanceStatus, Assistido } from '../types';
 import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
+import { Tooltip, InfoIcon } from '../components/shared/Tooltip';
 
 interface PasseRegistrationViewProps {
     attendances: PasseAttendance[];
@@ -16,7 +17,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
     // Current date logic: We assume the user creates it for today
     const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
     const [assistidoName, setAssistidoName] = useState('');
-    const [passeType, setPasseType] = useState<PasseType>(PasseType.A2);
+    const [passeType, setPasseType] = useState<PasseType>(PasseType.A1);
     const [attendancePhase, setAttendancePhase] = useState<AttendancePhase>(AttendancePhase.Normal);
 
     const isPasseTypeEnabled = attendancePhase === AttendancePhase.Normal;
@@ -72,7 +73,12 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                     <h3 className="font-bold text-slate-800 text-lg">Registrar Assistido na Fila</h3>
 
                     <div className="flex flex-col gap-1.5">
-                        <label className="text-sm font-semibold text-slate-700">Data</label>
+                        <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                            Data
+                            <Tooltip text="Data do atendimento. Normalmente é a data de hoje." position="top">
+                                <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
+                            </Tooltip>
+                        </label>
                         <input
                             type="date"
                             required
@@ -83,7 +89,12 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                        <label className="text-sm font-semibold text-slate-700">Nome do Assistido</label>
+                        <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                            Nome do Assistido
+                            <Tooltip text="Digite ou escolha um nome já cadastrado. Se for novo, a ficha será criada automaticamente." position="top">
+                                <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
+                            </Tooltip>
+                        </label>
                         <input
                             type="text"
                             required
@@ -100,9 +111,13 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                         </datalist>
                     </div>
 
-                    {/* Fase de Atendimento PRIMEIRO */}
                     <div className="flex flex-col gap-1.5">
-                        <label className="text-sm font-semibold text-slate-700">Fase de Atendimento</label>
+                        <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                            Fase de Atendimento
+                            <Tooltip text="Primeira Vez: chegou hoje pela 1ª vez. Retorno: está voltando para coletar resultado. Normal: atendimento de rotina com passe." position="top">
+                                <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
+                            </Tooltip>
+                        </label>
                         <select
                             value={attendancePhase}
                             onChange={e => handlePhaseChange(e.target.value as AttendancePhase)}
@@ -116,8 +131,11 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
 
                     {/* Tipo de Passe - só habilitado quando Normal */}
                     <div className={`flex flex-col gap-1.5 transition-opacity duration-200 ${isPasseTypeEnabled ? '' : 'opacity-40 grayscale-[50%]'}`}>
-                        <label className="text-sm font-semibold text-slate-700">
+                        <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                             Tipo de Passe
+                            <Tooltip text="A1: passe rápido (~15min). A2: passe longo (~30min). Só disponível na fase Normal." position="top">
+                                <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
+                            </Tooltip>
                         </label>
                         <div className="flex gap-3">
                             <button

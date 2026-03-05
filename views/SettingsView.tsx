@@ -109,54 +109,41 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported, onBa
                     </div>
                 </div>
 
-                {/* Export Button */}
-                <button
-                    onClick={handleExport}
-                    className="w-full bg-white border-2 border-green-200 rounded-2xl p-4 flex items-center gap-4 hover:bg-green-50 transition-colors"
-                >
-                    <div className="w-14 h-14 rounded-xl bg-green-500 flex items-center justify-center flex-shrink-0 text-3xl">
-                        ⬇️
-                    </div>
-                    <div className="flex-1 text-left">
-                        <h3 className="font-bold text-lg text-slate-800">Exportar Dados</h3>
-                        <p className="text-sm text-slate-500">Fazer backup em arquivo JSON</p>
-                    </div>
-                </button>
+                {/* Disabled notice */}
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                    <p className="text-sm text-amber-800">
+                        <strong>ℹ️ Aviso:</strong> As funções de exportar, importar e limpar dados foram desabilitadas pois o sistema agora utiliza o banco de dados Supabase na nuvem. Os dados são sincronizados automaticamente.
+                    </p>
+                </div>
 
-                {/* Import Button */}
-                <button
-                    onClick={handleImportClick}
-                    className="w-full bg-white border-2 border-blue-200 rounded-2xl p-4 flex items-center gap-4 hover:bg-blue-50 transition-colors"
-                >
-                    <div className="w-14 h-14 rounded-xl bg-blue-500 flex items-center justify-center flex-shrink-0 text-3xl">
-                        ⬆️
-                    </div>
+                {/* Export Button - disabled */}
+                <div className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 flex items-center gap-4 opacity-40 cursor-not-allowed select-none">
+                    <div className="w-14 h-14 rounded-xl bg-slate-300 flex items-center justify-center flex-shrink-0 text-3xl">⬇️</div>
                     <div className="flex-1 text-left">
-                        <h3 className="font-bold text-lg text-slate-800">Importar Dados</h3>
-                        <p className="text-sm text-slate-500">Restaurar de um backup JSON</p>
+                        <h3 className="font-bold text-lg text-slate-400">Exportar Dados</h3>
+                        <p className="text-sm text-slate-400">Não disponível com Supabase</p>
                     </div>
-                </button>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".json"
-                    onChange={handleFileChange}
-                    className="hidden"
-                />
+                </div>
 
-                {/* Clear Data Button */}
-                <button
-                    onClick={handleClearData}
-                    className="w-full bg-white border-2 border-red-200 rounded-2xl p-4 flex items-center gap-4 hover:bg-red-50 transition-colors"
-                >
-                    <div className="w-14 h-14 rounded-xl bg-red-500 flex items-center justify-center flex-shrink-0">
+                {/* Import Button - disabled */}
+                <div className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 flex items-center gap-4 opacity-40 cursor-not-allowed select-none">
+                    <div className="w-14 h-14 rounded-xl bg-slate-300 flex items-center justify-center flex-shrink-0 text-3xl">⬆️</div>
+                    <div className="flex-1 text-left">
+                        <h3 className="font-bold text-lg text-slate-400">Importar Dados</h3>
+                        <p className="text-sm text-slate-400">Não disponível com Supabase</p>
+                    </div>
+                </div>
+
+                {/* Clear Data Button - disabled */}
+                <div className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 flex items-center gap-4 opacity-40 cursor-not-allowed select-none">
+                    <div className="w-14 h-14 rounded-xl bg-slate-300 flex items-center justify-center flex-shrink-0">
                         <TrashIcon className="w-8 h-8 text-white" />
                     </div>
                     <div className="flex-1 text-left">
-                        <h3 className="font-bold text-lg text-slate-800">Limpar Todos os Dados</h3>
-                        <p className="text-sm text-slate-500">⚠️ Ação irreversível! Exporte antes</p>
+                        <h3 className="font-bold text-lg text-slate-400">Limpar Todos os Dados</h3>
+                        <p className="text-sm text-slate-400">Não disponível com Supabase</p>
                     </div>
-                </button>
+                </div>
 
                 {/* Help Text */}
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-6">

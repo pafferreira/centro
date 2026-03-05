@@ -19,7 +19,7 @@ interface RoomFormViewProps {
 export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCancel, defaultType, onHome }) => {
     const [name, setName] = useState(room?.name || "");
     const [roomType, setRoomType] = useState<RoomType>(room?.type || defaultType || RoomType.Passe);
-    const [capacity, setCapacity] = useState(room?.capacity?.toString() || "4");
+    const [capacity, setCapacity] = useState(room?.capacity?.toString() || "5");
     const [description, setDescription] = useState(room?.description || "");
     const [selectedAvatar, setSelectedAvatar] = useState(room?.avatarUrl || "");
     const [selectedIcon, setSelectedIcon] = useState<string | null>(room?.avatarIcon ?? "DoorIcon");
@@ -140,13 +140,13 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
                 {/* Tipo de Sala */}
                 <div>
                     <label className="block text-sm font-semibold text-text-main mb-2 ml-1">Tipo de Sala</label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex gap-1 justify-between">
                         {Object.values(RoomType).map((t) => (
                             <button
                                 key={t}
                                 type="button"
                                 onClick={() => setRoomType(t)}
-                                className={`px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer ${roomType === t
+                                className={`flex-1 px-2 py-2 rounded-xl text-xs font-bold border-2 transition-all cursor-pointer text-center ${roomType === t
                                     ? 'bg-green-100 border-green-500 text-green-800 shadow-sm'
                                     : 'bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:bg-green-50/50'
                                     }`}

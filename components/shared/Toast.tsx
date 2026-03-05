@@ -79,7 +79,7 @@ export const Toast: React.FC<ToastProps> = ({ toasts, onRemove }) => {
 
     return (
         <div
-            className="fixed top-4 left-0 right-0 z-[999] flex flex-col items-center gap-2 pointer-events-none px-4"
+            className="fixed top-16 left-0 right-0 z-[998] flex flex-col items-center gap-2 pointer-events-none px-4"
             style={{ marginTop: 'env(safe-area-inset-top, 0px)' }}
         >
             {toasts.map(toast => (
