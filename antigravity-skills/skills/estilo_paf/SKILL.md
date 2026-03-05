@@ -39,7 +39,7 @@ Esta skill combina duas responsabilidades complementares:
 - Visual: quando produzir exemplos visuais ou layouts mínimos, siga uma hierarquia clara: título > subtítulo > corpo > CTA.
 - Fluxo de saída/cancelamento: em telas de criação/edição e modais, sempre prever `ESC`, botão explícito de `Cancelar/Voltar` e compatibilidade com botão de voltar nativo do dispositivo/browser.
 - Loading UX: priorizar skeleton com shimmer suave em vez de loaders abruptos; manter proporção dos blocos finais (título, campos, cards, ações).
-- Tooltips em botões: usar fundo branco sólido, texto escuro de alto contraste, borda sutil e exibição em `hover` + `focus-visible`.
+- Tooltips em botões: usar efeito glassmorphism (fundo branco com borda sutil e blur / transparência), texto escuro de alto contraste, e exibição em `hover` + `focus-visible`.
 
 ## Identidade Visual GFA Nossa Casa
 

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface TooltipProps {
     text: string;
@@ -14,8 +15,9 @@ export const Tooltip: React.FC<TooltipProps> = ({ text, children, position = 'to
 
     const show = () => {
         if (!triggerRef.current) return;
+        // getBoundingClientRect gives real viewport coords regardless of transforms on ancestors
         const rect = triggerRef.current.getBoundingClientRect();
-        const gap = 8;
+        const gap = 10;
 
         let top = 0, left = 0;
         if (position === 'top') {
@@ -72,6 +74,31 @@ export const Tooltip: React.FC<TooltipProps> = ({ text, children, position = 'to
         };
     };
 
+    const tooltipEl = visible ? (
+        <div
+            role="tooltip"
+            className="fixed z-[9999] px-3 py-1.5 text-xs font-semibold text-slate-800 leading-snug
+                       bg-white/85 backdrop-blur-md border border-white/60
+                       rounded-xl shadow-lg shadow-slate-200/50
+                       max-w-[200px] pointer-events-none whitespace-nowrap"
+            style={positionStyle()}
+        >
+            {text}
+            {position === 'top' && (
+                <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0"
+                    style={{ borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid rgba(255, 255, 255, 0.85)' }} />
+            )}
+            {position === 'bottom' && (
+                <span className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0"
+                    style={{ borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '5px solid rgba(255, 255, 255, 0.85)' }} />
+            )}
+            {position === 'left' && (
+                <span className="absolute top-1/2 -translate-y-1/2 left-full w-0 h-0"
+                    style={{ borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: '5px solid rgba(255, 255, 255, 0.85)' }} />
+            )}
+        </div>
+    ) : null;
+
     return (
         <>
             <span
@@ -80,33 +107,12 @@ export const Tooltip: React.FC<TooltipProps> = ({ text, children, position = 'to
                 onMouseLeave={hide}
                 onFocus={show}
                 onBlur={hide}
-                className="inline-flex cursor-help"
+                className="inline-flex"
             >
                 {children}
             </span>
-
-            {visible && (
-                <div
-                    ref={tooltipRef}
-                    role="tooltip"
-                    className="fixed z-[1000] px-3 py-2 text-xs font-medium text-slate-700 leading-snug
-                     bg-white/70 backdrop-blur-xl border border-white/80 
-                     rounded-2xl shadow-lg shadow-slate-200/60
-                     max-w-[220px] pointer-events-none"
-                    style={positionStyle()}
-                >
-                    {text}
-                    {/* Arrow */}
-                    {position === 'top' && (
-                        <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0"
-                            style={{ borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid rgba(255,255,255,0.7)' }} />
-                    )}
-                    {position === 'bottom' && (
-                        <span className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0"
-                            style={{ borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '5px solid rgba(255,255,255,0.7)' }} />
-                    )}
-                </div>
-            )}
+            {/* Portal escapes any CSS-transform or overflow-hidden ancestor */}
+            {createPortal(tooltipEl, document.body)}
         </>
     );
 };

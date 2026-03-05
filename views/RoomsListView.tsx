@@ -17,11 +17,9 @@ interface RoomsListViewProps {
 
 export const RoomsListView: React.FC<RoomsListViewProps> = ({ rooms, onEdit, onDelete, onAdd, onBack, onHome }) => {
     const getRoomAvatarUrl = (room: Room) => {
-        // Prefer an explicitly set avatar, otherwise use the same DiceBear style used for workers
         return room.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(room.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
     };
 
-    // Sort rooms alphabetically by name
     const sortedRooms = [...rooms].sort((a, b) => a.name.localeCompare(b.name));
 
     return (
@@ -83,15 +81,17 @@ export const RoomsListView: React.FC<RoomsListViewProps> = ({ rooms, onEdit, onD
                 ))}
             </div>
 
-            {/* Add Button */}
-            <Tooltip text="Nova Sala" position="left">
-                <button
-                    onClick={onAdd}
-                    className="absolute bottom-24 right-6 w-16 h-16 bg-green-500 rounded-full shadow-2xl flex items-center justify-center text-white hover:bg-green-600 transition-all hover:scale-105 z-40"
-                >
-                    <PlusIcon className="w-8 h-8 stroke-[3]" />
-                </button>
-            </Tooltip>
+            {/* FAB button */}
+            <div className="absolute bottom-24 right-6 z-40">
+                <Tooltip text="Nova Sala" position="left">
+                    <button
+                        onClick={onAdd}
+                        className="w-16 h-16 bg-green-500 rounded-full shadow-2xl flex items-center justify-center text-white hover:bg-green-600 transition-all hover:scale-105"
+                    >
+                        <PlusIcon className="w-8 h-8 stroke-[3]" />
+                    </button>
+                </Tooltip>
+            </div>
         </PageContainer>
     );
 };
