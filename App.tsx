@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { ViewState, Worker, Room, PasseAttendance, Assistido } from "./types";
 import { BottomNav } from "./components/shared/BottomNav";
+import { Toast, ToastMessage } from "./components/shared/Toast";
 import { LoginView } from "./views/LoginView";
 import { DashboardView } from "./views/DashboardView";
 import { RoomAssemblyView } from "./views/RoomAssemblyView";
@@ -20,6 +21,10 @@ import {
   loadRooms,
   saveWorkers,
   saveRooms,
+  saveWorker,
+  deleteWorker,
+  saveRoom,
+  deleteRoom,
   loadAssistidos,
   saveAssistido,
   deleteAssistido,
@@ -46,6 +51,13 @@ export default function App() {
   const [editingAssistido, setEditingAssistido] = useState<Assistido | null>(null);
   const [showAssistidoForm, setShowAssistidoForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const showToast = (message: string, type: ToastMessage['type'] = 'success') => {
+    const id = crypto.randomUUID();
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+  const removeToast = (id: string) => setToasts(prev => prev.filter(t => t.id !== id));
 
   // Carregamento inicial assíncrono do Supabase
   useEffect(() => {
@@ -193,18 +205,30 @@ export default function App() {
     setShowWorkerForm(true);
   };
 
-  const handleSaveWorker = (worker: Worker) => {
-    if (editingWorker) {
-      setWorkers(prev => prev.map(w => w.id === worker.id ? worker : w));
-    } else {
-      setWorkers(prev => [...prev, worker]);
+  const handleSaveWorker = async (worker: Worker) => {
+    try {
+      if (editingWorker) {
+        setWorkers(prev => prev.map(w => w.id === worker.id ? worker : w));
+      } else {
+        setWorkers(prev => [...prev, worker]);
+      }
+      await saveWorker(worker);
+      showToast(editingWorker ? 'Trabalhador atualizado!' : 'Trabalhador cadastrado!');
+    } catch {
+      showToast('Erro ao salvar trabalhador.', 'error');
     }
     setShowWorkerForm(false);
     setEditingWorker(null);
   };
 
-  const handleDeleteWorker = (workerId: string) => {
+  const handleDeleteWorker = async (workerId: string) => {
     setWorkers(prev => prev.filter(w => w.id !== workerId));
+    try {
+      await deleteWorker(workerId);
+      showToast('Trabalhador removido.');
+    } catch {
+      showToast('Erro ao remover trabalhador.', 'error');
+    }
   };
 
   const handleCancelWorkerForm = () => {
@@ -223,18 +247,30 @@ export default function App() {
     setShowRoomForm(true);
   };
 
-  const handleSaveRoom = (room: Room) => {
-    if (editingRoom) {
-      setRooms(prev => prev.map(r => r.id === room.id ? room : r));
-    } else {
-      setRooms(prev => [...prev, room]);
+  const handleSaveRoom = async (room: Room) => {
+    try {
+      if (editingRoom) {
+        setRooms(prev => prev.map(r => r.id === room.id ? room : r));
+      } else {
+        setRooms(prev => [...prev, room]);
+      }
+      await saveRoom(room);
+      showToast(editingRoom ? 'Sala atualizada com sucesso!' : 'Sala cadastrada com sucesso!');
+    } catch {
+      showToast('Erro ao salvar sala. Tente novamente.', 'error');
     }
     setShowRoomForm(false);
     setEditingRoom(null);
   };
 
-  const handleDeleteRoom = (roomId: string) => {
+  const handleDeleteRoom = async (roomId: string) => {
     setRooms(prev => prev.filter(r => r.id !== roomId));
+    try {
+      await deleteRoom(roomId);
+      showToast('Sala removida.');
+    } catch {
+      showToast('Erro ao remover sala.', 'error');
+    }
   };
 
   const handleCancelRoomForm = () => {
@@ -421,6 +457,7 @@ export default function App() {
           {view !== 'LOGIN' && !showWorkerForm && !showRoomForm && !showAssistidoForm && (
             <BottomNav active={view} onChange={handleNavigate} />
           )}
+          <Toast toasts={toasts} onRemove={removeToast} />
         </div>
       </div>
     </LayoutProvider>
