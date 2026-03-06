@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Worker, Room, RoomType, WorkerRole } from "../types";
+import { getAppRules } from "../utils/storage";
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
 const ai = new GoogleGenAI({ apiKey });
@@ -48,16 +49,27 @@ export const autoAssignWorkers = async (workers: Worker[], rooms: Room[]) => {
     capacity: r.capacity
   }));
 
+  const appRules = getAppRules().filter(r => r.type === 'ROOM_ASSEMBLY' && r.isActive);
+  const restrictions = appRules.filter(r => r.isRestriction);
+  const priorities = appRules.filter(r => !r.isRestriction).sort((a, b) => a.order - b.order);
+
+  const restrictionsText = restrictions.length > 0 ?
+    `\n    Mandatory Constraints (These MUST NOT be violated):\n` +
+    restrictions.map(r => `    - ${r.description}`).join('\n') : '';
+
+  const prioritiesText = priorities.length > 0 ?
+    `\n    Priorities (Follow in this exact order to build the assignments):\n` +
+    priorities.map((r, i) => `    ${i + 1}. ${r.description}`).join('\n') : '';
+
   const prompt = `
     You are an intelligent system for a spiritual center. 
-    Your task is to assign workers to rooms optimally based on the following rules:
-    
-    1. 'Sala de Passe' type rooms MUST have exactly one worker who is a 'Coordenador' (isCoordinator: true).
-    2. Distribute workers with the 'Médium' role evenly across 'Sala de Passe' rooms.
-    3. Fill the remaining spots with 'Sustentação' or other roles.
-    4. Ensure no room exceeds its capacity.
-    5. 'Entrevista' type rooms (like Reception) must be staffed only by workers who have the 'Recepção' skill.
-    6. Return a complete list of assignments. If a worker cannot be assigned, do not include them in the list (they will remain unassigned).
+    Your task is to assign workers to rooms optimally.
+    ${restrictionsText}
+    ${prioritiesText}
+
+    Additional Rules:
+    - 'Entrevista' type rooms (like Reception) must be staffed only by workers who have the 'Recepção' skill.
+    - Return a complete list of assignments. If a worker cannot be assigned, do not include them in the list (they will remain unassigned).
 
     Input Data:
     Workers: ${JSON.stringify(workersData)}

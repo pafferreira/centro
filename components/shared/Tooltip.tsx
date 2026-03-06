@@ -77,24 +77,24 @@ export const Tooltip: React.FC<TooltipProps> = ({ text, children, position = 'to
     const tooltipEl = visible ? (
         <div
             role="tooltip"
-            className="fixed z-[9999] px-3 py-1.5 text-xs font-semibold text-slate-800 leading-snug
-                       bg-white/85 backdrop-blur-md border border-white/60
-                       rounded-xl shadow-lg shadow-slate-200/50
-                       max-w-[200px] pointer-events-none whitespace-nowrap"
+            className="fixed z-[9999] px-3.5 py-2 text-xs font-bold text-slate-900 leading-snug
+                       bg-white/80 backdrop-blur-md border border-white/60
+                       rounded-2xl shadow-lg shadow-slate-200/50
+                       max-w-[220px] pointer-events-none whitespace-normal"
             style={positionStyle()}
         >
             {text}
             {position === 'top' && (
                 <span className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0"
-                    style={{ borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid rgba(255, 255, 255, 0.85)' }} />
+                    style={{ borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '6px solid rgba(255, 255, 255, 0.8)' }} />
             )}
             {position === 'bottom' && (
                 <span className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0"
-                    style={{ borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '5px solid rgba(255, 255, 255, 0.85)' }} />
+                    style={{ borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderBottom: '6px solid rgba(255, 255, 255, 0.8)' }} />
             )}
             {position === 'left' && (
                 <span className="absolute top-1/2 -translate-y-1/2 left-full w-0 h-0"
-                    style={{ borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: '5px solid rgba(255, 255, 255, 0.85)' }} />
+                    style={{ borderTop: '6px solid transparent', borderBottom: '6px solid transparent', borderLeft: '6px solid rgba(255, 255, 255, 0.8)' }} />
             )}
         </div>
     ) : null;
@@ -103,11 +103,12 @@ export const Tooltip: React.FC<TooltipProps> = ({ text, children, position = 'to
         <>
             <span
                 ref={triggerRef}
+                tabIndex={0}
                 onMouseEnter={show}
                 onMouseLeave={hide}
                 onFocus={show}
                 onBlur={hide}
-                className="inline-flex"
+                className="inline-flex focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/80 rounded"
             >
                 {children}
             </span>

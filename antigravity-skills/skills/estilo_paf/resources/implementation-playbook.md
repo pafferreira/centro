@@ -39,6 +39,7 @@ Este playbook explica como aplicar a `estilo_paf` em mensagens do agente e como 
 - Botões primários: `bg-primary hover:bg-primary-dark text-white rounded-lg`
 - Botões de acento: `bg-accent text-text-main rounded-lg`
 - Skeleton loading: shimmer com `bg-gray-200 animate-pulse rounded`
+- Tooltips: glassmorphism, fundo claro translúcido com `backdrop-blur-md`, borda branca sutil (`border border-white/60`), cantos máximos arredondados (`rounded-2xl`), texto preenchido de alto contraste (`text-slate-900`) e suporte a navegação por tabulação (`focus-visible`).
 
 ---
 

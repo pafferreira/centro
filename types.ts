@@ -16,6 +16,17 @@ export interface Assistido {
   observacoes?: string;
 }
 
+export interface FichaAssistencia {
+  id: string;
+  assistidoId: string;
+  entrevistadorId?: string | null;
+  dataEntrevista: string;
+  qtdA2: number;
+  qtdA1: number;
+  tipoFicha: 'Inicial' | 'Acompanhamento';
+  statusFicha: 'Ativa' | 'Concluida';
+}
+
 export interface Worker {
   id: string;
   name: string;
@@ -72,6 +83,7 @@ export enum AttendancePhase {
 
 export enum AttendanceStatus {
   Aguardando = "Aguardando",
+  NaSala = "Na Sala",
   Atendido = "Atendido"
 }
 
@@ -84,5 +96,16 @@ export interface PasseAttendance {
   attendancePhase: AttendancePhase;
   status: AttendanceStatus;
   allocatedRoomId?: string | null;
+}
+
+export interface AppRule {
+  id: string; // Ex: 'rule_coord_priority'
+  type: 'ROOM_ASSEMBLY' | 'PASSE_DISTRIBUTION';
+  label: string;
+  description: string;
+  isActive: boolean;
+  order: number; // Order to be executed
+  configurable?: boolean; // Se o usuário pode ligar/desligar
+  isRestriction?: boolean; // Se for restrição, vai para um bloco de regras absolutas (ex: limite de pessoas)
 }
 

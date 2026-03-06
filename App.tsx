@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { ViewState, Worker, Room, PasseAttendance, Assistido } from "./types";
+import { ViewState, Worker, Room, PasseAttendance, Assistido, FichaAssistencia } from "./types";
 import { BottomNav } from "./components/shared/BottomNav";
 import { Toast, ToastMessage } from "./components/shared/Toast";
 import { LoginView } from "./views/LoginView";
@@ -11,8 +11,9 @@ import { RoomsListView } from "./views/RoomsListView";
 import { RoomFormView } from "./views/RoomFormView";
 import { LocationListView } from "./views/LocationListView";
 import { SettingsView } from "./views/SettingsView";
-import { AssistidosListView } from "./views/AssistidosListView";
-import { AssistidoFormView } from "./views/AssistidoFormView";
+import { AssistidosListView } from './views/AssistidosListView';
+import { AssistidoFormView } from './views/AssistidoFormView';
+import { AssistanceView } from './views/AssistanceView';
 import { PasseRegistrationView } from "./views/PasseRegistrationView";
 import { PasseDistributionView } from "./views/PasseDistributionView";
 import { RoomType } from "./types";
@@ -30,6 +31,9 @@ import {
   deleteAssistido,
   loadAttendances,
   saveAttendances,
+  saveAttendance,
+  deleteAttendance,
+  saveFichaAssistencia,
 } from "./utils/storage";
 import { LayoutProvider } from "./context/LayoutContext";
 
@@ -50,6 +54,7 @@ export default function App() {
   const [assistidos, setAssistidos] = useState<Assistido[]>([]);
   const [editingAssistido, setEditingAssistido] = useState<Assistido | null>(null);
   const [showAssistidoForm, setShowAssistidoForm] = useState(false);
+  const [showAssistanceView, setShowAssistanceView] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -117,6 +122,9 @@ export default function App() {
     setEditingWorker(null);
     setShowRoomForm(false);
     setEditingRoom(null);
+    setShowAssistidoForm(false);
+    setEditingAssistido(null);
+    setShowAssistanceView(false);
   };
 
   const handleBack = () => {
@@ -310,6 +318,20 @@ export default function App() {
     await saveAssistido(assistido);
   };
 
+  const handleSaveFicha = async (ficha: FichaAssistencia, ats: PasseAttendance[]) => {
+    // Save to DB
+    await saveFichaAssistencia(ficha);
+    for (const att of ats) {
+      await saveAttendance(att);
+    }
+    // Update local state
+    setAttendances(prev => [...prev, ...ats]);
+
+    // Simulate back action
+    setShowAssistanceView(false);
+    showToast("Ficha de Assistência e sessões salvas com sucesso!");
+  };
+
   // Settings handler
   const handleDataImported = (newWorkers: Worker[], newRooms: Room[]) => {
     setWorkers(newWorkers);
@@ -420,12 +442,23 @@ export default function App() {
               />
             )}
 
-            {view === 'ASSISTANCE' && showAssistidoForm && (
+            {view === 'ASSISTANCE' && showAssistidoForm && !showAssistanceView && (
               <AssistidoFormView
                 assistido={editingAssistido}
                 history={editingAssistido ? attendances.filter(a => a.assistidoName === editingAssistido.nome) : []}
                 onSave={handleSaveAssistidoForm}
                 onCancel={handleCancelAssistidoForm}
+                onEditAssistance={() => setShowAssistanceView(true)}
+                onHome={() => handleNavigate('DASHBOARD')}
+              />
+            )}
+
+            {view === 'ASSISTANCE' && showAssistanceView && editingAssistido && (
+              <AssistanceView
+                workers={workers}
+                assistido={editingAssistido}
+                onSaveFicha={handleSaveFicha}
+                onBack={() => setShowAssistanceView(false)}
                 onHome={() => handleNavigate('DASHBOARD')}
               />
             )}
@@ -434,8 +467,21 @@ export default function App() {
               <PasseRegistrationView
                 attendances={attendances}
                 assistidos={assistidos}
-                onAddAttendance={(att) => setAttendances(prev => [...prev, att])}
+                onAddAttendance={async (att) => {
+                  setAttendances(prev => [...prev, att]);
+                  await saveAttendance(att);
+                }}
+                onUpdateAttendance={async (updated) => {
+                  setAttendances(prev => prev.map(a => a.id === updated.id ? updated : a));
+                  await saveAttendance(updated);
+                }}
+                onDeleteAttendance={async (id) => {
+                  setAttendances(prev => prev.filter(a => a.id !== id));
+                  await deleteAttendance(id);
+                }}
                 onAddAssistido={handleQuickAddAssistido}
+                rooms={rooms}
+                workers={workers}
                 onBack={handleBack}
                 onNavigate={handleNavigate}
               />

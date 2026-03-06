@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Assistido, PasseAttendance, AttendancePhase, PasseType } from '../types';
 import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
-import { ChevronDownIconInline, ChevronUpIconInline } from '../components/Icons';
+import { ChevronDownIconInline, ChevronUpIconInline, CardsIcon } from '../components/Icons';
 
 interface AssistidoFormViewProps {
     assistido?: Assistido | null;
@@ -10,9 +10,10 @@ interface AssistidoFormViewProps {
     onSave: (assistido: Assistido) => void;
     onCancel: () => void;
     onHome?: () => void;
+    onEditAssistance?: (assistido: Assistido) => void;
 }
 
-export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido, history = [], onSave, onCancel, onHome }) => {
+export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido, history = [], onSave, onCancel, onHome, onEditAssistance }) => {
     const [nome, setNome] = useState(assistido?.nome || '');
     const [telefone, setTelefone] = useState(assistido?.telefone || '');
     const [dataNascimento, setDataNascimento] = useState(assistido?.dataNascimento || '');
@@ -103,6 +104,18 @@ export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido,
                         Salvar Assistido
                     </button>
                 </form>
+
+                {/* Ações Auxiliares */}
+                {assistido && onEditAssistance && (
+                    <button
+                        type="button"
+                        onClick={() => onEditAssistance(assistido)}
+                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-4 rounded-2xl shadow-sm border border-indigo-200 flex items-center justify-center gap-3 transition-all active:scale-[0.98]"
+                    >
+                        <CardsIcon className="w-6 h-6" />
+                        Acessar Ficha de Assistência (Entrevista)
+                    </button>
+                )}
 
                 {/* Histórico */}
                 {assistido && (

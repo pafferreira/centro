@@ -39,7 +39,7 @@ Esta skill combina duas responsabilidades complementares:
 - Visual: quando produzir exemplos visuais ou layouts mínimos, siga uma hierarquia clara: título > subtítulo > corpo > CTA.
 - Fluxo de saída/cancelamento: em telas de criação/edição e modais, sempre prever `ESC`, botão explícito de `Cancelar/Voltar` e compatibilidade com botão de voltar nativo do dispositivo/browser.
 - Loading UX: priorizar skeleton com shimmer suave em vez de loaders abruptos; manter proporção dos blocos finais (título, campos, cards, ações).
-- Tooltips em botões: usar efeito glassmorphism (fundo branco com borda sutil e blur / transparência), texto escuro de alto contraste, e exibição em `hover` + `focus-visible`.
+- Tooltips em botões: usar efeito glassmorphism com cantos bem arredondados e bordas sutis translúcidas. Requer texto escuro de alto contraste, e exibição em `hover` + navegação por teclado estilo `focus-visible`. Detalhes das classes exatas estão na seção de Snippets.
 
 ## Identidade Visual GFA Nossa Casa
 
@@ -95,6 +95,22 @@ Pequenos trechos de estilo e comportamento que podem ser reutilizados em comunic
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
+```
+
+- Padrão Tooltip (React/TailwindCSS):
+
+```html
+<!-- Wrapper do trigger (ícone ou botão) -->
+<span class="inline-flex focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/80 rounded" tabIndex="0">
+  {children}
+</span>
+
+<!-- Balão do Tooltip (Absolute / Portal) -->
+<div role="tooltip" class="fixed z-[9999] px-3.5 py-2 text-xs font-bold text-slate-900 leading-snug bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl shadow-lg shadow-slate-200/50 max-w-[220px] pointer-events-none whitespace-normal">
+  {text}
+  <!-- Seta (Arrow) - Exemplo Bottom (ponta p/ baixo) -->
+  <span class="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0" style="border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid rgba(255, 255, 255, 0.8);"></span>
+</div>
 ```
 
 Inclua estes snippets no playbook quando fizer handoff para desenvolvimento. Eles servem como referência rápida — as cores vêm do Tailwind config do projeto.

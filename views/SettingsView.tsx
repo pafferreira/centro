@@ -1,8 +1,13 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "../components/shared/Header";
 import { PageContainer } from "../components/shared/PageContainer";
-import { TrashIcon, CheckIcon } from "../components/Icons";
-import { exportData, importData, clearAllData, getLastModified, getStorageSize, saveWorkers, saveRooms } from "../utils/storage";
+import { Accordion } from "../components/shared/Accordion";
+import { DragIndicatorIcon } from "../components/Icons";
+import { getAppRules, saveAppRules, getLastModified, getStorageSize } from "../utils/storage";
+import { AppRule } from "../types";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface SettingsViewProps {
     onDataImported: (workers: any[], rooms: any[]) => void;
@@ -10,77 +15,102 @@ interface SettingsViewProps {
     onHome?: () => void;
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported, onBack, onHome }) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
+function SortableRuleItem({ rule, index, onToggle }: { key?: string | number; rule: AppRule; index: number; onToggle: (id: string) => void }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: rule.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : 1,
+        position: 'relative' as const,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className={`flex items-start gap-3 p-2.5 rounded-xl border-2 transition-colors ${isDragging ? 'bg-white opacity-90 shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-blue-200 z-50' : 'hover:bg-slate-50 border-transparent bg-white'}`}>
+            <div className="flex flex-col items-center justify-center mt-1 w-6">
+                <span className="text-sm font-black text-slate-300 select-none">{index + 1}</span>
+            </div>
+            <div {...attributes} {...listeners} className="mt-1 cursor-grab active:cursor-grabbing p-1 -ml-3 -mr-1 text-slate-400 hover:text-slate-600 rounded" title="Segure e arraste para reordenar">
+                <DragIndicatorIcon className="w-5 h-5 focus:outline-none" />
+            </div>
+            <input
+                type="checkbox"
+                checked={rule.isActive}
+                onChange={() => onToggle(rule.id)}
+                disabled={!rule.configurable}
+                className="mt-1 flex-shrink-0 w-5 h-5 rounded border-2 border-slate-300 text-blue-500 focus:ring-blue-500 cursor-pointer"
+            />
+            <div className="flex-1">
+                <span className="font-semibold text-slate-800 block">{rule.label}</span>
+                <span className="text-xs text-slate-500">{rule.description}</span>
+            </div>
+        </div>
+    );
+}
+
+function StaticRuleItem({ rule, onToggle }: { key?: string | number; rule: AppRule; onToggle: (id: string) => void }) {
+    return (
+        <label className={`flex items-start gap-3 p-2.5 rounded-xl border-2 transition-colors cursor-pointer ${rule.isRestriction ? 'bg-red-50 border-red-100 hover:bg-red-100' : 'hover:bg-slate-50 border-transparent bg-white'}`}>
+            <input
+                type="checkbox"
+                checked={rule.isActive}
+                onChange={() => onToggle(rule.id)}
+                disabled={!rule.configurable}
+                className={`mt-1 flex-shrink-0 w-5 h-5 rounded border-2 border-slate-300 cursor-pointer ${rule.isRestriction ? 'text-red-500 focus:ring-red-500' : 'text-blue-500 focus:ring-blue-500'}`}
+            />
+            <div>
+                <span className="font-semibold text-slate-800 block">{rule.label}</span>
+                <span className="text-xs text-slate-500">{rule.description}</span>
+            </div>
+        </label>
+    );
+}
+
+export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, onHome }) => {
     const lastModified = getLastModified();
     const [storageSize, setStorageSize] = useState<string>('Calculando...');
+    const [rules, setRules] = useState<AppRule[]>([]);
 
     useEffect(() => {
         getStorageSize().then(size => setStorageSize(size));
+        setRules(getAppRules());
     }, []);
 
-    const handleExport = async () => {
-        try {
-            const jsonData = await exportData();
-            const blob = new Blob([jsonData], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            const date = new Date().toISOString().split('T')[0];
-            link.href = url;
-            link.download = `centro-backup-${date}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            alert('✅ Dados exportados com sucesso!');
-        } catch (error) {
-            alert('❌ Erro ao exportar dados');
-            console.error(error);
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    const handleToggleRule = (id: string) => {
+        const newRules = rules.map(r => r.id === id ? { ...r, isActive: !r.isActive } : r);
+        setRules(newRules);
+        saveAppRules(newRules);
+    };
+
+    const handleDragEnd = (event: DragEndEvent, type: 'ROOM_ASSEMBLY' | 'PASSE_DISTRIBUTION') => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setRules((currentRules) => {
+                // Obter apenas as regras do tipo específico e que são ordenáveis
+                const typeRules = currentRules.filter(r => r.type === type && !r.isRestriction).sort((a, b) => a.order - b.order);
+                const oldIndex = typeRules.findIndex(i => i.id === active.id);
+                const newIndex = typeRules.findIndex(i => i.id === over.id);
+
+                const newTypeRulesArray = arrayMove(typeRules, oldIndex, newIndex) as AppRule[];
+
+                // Recalcular ordens apenas para estas
+                const orderedTypeRules = newTypeRulesArray.map((r, index) => ({ ...r, order: index }));
+
+                // Mesclar com o resto
+                const finalRules = currentRules.map(r => {
+                    const updated = orderedTypeRules.find(tr => tr.id === r.id);
+                    return updated ? updated : r;
+                });
+
+                saveAppRules(finalRules);
+                return finalRules;
+            });
         }
-    };
-
-    const handleImportClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const jsonString = e.target?.result as string;
-                const data = await importData(jsonString);
-
-                if (data) {
-                    await saveWorkers(data.workers);
-                    await saveRooms(data.rooms);
-                    onDataImported(data.workers, data.rooms);
-
-                    alert('✅ Dados importados com sucesso!\n\nRecarregue a página para ver as mudanças.');
-                } else {
-                    alert('❌ Arquivo JSON inválido');
-                }
-            } catch (error) {
-                alert('❌ Erro ao importar dados');
-                console.error(error);
-            }
-        };
-        reader.readAsText(file);
-        event.target.value = '';
-    };
-
-    const handleClearData = async () => {
-        const confirm1 = confirm('⚠️ ATENÇÃO: Isso irá apagar TODOS os dados permanentemente!\n\nDeseja continuar?');
-        if (!confirm1) return;
-
-        const confirm2 = confirm('🚨 Última confirmação!\n\nTem certeza absoluta?\n\nRecomendamos exportar um backup antes.');
-        if (!confirm2) return;
-
-        await clearAllData();
-        alert('✅ Dados limpos com sucesso!\n\nRecarregue a página.');
-        window.location.reload();
     };
 
     const formatDate = (isoString: string | null) => {
@@ -94,6 +124,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported, onBa
             minute: '2-digit',
         });
     };
+
+    const roomAssemblySortableRules = rules.filter(r => r.type === 'ROOM_ASSEMBLY' && !r.isRestriction).sort((a, b) => a.order - b.order);
+    const roomAssemblyRestrictionRules = rules.filter(r => r.type === 'ROOM_ASSEMBLY' && r.isRestriction);
+
+    const passeDistributionSortableRules = rules.filter(r => r.type === 'PASSE_DISTRIBUTION' && !r.isRestriction).sort((a, b) => a.order - b.order);
+    const passeDistributionRestrictionRules = rules.filter(r => r.type === 'PASSE_DISTRIBUTION' && r.isRestriction);
 
     return (
         <PageContainer>
@@ -109,49 +145,51 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onDataImported, onBa
                     </div>
                 </div>
 
-                {/* Disabled notice */}
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-                    <p className="text-sm text-amber-800">
-                        <strong>ℹ️ Aviso:</strong> As funções de exportar, importar e limpar dados foram desabilitadas pois o sistema agora utiliza o banco de dados Supabase na nuvem. Os dados são sincronizados automaticamente.
-                    </p>
-                </div>
+                {/* Montagem de Salas Rules */}
+                <Accordion title={<span className="flex items-center gap-2"><span>🧩</span> Regras de Montagem das Salas</span>} defaultOpen>
+                    <div className="space-y-1">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 mb-2 block">Ordem de Prioridade</span>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e, 'ROOM_ASSEMBLY')}>
+                            <SortableContext items={roomAssemblySortableRules.map(r => r.id)} strategy={verticalListSortingStrategy}>
+                                {roomAssemblySortableRules.map((r, i) => (
+                                    <SortableRuleItem key={r.id} rule={r} index={i} onToggle={handleToggleRule} />
+                                ))}
+                            </SortableContext>
+                        </DndContext>
 
-                {/* Export Button - disabled */}
-                <div className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 flex items-center gap-4 opacity-40 cursor-not-allowed select-none">
-                    <div className="w-14 h-14 rounded-xl bg-slate-300 flex items-center justify-center flex-shrink-0 text-3xl">⬇️</div>
-                    <div className="flex-1 text-left">
-                        <h3 className="font-bold text-lg text-slate-400">Exportar Dados</h3>
-                        <p className="text-sm text-slate-400">Não disponível com Supabase</p>
+                        {roomAssemblyRestrictionRules.length > 0 && (
+                            <div className="mt-6 space-y-1">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 mb-2 block">Restrições (Não ordenáveis)</span>
+                                {roomAssemblyRestrictionRules.map(r => (
+                                    <StaticRuleItem key={r.id} rule={r} onToggle={handleToggleRule} />
+                                ))}
+                            </div>
+                        )}
                     </div>
-                </div>
+                </Accordion>
 
-                {/* Import Button - disabled */}
-                <div className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 flex items-center gap-4 opacity-40 cursor-not-allowed select-none">
-                    <div className="w-14 h-14 rounded-xl bg-slate-300 flex items-center justify-center flex-shrink-0 text-3xl">⬆️</div>
-                    <div className="flex-1 text-left">
-                        <h3 className="font-bold text-lg text-slate-400">Importar Dados</h3>
-                        <p className="text-sm text-slate-400">Não disponível com Supabase</p>
-                    </div>
-                </div>
+                {/* Painel de Distribuição */}
+                <Accordion title={<span className="flex items-center gap-2"><span>📋</span> Regras de Distribuição</span>} defaultOpen>
+                    <div className="space-y-1">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 mb-2 block">Ordem de Prioridade</span>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e, 'PASSE_DISTRIBUTION')}>
+                            <SortableContext items={passeDistributionSortableRules.map(r => r.id)} strategy={verticalListSortingStrategy}>
+                                {passeDistributionSortableRules.map((r, i) => (
+                                    <SortableRuleItem key={r.id} rule={r} index={i} onToggle={handleToggleRule} />
+                                ))}
+                            </SortableContext>
+                        </DndContext>
 
-                {/* Clear Data Button - disabled */}
-                <div className="w-full bg-white border-2 border-slate-100 rounded-2xl p-4 flex items-center gap-4 opacity-40 cursor-not-allowed select-none">
-                    <div className="w-14 h-14 rounded-xl bg-slate-300 flex items-center justify-center flex-shrink-0">
-                        <TrashIcon className="w-8 h-8 text-white" />
+                        {passeDistributionRestrictionRules.length > 0 && (
+                            <div className="mt-6 space-y-1">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1 mb-2 block">Restrições (Não ordenáveis)</span>
+                                {passeDistributionRestrictionRules.map(r => (
+                                    <StaticRuleItem key={r.id} rule={r} onToggle={handleToggleRule} />
+                                ))}
+                            </div>
+                        )}
                     </div>
-                    <div className="flex-1 text-left">
-                        <h3 className="font-bold text-lg text-slate-400">Limpar Todos os Dados</h3>
-                        <p className="text-sm text-slate-400">Não disponível com Supabase</p>
-                    </div>
-                </div>
-
-                {/* Help Text */}
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-6">
-                    <p className="text-sm text-amber-800">
-                        <strong>💡 Dica:</strong> Os dados agora são armazenados no banco de dados Supabase na nuvem.
-                        Exporte seus dados periodicamente para manter um backup local em JSON.
-                    </p>
-                </div>
+                </Accordion>
             </div>
         </PageContainer>
     );

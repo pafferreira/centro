@@ -1,4 +1,5 @@
 import { PasseAttendance, Room, WorkerRole, PasseType, AttendancePhase, AttendanceStatus, Worker } from "../types";
+import { getAppRules } from "./storage";
 
 export interface RoomDistribution {
     room: Room;
@@ -38,7 +39,7 @@ export function distributeAttendances(attendances: PasseAttendance[], rooms: Roo
     });
 
     // 3. Separate attendances
-    const atendidos = attendances.filter(a => a.status === AttendanceStatus.Atendido);
+    const atendidos = attendances.filter(a => a.status === AttendanceStatus.Atendido || a.status === AttendanceStatus.NaSala);
     const aguardando = attendances.filter(a => a.status === AttendanceStatus.Aguardando);
 
     atendidos.forEach(a => {
@@ -57,6 +58,9 @@ export function distributeAttendances(attendances: PasseAttendance[], rooms: Roo
     // Otherwise reallocate.
 
     const toAllocate: PasseAttendance[] = [];
+    const distributionRules = getAppRules().filter(r => r.type === 'PASSE_DISTRIBUTION' && r.isActive && !r.isRestriction).sort((a, b) => a.order - b.order);
+    const balanceRule = getAppRules().find(r => r.id === 'rule_dist_balance');
+    const isBalanceActive = balanceRule ? balanceRule.isActive : false;
 
     aguardando.forEach(a => {
         let needsAllocation = true;
@@ -86,6 +90,20 @@ export function distributeAttendances(attendances: PasseAttendance[], rooms: Roo
         }
     });
 
+    // Sort based on dynamically set priorities
+    const getPriority = (attendance: PasseAttendance): number => {
+        for (let i = 0; i < distributionRules.length; i++) {
+            const rule = distributionRules[i];
+            if (rule.id === 'rule_dist_first_time' && attendance.attendancePhase === AttendancePhase.PrimeiraVez) return i;
+            if (rule.id === 'rule_dist_retorno' && attendance.attendancePhase === AttendancePhase.Retorno) return i;
+            if (rule.id === 'rule_dist_a2' && attendance.passeType === PasseType.A2) return i;
+            if (rule.id === 'rule_dist_a1' && attendance.passeType === PasseType.A1 && attendance.attendancePhase === AttendancePhase.Normal) return i;
+        }
+        return 999; // Fallback se não bater em nenhuma regra ativa
+    };
+
+    toAllocate.sort((a, b) => getPriority(a) - getPriority(b));
+
     // Balance remaining
     toAllocate.forEach(attendance => {
         let validRooms = roomCapabilities;
@@ -100,10 +118,13 @@ export function distributeAttendances(attendances: PasseAttendance[], rooms: Roo
         }
 
         if (validRooms.length > 0) {
-            // Pick room with lowest queue size (balance)
-            const chosenRoom = validRooms.reduce((prev, curr) => {
-                return (curr.currentQueueSize < prev.currentQueueSize) ? curr : prev;
-            });
+            let chosenRoom = validRooms[0];
+            if (isBalanceActive) {
+                // Pick room with lowest queue size (balance)
+                chosenRoom = validRooms.reduce((prev, curr) => {
+                    return (curr.currentQueueSize < prev.currentQueueSize) ? curr : prev;
+                });
+            }
 
             // Allocate
             attendance.allocatedRoomId = chosenRoom.room.id;

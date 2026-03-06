@@ -1,4 +1,4 @@
-import { Worker, Room, PasseAttendance, RoomType, WorkerRole, Assistido } from "../types";
+import { Worker, Room, PasseAttendance, RoomType, WorkerRole, Assistido, AppRule, FichaAssistencia } from "../types";
 import { supabase } from "../services/supabaseClient";
 
 // ============================================================================
@@ -199,6 +199,33 @@ export async function deleteAssistido(assistidoId: string): Promise<void> {
 }
 
 // ============================================================================
+// FUNÇÕES CRUD – FICHAS (gfa_fichas_assistencia)
+// ============================================================================
+
+export async function saveFichaAssistencia(ficha: FichaAssistencia): Promise<void> {
+    try {
+        const row = {
+            id: ficha.id,
+            id_assistido: ficha.assistidoId,
+            id_entrevistador: ficha.entrevistadorId ?? null,
+            data_entrevista: ficha.dataEntrevista,
+            qtd_a2: ficha.qtdA2,
+            qtd_a1: ficha.qtdA1,
+            tipo_ficha: ficha.tipoFicha,
+            status_ficha: ficha.statusFicha,
+        };
+
+        const { error } = await supabase
+            .from('gfa_fichas_assistencia')
+            .upsert(row, { onConflict: 'id' });
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao salvar ficha_assistencia no Supabase:', error);
+    }
+}
+
+// ============================================================================
 // FUNÇÕES CRUD – WORKERS (gfa_trabalhadores)
 // ============================================================================
 
@@ -310,6 +337,19 @@ export async function saveAttendance(att: PasseAttendance): Promise<void> {
     }
 }
 
+export async function deleteAttendance(attendanceId: string): Promise<void> {
+    try {
+        const { error } = await supabase
+            .from('gfa_atendimentos_passe')
+            .delete()
+            .eq('id', attendanceId);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao deletar atendimento no Supabase:', error);
+    }
+}
+
 // ============================================================================
 // FUNÇÕES UTILITÁRIAS (Export / Import / Clear)
 // ============================================================================
@@ -377,4 +417,116 @@ export async function getStorageSize(): Promise<string> {
         console.error('Erro ao calcular tamanho:', error);
         return 'Desconhecido';
     }
+}
+
+// ============================================================================
+// FUNÇÕES DE CONFIGURAÇÃO (AppRules) - Armazenamento Local Inicial
+// ============================================================================
+
+export const DEFAULT_RULES: AppRule[] = [
+    {
+        id: 'rule_coord_priority',
+        type: 'ROOM_ASSEMBLY',
+        label: 'Prioridade 1: Coordenadores',
+        description: 'Garantir que cada sala tenha exatamente 1 Coordenador habilitado.',
+        isActive: true,
+        order: 1,
+        configurable: true
+    },
+    {
+        id: 'rule_medium_dist',
+        type: 'ROOM_ASSEMBLY',
+        label: 'Prioridade 2: Distribuição de Médiuns',
+        description: 'Médiuns devem ser distribuídos de forma equalitária entre as salas.',
+        isActive: true,
+        order: 2,
+        configurable: true
+    },
+    {
+        id: 'rule_sust_fill',
+        type: 'ROOM_ASSEMBLY',
+        label: 'Prioridade 3: Sustentação',
+        description: 'Completar os assentos restantes com trabalhadores de Sustentação.',
+        isActive: true,
+        order: 3,
+        configurable: true
+    },
+    {
+        id: 'rule_capacity_limit',
+        type: 'ROOM_ASSEMBLY',
+        label: 'Restrição: Capacidade Máxima',
+        description: 'Não permitir que o número de trabalhadores alocados ultrapasse a capacidade total da sala.',
+        isActive: true,
+        order: 0,
+        configurable: true,
+        isRestriction: true
+    },
+    {
+        id: 'rule_dist_first_time',
+        type: 'PASSE_DISTRIBUTION',
+        label: '1) Primeira Vez (Sala c/ Médium)',
+        description: 'Prioriza assistidos em fase de "Primeira Vez". Requer sala com Médium.',
+        isActive: true,
+        order: 1,
+        configurable: true
+    },
+    {
+        id: 'rule_dist_retorno',
+        type: 'PASSE_DISTRIBUTION',
+        label: '2) Retorno (Sala c/ Médium)',
+        description: 'Prioriza assistidos em fase de "Retorno". Requer sala com Médium.',
+        isActive: true,
+        order: 2,
+        configurable: true
+    },
+    {
+        id: 'rule_dist_a2',
+        type: 'PASSE_DISTRIBUTION',
+        label: '3) Passe A2 (Sala c/ Médium + Diálogo)',
+        description: 'Prioriza assistidos classificados como "A2". Requer sala com Médium e Diálogo.',
+        isActive: true,
+        order: 3,
+        configurable: true
+    },
+    {
+        id: 'rule_dist_a1',
+        type: 'PASSE_DISTRIBUTION',
+        label: '4) Passe A1 (Qualquer Sala)',
+        description: 'Prioriza assistidos classificados como "A1". Aceita qualquer sala de passe.',
+        isActive: true,
+        order: 4,
+        configurable: true
+    },
+    {
+        id: 'rule_dist_balance',
+        type: 'PASSE_DISTRIBUTION',
+        label: 'Restrição: Balanceamento Equalitário',
+        description: 'Se existirem múltiplas salas válidas para o assistido, encaminhar sempre para a que tiver a menor fila.',
+        isActive: true,
+        order: 0,
+        configurable: true,
+        isRestriction: true
+    }
+];
+
+export function getAppRules(): AppRule[] {
+    const data = localStorage.getItem('@centro:AppRules');
+    if (data) {
+        try {
+            const parsed = JSON.parse(data);
+            // Migration: if they don't have the a2 rule, reset to defaults
+            if (!parsed.some((r: AppRule) => r.id === 'rule_dist_a2')) {
+                saveAppRules(DEFAULT_RULES);
+                return DEFAULT_RULES;
+            }
+            return parsed;
+        } catch (e) {
+            console.error(e);
+        }
+    }
+    return DEFAULT_RULES;
+}
+
+export function saveAppRules(rules: AppRule[]): void {
+    localStorage.setItem('@centro:AppRules', JSON.stringify(rules));
 }
