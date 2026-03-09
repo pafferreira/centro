@@ -63,7 +63,7 @@ function attendanceFromDb(row: any): PasseAttendance {
         id: row.id,
         date: row.data_atendimento,
         assistidoId: row.id_assistido,
-        assistidoName: row.nome_assistido_cache ?? '',
+        assistidoName: row.nome_assistido_cache ?? row.gfa_assistidos?.nome_assistido ?? '',
         passeType: row.tipo_passe,
         attendancePhase: row.fase_atendimento,
         status: row.status_atendimento,
@@ -354,16 +354,7 @@ export async function loadAttendances(): Promise<PasseAttendance[]> {
 
         if (error) throw error;
 
-        return (data ?? []).map((row: any) => ({
-            id: row.id,
-            date: row.data_atendimento,
-            assistidoId: row.id_assistido,
-            assistidoName: row.gfa_assistidos?.nome_assistido ?? '',
-            passeType: row.tipo_passe,
-            attendancePhase: row.fase_atendimento,
-            status: row.status_atendimento,
-            allocatedRoomId: row.id_sala_alocada ?? null,
-        }));
+        return (data ?? []).map(attendanceFromDb);
     } catch (error) {
         console.error('Erro ao carregar atendimentos do Supabase:', error);
         return [];
@@ -593,3 +584,4 @@ export function getAppRules(): AppRule[] {
 export function saveAppRules(rules: AppRule[]): void {
     localStorage.setItem('@centro:AppRules', JSON.stringify(rules));
 }
+

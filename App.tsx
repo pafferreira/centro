@@ -342,6 +342,23 @@ export default function App() {
       return [ficha, ...prev];
     });
 
+    // Vincula id_ficha_assistencia nos atendimentos do assistido ainda sem ficha
+    const updatedAttendances = attendances.map(att => {
+      if (att.assistidoId === ficha.assistidoId && !att.fichaAssistenciaId) {
+        return { ...att, fichaAssistenciaId: ficha.id };
+      }
+      return att;
+    });
+
+    const changedRows = updatedAttendances.filter(
+      (att, idx) => att.fichaAssistenciaId !== attendances[idx]?.fichaAssistenciaId
+    );
+
+    if (changedRows.length > 0) {
+      setAttendances(updatedAttendances);
+      await saveAttendances(updatedAttendances);
+    }
+
     // Simulate back action
     setShowAssistanceView(false);
     showToast("Ficha de Assistência salva com sucesso!");
@@ -550,3 +567,4 @@ export default function App() {
     </LayoutProvider>
   );
 }
+

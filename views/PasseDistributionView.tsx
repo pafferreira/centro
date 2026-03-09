@@ -50,8 +50,8 @@ const STYLES = `
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: #7a8c90;
-  background: #f2f5f7;
-  border-bottom: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.45);
+  border-bottom: 1px solid rgba(13, 25, 27, 0.08);
 }
 .dist-table th:last-child,
 .dist-table td:last-child {
@@ -59,17 +59,21 @@ const STYLES = `
 }
 .dist-table td {
   padding: 10px 12px;
-  border-bottom: 1px solid #f0f4f7;
+  border-bottom: 1px solid rgba(13, 25, 27, 0.06);
   color: #0d191b;
   vertical-align: middle;
 }
 .dist-table tr:last-child td { border-bottom: none; }
-.dist-table tr:hover td { background: #f7fbff; }
+.dist-table tr:hover td { background: rgba(68, 210, 240, 0.08); }
 .dist-table-wrap {
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 12px;
   overflow: hidden;
   width: 100%;
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 14px 28px -20px rgba(13, 25, 27, 0.55);
 }
 .dist-section-title {
   font-size: 11px;
@@ -90,7 +94,8 @@ const STYLES = `
 }
 .dist-badge-a1 { background: #eff6ff; color: #3b82f6; border: 1px solid #dbeafe; }
 .dist-badge-a2 { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-.dist-badge-phase { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+.dist-badge-first { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.dist-badge-retorno { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 `;
 
 interface PasseDistributionViewProps {
@@ -109,6 +114,19 @@ function getPriority(a: FlatAttendance): number {
     if (a.attendancePhase === AttendancePhase.PrimeiraVez || a.attendancePhase === AttendancePhase.Retorno) return 0;
     if (a.passeType === PasseType.A2) return 1;
     return 2;
+}
+
+function getTipoBadge(att: FlatAttendance): { label: string; className: string } {
+    if (att.attendancePhase === AttendancePhase.PrimeiraVez) {
+        return { label: '1a Vez', className: 'dist-badge-first' };
+    }
+    if (att.attendancePhase === AttendancePhase.Retorno) {
+        return { label: 'Retorno', className: 'dist-badge-retorno' };
+    }
+    if (att.passeType === PasseType.A2) {
+        return { label: 'A2', className: 'dist-badge-a2' };
+    }
+    return { label: 'A1', className: 'dist-badge-a1' };
 }
 
 function SituacaoIcon({ status, passeType }: { status: AttendanceStatus; passeType: PasseType }) {
@@ -255,52 +273,53 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                                 <table className="dist-table">
                                     <thead>
                                         <tr>
-                                            <th style={{ width: 36 }}>#</th>
                                             <th>Nome</th>
-                                            <th style={{ width: 90 }}>Tipo</th>
-                                            <th style={{ width: 120 }}>Sala</th>
-                                            <th style={{ width: 72 }}>Situação</th>
+                                            <th style={{ width: 84 }}>Tipo</th>
+                                            <th style={{ width: 98 }}>Sala</th>
+                                            <th style={{ width: 64 }}>Situação</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {activeRows.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} style={{ textAlign: 'center', padding: '28px 12px', color: '#b0bec5', fontStyle: 'italic', fontSize: 13 }}>
+                                                <td colSpan={4} style={{ textAlign: 'center', padding: '28px 12px', color: '#b0bec5', fontStyle: 'italic', fontSize: 13 }}>
                                                     Nenhum assistido aguardando
                                                 </td>
                                             </tr>
-                                        ) : activeRows.map((att, idx) => (
-                                            <tr
-                                                key={att.id}
-                                                className={exitingId === att.id ? 'dist-row-exit' : undefined}
-                                            >
-                                                <td style={{ color: '#475569', fontWeight: 800, fontSize: 13 }}>{idx + 1}</td>
-                                                <td>
-                                                    <div style={{ fontWeight: 600, color: '#0d191b' }}>{att.assistidoName}</div>
-                                                    {att.attendancePhase !== AttendancePhase.EmAtendimento && (
-                                                        <span className="dist-badge dist-badge-phase" style={{ marginTop: 3 }}>
-                                                            {att.attendancePhase}
+                                        ) : activeRows.map((att, idx) => {
+                                            const tipoBadge = getTipoBadge(att);
+                                            return (
+                                                <tr
+                                                    key={att.id}
+                                                    className={exitingId === att.id ? 'dist-row-exit' : undefined}
+                                                >
+                                                    <td>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                                                            <span style={{ color: '#94a3b8', fontWeight: 800, fontSize: 12, minWidth: 20 }}>{idx + 1}.</span>
+                                                            <span style={{ fontWeight: 600, color: '#0d191b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                {att.assistidoName}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`dist-badge ${tipoBadge.className}`}>
+                                                            {tipoBadge.label}
                                                         </span>
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    <span className={`dist-badge ${att.passeType === PasseType.A2 ? 'dist-badge-a2' : 'dist-badge-a1'}`}>
-                                                        {att.passeType}
-                                                    </span>
-                                                </td>
-                                                <td style={{ color: '#475569', fontSize: 13 }}>{att.assignedRoomName}</td>
-                                                <td>
-                                                    <button
-                                                        className="dist-icon-btn"
-                                                        onClick={() => handleIconClick(att)}
-                                                        title={att.status}
-                                                        aria-label={`Avançar situação de ${att.assistidoName}`}
-                                                    >
-                                                        <SituacaoIcon status={att.status} passeType={att.passeType} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td style={{ color: '#475569', fontSize: 12, fontWeight: 600 }}>{att.assignedRoomName}</td>
+                                                    <td>
+                                                        <button
+                                                            className="dist-icon-btn"
+                                                            onClick={() => handleIconClick(att)}
+                                                            title={att.status}
+                                                            aria-label={`Avançar situação de ${att.assistidoName}`}
+                                                        >
+                                                            <SituacaoIcon status={att.status} passeType={att.passeType} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
@@ -317,33 +336,36 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                                         <thead>
                                             <tr>
                                                 <th>Nome</th>
-                                                <th style={{ width: 90 }}>Tipo</th>
-                                                <th style={{ width: 120 }}>Sala</th>
-                                                <th style={{ width: 72 }}>Situação</th>
+                                                <th style={{ width: 84 }}>Tipo</th>
+                                                <th style={{ width: 98 }}>Sala</th>
+                                                <th style={{ width: 64 }}>Situação</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {liberadoRows.map(att => (
-                                                <tr
-                                                    key={att.id}
-                                                    className={recentlyLiberadoIds.has(att.id) ? 'dist-row-enter' : undefined}
-                                                >
-                                                    <td>
-                                                        <div style={{ fontWeight: 600, color: '#0d191b' }}>{att.assistidoName}</div>
-                                                    </td>
-                                                    <td>
-                                                        <span className={`dist-badge ${att.passeType === PasseType.A2 ? 'dist-badge-a2' : 'dist-badge-a1'}`}>
-                                                            {att.passeType}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ color: '#475569', fontSize: 13 }}>{att.assignedRoomName}</td>
-                                                    <td>
-                                                        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44 }}>
-                                                            <CheckCircleIcon style={{ width: 22, height: 22, color: '#10b981' }} />
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {liberadoRows.map(att => {
+                                                const tipoBadge = getTipoBadge(att);
+                                                return (
+                                                    <tr
+                                                        key={att.id}
+                                                        className={recentlyLiberadoIds.has(att.id) ? 'dist-row-enter' : undefined}
+                                                    >
+                                                        <td>
+                                                            <div style={{ fontWeight: 600, color: '#0d191b' }}>{att.assistidoName}</div>
+                                                        </td>
+                                                        <td>
+                                                            <span className={`dist-badge ${tipoBadge.className}`}>
+                                                                {tipoBadge.label}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ color: '#475569', fontSize: 12, fontWeight: 600 }}>{att.assignedRoomName}</td>
+                                                        <td>
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44 }}>
+                                                                <CheckCircleIcon style={{ width: 22, height: 22, color: '#10b981' }} />
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
