@@ -69,6 +69,8 @@ function attendanceFromDb(row: any): PasseAttendance {
         status: row.status_atendimento,
         allocatedRoomId: row.id_sala_alocada ?? null,
         fichaAssistenciaId: row.id_ficha_assistencia ?? undefined,
+        horaEntrada: row.hora_entrada ?? undefined,
+        horaSaida: row.hora_saida ?? undefined,
     };
 }
 
@@ -76,12 +78,15 @@ function attendanceToDb(att: PasseAttendance): Record<string, any> {
     return {
         id: att.id,
         data_atendimento: att.date,
+        nome_assistido_cache: att.assistidoName,
         tipo_passe: att.passeType,
         fase_atendimento: att.attendancePhase,
         status_atendimento: att.status,
         id_assistido: att.assistidoId,
         id_sala_alocada: att.allocatedRoomId ?? null,
         id_ficha_assistencia: att.fichaAssistenciaId ?? null,
+        hora_entrada: att.horaEntrada ?? null,
+        hora_saida: att.horaSaida ?? null,
     };
 }
 
@@ -250,6 +255,31 @@ export async function saveFichaAssistencia(ficha: FichaAssistencia): Promise<voi
         if (error) throw error;
     } catch (error) {
         console.error('Erro ao salvar ficha_assistencia no Supabase:', error);
+    }
+}
+
+export async function updateFichaRealizado(fichaId: string, type: 'A1' | 'A2'): Promise<void> {
+    try {
+        const { data, error: fetchError } = await supabase
+            .from('gfa_fichas_assistencia')
+            .select('realizado_a1, realizado_a2')
+            .eq('id', fichaId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const update = type === 'A2'
+            ? { realizado_a2: (data.realizado_a2 ?? 0) + 1 }
+            : { realizado_a1: (data.realizado_a1 ?? 0) + 1 };
+
+        const { error } = await supabase
+            .from('gfa_fichas_assistencia')
+            .update(update)
+            .eq('id', fichaId);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao atualizar realizado na ficha:', error);
     }
 }
 

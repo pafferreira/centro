@@ -70,6 +70,8 @@ CREATE TABLE public.gfa_atendimentos_passe (
     tipo_passe TEXT NOT NULL,
     fase_atendimento TEXT NOT NULL,
     status_atendimento TEXT NOT NULL DEFAULT 'Aguardando',
+    hora_entrada TIMESTAMPTZ,
+    hora_saida TIMESTAMPTZ,
     criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

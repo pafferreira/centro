@@ -9,3 +9,7 @@ ALTER TABLE public.gfa_fichas_assistencia RENAME COLUMN historico_a1 TO realizad
 
 -- Remove campo data_nascimento da tabela de assistidos (campo não utilizado)
 ALTER TABLE public.gfa_assistidos DROP COLUMN IF EXISTS data_nascimento;
+
+-- Rastreamento de horário de início e fim do atendimento no Painel de Distribuição
+ALTER TABLE public.gfa_atendimentos_passe ADD COLUMN IF NOT EXISTS hora_entrada TIMESTAMPTZ;
+ALTER TABLE public.gfa_atendimentos_passe ADD COLUMN IF NOT EXISTS hora_saida TIMESTAMPTZ;

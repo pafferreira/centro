@@ -1,11 +1,101 @@
-import React, { useState, useMemo } from 'react';
-import { ViewState, PasseAttendance, Room, Worker, AttendanceStatus } from '../types';
+import React, { useState, useMemo, useCallback } from 'react';
+import { ViewState, PasseAttendance, Room, Worker, AttendanceStatus, PasseType, AttendancePhase } from '../types';
 import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
 import { distributeAttendances } from '../utils/distributionLogic';
+import { saveAttendance, updateFichaRealizado } from '../utils/storage';
+import { CheckCircleIcon, ArrowUpIcon, HourglassIcon } from '../components/Icons';
+
+// ─── CSS animations injected once ────────────────────────────────────────────
+const STYLES = `
+@keyframes dist-slide-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(12px); }
+}
+@keyframes dist-slide-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.dist-row-exit {
+  animation: dist-slide-out 0.35s ease forwards;
+  pointer-events: none;
+}
+.dist-row-enter {
+  animation: dist-slide-in 0.35s ease forwards;
+}
+.dist-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: background 150ms;
+  -webkit-tap-highlight-color: transparent;
+}
+.dist-icon-btn:hover { background: rgba(0,0,0,0.05); }
+.dist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.dist-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #7a8c90;
+  background: #f2f5f7;
+  border-bottom: 1px solid #e2e8f0;
+}
+.dist-table th:last-child,
+.dist-table td:last-child {
+  text-align: center;
+}
+.dist-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f4f7;
+  color: #0d191b;
+  vertical-align: middle;
+}
+.dist-table tr:last-child td { border-bottom: none; }
+.dist-table tr:hover td { background: #f7fbff; }
+.dist-table-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  width: 100%;
+}
+.dist-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #7a8c90;
+  margin-bottom: 8px;
+}
+.dist-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.dist-badge-a1 { background: #eff6ff; color: #3b82f6; border: 1px solid #dbeafe; }
+.dist-badge-a2 { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.dist-badge-phase { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+`;
 
 interface PasseDistributionViewProps {
     attendances: PasseAttendance[];
+    fichas?: any[];
     rooms: Room[];
     workers: Worker[];
     onUpdateAttendance: (att: PasseAttendance) => void;
@@ -13,130 +103,253 @@ interface PasseDistributionViewProps {
     onNavigate: (v: ViewState) => void;
 }
 
-export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({ attendances, rooms, workers, onUpdateAttendance, onBack, onNavigate }) => {
+type FlatAttendance = PasseAttendance & { assignedRoomName: string };
+
+function getPriority(a: FlatAttendance): number {
+    if (a.attendancePhase === AttendancePhase.PrimeiraVez || a.attendancePhase === AttendancePhase.Retorno) return 0;
+    if (a.passeType === PasseType.A2) return 1;
+    return 2;
+}
+
+function SituacaoIcon({ status, passeType }: { status: AttendanceStatus; passeType: PasseType }) {
+    if (status === AttendanceStatus.Aguardando) {
+        return <span style={{ color: '#9eb3b8', fontWeight: 700, fontSize: 18, letterSpacing: '-1px' }}>—</span>;
+    }
+    if (status === AttendanceStatus.NaSala) {
+        return <ArrowUpIcon style={{ width: 22, height: 22, color: '#004e89' }} />;
+    }
+    if (status === AttendanceStatus.EmAtendimento) {
+        return <HourglassIcon style={{ width: 20, height: 20, color: '#10b981' }} />;
+    }
+    // Atendido
+    return <CheckCircleIcon style={{ width: 22, height: 22, color: '#10b981' }} />;
+}
+
+export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
+    attendances, rooms, workers, onUpdateAttendance, onBack, onNavigate
+}) => {
     const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [exitingId, setExitingId] = useState<string | null>(null);
+    const [recentlyLiberadoIds, setRecentlyLiberadoIds] = useState<Set<string>>(new Set());
 
-    // Derived state for the distribution
-    const todaysAttendances = attendances.filter(a => a.date === date);
+    const todaysAttendances = useMemo(
+        () => attendances.filter(a => a.date === date),
+        [attendances, date]
+    );
 
-    // Run distribution algorithm
-    const distribution = useMemo(() => {
-        return distributeAttendances(todaysAttendances, rooms, workers);
-    }, [todaysAttendances, rooms, workers]);
+    const distribution = useMemo(
+        () => distributeAttendances(todaysAttendances, rooms, workers),
+        [todaysAttendances, rooms, workers]
+    );
 
-    const flatAttendances = useMemo(() => {
-        const flat: (PasseAttendance & { assignedRoomName: string })[] = [];
+    const flatAttendances = useMemo<FlatAttendance[]>(() => {
+        const flat: FlatAttendance[] = [];
         distribution.forEach(d => {
-            d.attendances.forEach(a => {
-                flat.push({ ...a, assignedRoomName: d.room.name });
-            });
+            d.attendances.forEach(a => flat.push({ ...a, assignedRoomName: d.room.name }));
         });
         return flat;
     }, [distribution]);
 
-    const aguardando = flatAttendances.filter(a => a.status === AttendanceStatus.Aguardando);
-    const naSala = flatAttendances.filter(a => a.status === AttendanceStatus.NaSala);
-    const atendidos = flatAttendances.filter(a => a.status === AttendanceStatus.Atendido);
+    const activeRows = useMemo(
+        () => flatAttendances
+            .filter(a => a.status !== AttendanceStatus.Atendido)
+            .sort((a, b) => getPriority(a) - getPriority(b)),
+        [flatAttendances]
+    );
 
-    const updateStatus = (att: PasseAttendance, newStatus: AttendanceStatus) => {
-        // Find original attendance without 'assignedRoomName'
-        const originalArray = attendances.find(a => a.id === att.id);
-        if (originalArray) {
-            onUpdateAttendance({ ...originalArray, status: newStatus });
+    const liberadoRows = useMemo(
+        () => flatAttendances.filter(a => a.status === AttendanceStatus.Atendido),
+        [flatAttendances]
+    );
+
+    const handleIconClick = useCallback((att: FlatAttendance) => {
+        if (att.status === AttendanceStatus.Atendido) return;
+
+        const now = new Date().toISOString();
+        let updated: PasseAttendance = { ...att };
+
+        if (att.status === AttendanceStatus.Aguardando) {
+            updated = { ...att, status: AttendanceStatus.NaSala, horaEntrada: now };
+            onUpdateAttendance(updated);
+            saveAttendance(updated);
+        } else if (att.status === AttendanceStatus.NaSala) {
+            if (att.passeType === PasseType.A2) {
+                updated = { ...att, status: AttendanceStatus.EmAtendimento };
+                onUpdateAttendance(updated);
+                saveAttendance(updated);
+            } else {
+                // A1 / PrimeiraVez / Retorno → Liberado
+                liberarAssistido(att, now);
+            }
+        } else if (att.status === AttendanceStatus.EmAtendimento) {
+            liberarAssistido(att, now);
         }
+    }, [onUpdateAttendance]);
+
+    const liberarAssistido = (att: FlatAttendance, now: string) => {
+        setExitingId(att.id);
+        setRecentlyLiberadoIds(prev => new Set(prev).add(att.id));
+
+        setTimeout(() => {
+            const updated: PasseAttendance = { ...att, status: AttendanceStatus.Atendido, horaSaida: now };
+            onUpdateAttendance(updated);
+            saveAttendance(updated);
+            setExitingId(null);
+
+            // Increment realizado on the ficha
+            if (att.fichaAssistenciaId) {
+                const type = att.passeType === PasseType.A2 ? 'A2' : 'A1';
+                updateFichaRealizado(att.fichaAssistenciaId, type);
+            }
+        }, 380);
     };
 
-    const renderCard = (att: PasseAttendance & { assignedRoomName: string }, index: number) => (
-        <div key={att.id} className="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-2 relative">
-            <div className="flex justify-between items-start">
-                <span className="font-bold text-slate-800 leading-tight pr-6">{att.assistidoName}</span>
-                <span className="text-xs font-bold text-slate-400 absolute right-3 top-3">#{index + 1}</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mt-0.5">
-                <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-bold border border-slate-200 uppercase tracking-widest">
-                    {att.attendancePhase}
-                </span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold border uppercase tracking-widest ${att.passeType === 'A1' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                    {att.passeType}
-                </span>
-            </div>
-            <div className="text-xs font-medium text-slate-500 bg-slate-50 rounded-lg p-2 mt-1 border border-slate-100 flex items-center gap-2">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 text-slate-400">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                </svg>
-                Sala sugerida: <strong className="text-slate-700">{att.assignedRoomName}</strong>
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-end mt-2 pt-2 border-t border-slate-50 gap-2">
-                {att.status === AttendanceStatus.Aguardando && (
-                    <button onClick={() => updateStatus(att, AttendanceStatus.NaSala)} className="text-xs w-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-2 rounded-xl font-bold transition-colors">
-                        Chamar Sala
-                    </button>
-                )}
-                {att.status === AttendanceStatus.NaSala && (
-                    <>
-                        <button onClick={() => updateStatus(att, AttendanceStatus.Aguardando)} className="text-xs text-slate-500 hover:text-slate-700 px-2 py-2 rounded-xl font-bold transition-colors shrink-0">
-                            Voltar
-                        </button>
-                        <button onClick={() => updateStatus(att, AttendanceStatus.Atendido)} className="flex-1 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-2 rounded-xl font-bold border border-emerald-200 transition-colors shrink-0">
-                            Finalizar Passe
-                        </button>
-                    </>
-                )}
-                {att.status === AttendanceStatus.Atendido && (
-                    <button onClick={() => updateStatus(att, AttendanceStatus.Aguardando)} className="text-xs w-full text-slate-500 hover:text-slate-700 px-3 py-2 rounded-xl font-bold outline outline-1 outline-slate-200 transition-colors">
-                        Desfazer Finalização
-                    </button>
-                )}
-            </div>
-        </div>
-    );
-
-    const KanbanColumn = ({ title, items, colorClass }: { title: string, items: any[], colorClass: string }) => (
-        <div className={`flex flex-col gap-3 min-w-[300px] w-full md:w-1/3 bg-slate-50 border border-slate-200 rounded-3xl p-3 shrink-0`}>
-            <div className={`font-bold text-[11px] uppercase tracking-widest pl-2 mb-1 opacity-80 ${colorClass}`}>
-                {title} ({items.length})
-            </div>
-            <div className="flex flex-col gap-3 overflow-y-auto max-h-[60vh] md:max-h-[calc(100vh-280px)] px-1 pb-4">
-                {items.map((item, idx) => renderCard(item, idx))}
-                {items.length === 0 && <div className="text-center text-slate-400 text-sm py-10 font-medium border-2 border-dashed border-slate-200 rounded-2xl mx-1">Vazio</div>}
-            </div>
-        </div>
-    );
+    const noValidRooms = distribution.length === 0;
 
     return (
         <PageContainer>
+            <style>{STYLES}</style>
             <Header title="Painel de Distribuição" onBack={onBack} onHome={() => onNavigate('DASHBOARD')} />
 
-            <div className="mt-6 flex flex-col gap-6 px-1 pb-10">
-                <div className="flex flex-col gap-1.5 px-1">
-                    <label className="text-sm font-semibold text-slate-700">Data do Passe</label>
+            <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
+                {/* Date filter */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Data do Passe</label>
                     <input
                         type="date"
                         value={date}
                         onChange={e => setDate(e.target.value)}
-                        className="w-full px-4 py-3 bg-white rounded-xl shadow-soft border border-slate-200 focus:ring-2 focus:ring-blue-500/30 font-bold"
+                        style={{
+                            padding: '10px 14px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: 10,
+                            fontSize: 14,
+                            fontWeight: 600,
+                            background: '#fff',
+                            color: '#0d191b',
+                            outline: 'none',
+                        }}
                     />
                 </div>
 
-                {distribution.length === 0 ? (
-                    <div className="bg-yellow-50 text-yellow-800 p-5 rounded-2xl border border-yellow-200 font-medium mx-1">
+                {noValidRooms ? (
+                    <div style={{
+                        background: '#fefce8',
+                        border: '1px solid #fde68a',
+                        borderRadius: 12,
+                        padding: '16px 20px',
+                        color: '#92400e',
+                        fontWeight: 500,
+                        fontSize: 14,
+                    }}>
                         Não há salas de passe válidas (com médium alocado e presente). Verifique a Montagem das Salas.
                     </div>
                 ) : (
-                    <div className="flex flex-col md:flex-row gap-4 overflow-x-auto snap-x snap-mandatory px-1 pb-4 min-h-[400px]">
-                        <div className="snap-start shrink-0 w-full md:w-auto md:flex-1">
-                            <KanbanColumn title="Aguardando" items={aguardando} colorClass="text-slate-500" />
+                    <>
+                        {/* ── Tabela principal ── */}
+                        <div>
+                            <div className="dist-section-title">
+                                Em Atendimento <span style={{ fontWeight: 400, color: '#b0bec5', marginLeft: 4 }}>({activeRows.length})</span>
+                            </div>
+                            <div className="dist-table-wrap">
+                                <table className="dist-table">
+                                    <thead>
+                                        <tr>
+                                            <th style={{ width: 36 }}>#</th>
+                                            <th>Nome</th>
+                                            <th style={{ width: 90 }}>Tipo</th>
+                                            <th style={{ width: 120 }}>Sala</th>
+                                            <th style={{ width: 72 }}>Situação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {activeRows.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} style={{ textAlign: 'center', padding: '28px 12px', color: '#b0bec5', fontStyle: 'italic', fontSize: 13 }}>
+                                                    Nenhum assistido aguardando
+                                                </td>
+                                            </tr>
+                                        ) : activeRows.map((att, idx) => (
+                                            <tr
+                                                key={att.id}
+                                                className={exitingId === att.id ? 'dist-row-exit' : undefined}
+                                            >
+                                                <td style={{ color: '#475569', fontWeight: 800, fontSize: 13 }}>{idx + 1}</td>
+                                                <td>
+                                                    <div style={{ fontWeight: 600, color: '#0d191b' }}>{att.assistidoName}</div>
+                                                    {att.attendancePhase !== AttendancePhase.EmAtendimento && (
+                                                        <span className="dist-badge dist-badge-phase" style={{ marginTop: 3 }}>
+                                                            {att.attendancePhase}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <span className={`dist-badge ${att.passeType === PasseType.A2 ? 'dist-badge-a2' : 'dist-badge-a1'}`}>
+                                                        {att.passeType}
+                                                    </span>
+                                                </td>
+                                                <td style={{ color: '#475569', fontSize: 13 }}>{att.assignedRoomName}</td>
+                                                <td>
+                                                    <button
+                                                        className="dist-icon-btn"
+                                                        onClick={() => handleIconClick(att)}
+                                                        title={att.status}
+                                                        aria-label={`Avançar situação de ${att.assistidoName}`}
+                                                    >
+                                                        <SituacaoIcon status={att.status} passeType={att.passeType} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        <div className="snap-start shrink-0 w-full md:w-auto md:flex-1">
-                            <KanbanColumn title="Na Sala" items={naSala} colorClass="text-indigo-600" />
-                        </div>
-                        <div className="snap-start shrink-0 w-full md:w-auto md:flex-1">
-                            <KanbanColumn title="Atendido" items={atendidos} colorClass="text-emerald-600" />
-                        </div>
-                    </div>
+
+                        {/* ── Tabela de Liberados ── */}
+                        {liberadoRows.length > 0 && (
+                            <div>
+                                <div className="dist-section-title">
+                                    Atendidos <span style={{ fontWeight: 400, color: '#b0bec5', marginLeft: 4 }}>({liberadoRows.length})</span>
+                                </div>
+                                <div className="dist-table-wrap">
+                                    <table className="dist-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Nome</th>
+                                                <th style={{ width: 90 }}>Tipo</th>
+                                                <th style={{ width: 120 }}>Sala</th>
+                                                <th style={{ width: 72 }}>Situação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {liberadoRows.map(att => (
+                                                <tr
+                                                    key={att.id}
+                                                    className={recentlyLiberadoIds.has(att.id) ? 'dist-row-enter' : undefined}
+                                                >
+                                                    <td>
+                                                        <div style={{ fontWeight: 600, color: '#0d191b' }}>{att.assistidoName}</div>
+                                                    </td>
+                                                    <td>
+                                                        <span className={`dist-badge ${att.passeType === PasseType.A2 ? 'dist-badge-a2' : 'dist-badge-a1'}`}>
+                                                            {att.passeType}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ color: '#475569', fontSize: 13 }}>{att.assignedRoomName}</td>
+                                                    <td>
+                                                        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44 }}>
+                                                            <CheckCircleIcon style={{ width: 22, height: 22, color: '#10b981' }} />
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </PageContainer>

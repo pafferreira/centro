@@ -85,6 +85,7 @@ export enum AttendancePhase {
 export enum AttendanceStatus {
   Aguardando = "Aguardando",
   NaSala = "Na Sala",
+  EmAtendimento = "Em Atendimento",
   Atendido = "Atendido"
 }
 
@@ -98,6 +99,8 @@ export interface PasseAttendance {
   status: AttendanceStatus;
   allocatedRoomId?: string | null;
   fichaAssistenciaId?: string;
+  horaEntrada?: string; // ISO timestamp — when entered room
+  horaSaida?: string;   // ISO timestamp — when released
 }
 
 export interface AppRule {
