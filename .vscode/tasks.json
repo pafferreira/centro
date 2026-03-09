@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Commit_PAF (patch)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\Commit_PAF.cmd",
+      "args": ["-Bump", "patch", "-Summary", "${input:commitPafSummary}"],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Commit_PAF (minor)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\Commit_PAF.cmd",
+      "args": ["-Bump", "minor", "-Summary", "${input:commitPafSummary}"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Commit_PAF (major)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\Commit_PAF.cmd",
+      "args": ["-Bump", "major", "-Summary", "${input:commitPafSummary}"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Commit_PAF (patch sem push)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\Commit_PAF.cmd",
+      "args": ["-Bump", "patch", "-NoPush", "-Summary", "${input:commitPafSummary}"],
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "commitPafSummary",
+      "type": "promptString",
+      "description": "Resumo complementar (opcional)",
+      "default": ""
+    }
+  ]
+}
