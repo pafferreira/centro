@@ -241,7 +241,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                         {/* Data */}
                         <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                                Data
+                                Data do Passe
                                 <Tooltip text="Data do atendimento. Normalmente é a data de hoje." position="top">
                                     <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
                                 </Tooltip>
@@ -329,13 +329,13 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                             <div className="flex gap-3">
                                 {fichaAutoDetected ? (
                                     <>
-                                        <div className={`flex-1 py-3.5 rounded-xl font-bold border-2 text-center text-base select-none ${passeType === PasseType.A1 && isPasseTypeEnabled ? 'bg-blue-100 border-blue-500 text-blue-800 shadow-sm' : 'bg-blue-50/50 border-blue-200 text-blue-300'}`}>A1</div>
                                         <div className={`flex-1 py-3.5 rounded-xl font-bold border-2 text-center text-base select-none ${passeType === PasseType.A2 && isPasseTypeEnabled ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-amber-50/50 border-amber-200 text-amber-300'}`}>A2</div>
+                                        <div className={`flex-1 py-3.5 rounded-xl font-bold border-2 text-center text-base select-none ${passeType === PasseType.A1 && isPasseTypeEnabled ? 'bg-blue-100 border-blue-500 text-blue-800 shadow-sm' : 'bg-blue-50/50 border-blue-200 text-blue-300'}`}>A1</div>
                                     </>
                                 ) : (
                                     <>
-                                        <button type="button" disabled={!isPasseTypeEnabled} onClick={() => setPasseType(PasseType.A1)} className={`flex-1 py-3.5 rounded-xl font-bold border-2 transition-all disabled:cursor-not-allowed ${passeType === PasseType.A1 ? 'bg-blue-100 border-blue-500 text-blue-800 shadow-sm scale-[1.02]' : 'bg-blue-50/50 border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300'}`}>A1</button>
                                         <button type="button" disabled={!isPasseTypeEnabled} onClick={() => setPasseType(PasseType.A2)} className={`flex-1 py-3.5 rounded-xl font-bold border-2 transition-all disabled:cursor-not-allowed ${passeType === PasseType.A2 ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm scale-[1.02]' : 'bg-amber-50/50 border-amber-200 text-amber-600 hover:bg-amber-100 hover:border-amber-300'}`}>A2</button>
+                                        <button type="button" disabled={!isPasseTypeEnabled} onClick={() => setPasseType(PasseType.A1)} className={`flex-1 py-3.5 rounded-xl font-bold border-2 transition-all disabled:cursor-not-allowed ${passeType === PasseType.A1 ? 'bg-blue-100 border-blue-500 text-blue-800 shadow-sm scale-[1.02]' : 'bg-blue-50/50 border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300'}`}>A1</button>
                                     </>
                                 )}
                             </div>
@@ -407,3 +407,5 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
         </PageContainer>
     );
 };
+
+

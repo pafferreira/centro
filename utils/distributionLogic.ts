@@ -6,17 +6,56 @@ export interface RoomDistribution {
     attendances: PasseAttendance[];
 }
 
-export function distributeAttendances(attendances: PasseAttendance[], rooms: Room[], workersList: Worker[]): RoomDistribution[] {
-    // 1. Get available Passe rooms (that have at least one worker)
-    // 2. Map workers to each room to determine capabilities
+interface RoomCapability {
+    room: Room;
+    hasMedium: boolean;
+    hasDialogo: boolean;
+    currentQueueSize: number;
+}
 
-    interface RoomCapability {
-        room: Room;
-        hasMedium: boolean;
-        hasDialogo: boolean;
-        currentQueueSize: number;
+function getAttendancePriority(attendance: PasseAttendance): number {
+    if (attendance.attendancePhase === AttendancePhase.PrimeiraVez || attendance.attendancePhase === AttendancePhase.Retorno) {
+        return 0;
+    }
+    if (attendance.attendancePhase === AttendancePhase.EmAtendimento && attendance.passeType === PasseType.A2) {
+        return 1;
+    }
+    if (attendance.attendancePhase === AttendancePhase.EmAtendimento && attendance.passeType === PasseType.A1) {
+        return 2;
+    }
+    return 3;
+}
+
+function getValidRoomsForAttendance(attendance: PasseAttendance, roomCapabilities: RoomCapability[]): RoomCapability[] {
+    if (attendance.attendancePhase === AttendancePhase.PrimeiraVez || attendance.attendancePhase === AttendancePhase.Retorno) {
+        return roomCapabilities.filter(r => r.hasMedium);
     }
 
+    if (attendance.attendancePhase === AttendancePhase.EmAtendimento && attendance.passeType === PasseType.A2) {
+        return roomCapabilities.filter(r => r.hasMedium && r.hasDialogo);
+    }
+
+    return roomCapabilities.filter(r => r.hasMedium);
+}
+
+function chooseRoom(validRooms: RoomCapability[], isBalanceActive: boolean): RoomCapability | null {
+    if (validRooms.length === 0) {
+        return null;
+    }
+
+    if (!isBalanceActive) {
+        return validRooms[0];
+    }
+
+    return validRooms.reduce((prev, curr) => {
+        if (curr.currentQueueSize !== prev.currentQueueSize) {
+            return curr.currentQueueSize < prev.currentQueueSize ? curr : prev;
+        }
+        return curr.room.name.localeCompare(prev.room.name, 'pt-BR') < 0 ? curr : prev;
+    });
+}
+
+export function distributeAttendances(attendances: PasseAttendance[], rooms: Room[], workersList: Worker[]): RoomDistribution[] {
     const roomCapabilities: RoomCapability[] = rooms
         .filter(r => r.type === 'Passe')
         .map(room => {
@@ -27,117 +66,104 @@ export function distributeAttendances(attendances: PasseAttendance[], rooms: Roo
                 room,
                 hasMedium,
                 hasDialogo,
-                currentQueueSize: 0
+                currentQueueSize: 0,
             };
         })
-        .filter(r => r.hasMedium); // A room without a medium can't be used for passe at all
+        .filter(r => r.hasMedium);
 
-    // We will build the distribution result
     const distribution: Record<string, PasseAttendance[]> = {};
     roomCapabilities.forEach(rc => {
         distribution[rc.room.id] = [];
     });
 
-    // 3. Separate attendances
-    const atendidos = attendances.filter(a => a.status === AttendanceStatus.Atendido || a.status === AttendanceStatus.NaSala);
-    const aguardando = attendances.filter(a => a.status === AttendanceStatus.Aguardando);
-
-    atendidos.forEach(a => {
-        if (a.allocatedRoomId && distribution[a.allocatedRoomId]) {
-            distribution[a.allocatedRoomId].push(a);
-        } else {
-            // Unallocated but attended? Just put in an arbitrary or first room.
-            const firstRoom = roomCapabilities[0];
-            if (firstRoom) {
-                distribution[firstRoom.room.id].push(a);
-            }
-        }
-    });
-
-    // We process aguardando. Those that are already allocated AND their allocated room is STILL valid, keep them.
-    // Otherwise reallocate.
-
-    const toAllocate: PasseAttendance[] = [];
-    const distributionRules = getAppRules().filter(r => r.type === 'PASSE_DISTRIBUTION' && r.isActive && !r.isRestriction).sort((a, b) => a.order - b.order);
     const balanceRule = getAppRules().find(r => r.id === 'rule_dist_balance');
     const isBalanceActive = balanceRule ? balanceRule.isActive : false;
 
-    aguardando.forEach(a => {
-        let needsAllocation = true;
-        if (a.allocatedRoomId && distribution[a.allocatedRoomId]) {
-            const rc = roomCapabilities.find(r => r.room.id === a.allocatedRoomId);
+    const arrivalIndexById = new Map(attendances.map((att, idx) => [att.id, idx]));
+
+    const allocateToRoom = (attendance: PasseAttendance, roomId: string, countInQueue: boolean): PasseAttendance => {
+        const withRoom = attendance.allocatedRoomId === roomId
+            ? attendance
+            : { ...attendance, allocatedRoomId: roomId };
+
+        distribution[roomId].push(withRoom);
+
+        if (countInQueue) {
+            const rc = roomCapabilities.find(r => r.room.id === roomId);
             if (rc) {
-                // Check if the room STILL satisfies the rules for this attendance
-                let isStillValid = false;
-
-                if (a.attendancePhase === AttendancePhase.PrimeiraVez || a.attendancePhase === AttendancePhase.Retorno) {
-                    isStillValid = rc.hasMedium;
-                } else if (a.attendancePhase === AttendancePhase.EmAtendimento && a.passeType === PasseType.A2) {
-                    isStillValid = rc.hasMedium && rc.hasDialogo;
-                } else if (a.attendancePhase === AttendancePhase.EmAtendimento && a.passeType === PasseType.A1) {
-                    isStillValid = rc.hasMedium;
-                }
-
-                if (isStillValid) {
-                    needsAllocation = false;
-                    distribution[a.allocatedRoomId].push(a);
-                    rc.currentQueueSize += 1;
-                }
+                rc.currentQueueSize += 1;
             }
         }
-        if (needsAllocation) {
-            toAllocate.push(a);
+
+        return withRoom;
+    };
+
+    const activeInRoom = attendances.filter(
+        a => a.status === AttendanceStatus.NaSala || a.status === AttendanceStatus.EmAtendimento
+    );
+    const atendidos = attendances.filter(a => a.status === AttendanceStatus.Atendido);
+    const aguardando = attendances.filter(a => a.status === AttendanceStatus.Aguardando);
+
+    activeInRoom.forEach(attendance => {
+        const validRooms = getValidRoomsForAttendance(attendance, roomCapabilities);
+        const keepCurrent = attendance.allocatedRoomId && validRooms.some(r => r.room.id === attendance.allocatedRoomId);
+
+        if (keepCurrent) {
+            allocateToRoom(attendance, attendance.allocatedRoomId!, true);
+            return;
+        }
+
+        const chosenRoom = chooseRoom(validRooms, isBalanceActive);
+        if (chosenRoom) {
+            allocateToRoom(attendance, chosenRoom.room.id, true);
         }
     });
 
-    // Sort based on dynamically set priorities
-    const getPriority = (attendance: PasseAttendance): number => {
-        for (let i = 0; i < distributionRules.length; i++) {
-            const rule = distributionRules[i];
-            if (rule.id === 'rule_dist_first_time' && attendance.attendancePhase === AttendancePhase.PrimeiraVez) return i;
-            if (rule.id === 'rule_dist_retorno' && attendance.attendancePhase === AttendancePhase.Retorno) return i;
-            if (rule.id === 'rule_dist_a2' && attendance.passeType === PasseType.A2) return i;
-            if (rule.id === 'rule_dist_a1' && attendance.passeType === PasseType.A1 && attendance.attendancePhase === AttendancePhase.EmAtendimento) return i;
-        }
-        return 999; // Fallback se não bater em nenhuma regra ativa
-    };
-
-    toAllocate.sort((a, b) => getPriority(a) - getPriority(b));
-
-    // Balance remaining
-    toAllocate.forEach(attendance => {
-        let validRooms = roomCapabilities;
-
-        if (attendance.attendancePhase === AttendancePhase.PrimeiraVez || attendance.attendancePhase === AttendancePhase.Retorno) {
-            // Needs Medium, all our valid rooms already have Medium
-        } else if (attendance.attendancePhase === AttendancePhase.EmAtendimento && attendance.passeType === PasseType.A2) {
-            // Needs Medium + Dialogo
-            validRooms = roomCapabilities.filter(r => r.hasDialogo);
-        } else if (attendance.attendancePhase === AttendancePhase.EmAtendimento && attendance.passeType === PasseType.A1) {
-            // Any valid
+    atendidos.forEach(attendance => {
+        if (attendance.allocatedRoomId && distribution[attendance.allocatedRoomId]) {
+            allocateToRoom(attendance, attendance.allocatedRoomId, false);
+            return;
         }
 
-        if (validRooms.length > 0) {
-            let chosenRoom = validRooms[0];
-            if (isBalanceActive) {
-                // Pick room with lowest queue size (balance)
-                chosenRoom = validRooms.reduce((prev, curr) => {
-                    return (curr.currentQueueSize < prev.currentQueueSize) ? curr : prev;
-                });
-            }
+        const fallbackRoom = roomCapabilities[0];
+        if (fallbackRoom) {
+            allocateToRoom(attendance, fallbackRoom.room.id, false);
+        }
+    });
 
-            // Allocate
-            attendance.allocatedRoomId = chosenRoom.room.id;
-            distribution[chosenRoom.room.id].push(attendance);
-            chosenRoom.currentQueueSize += 1;
+    const toAllocate: PasseAttendance[] = [];
+
+    aguardando.forEach(attendance => {
+        const validRooms = getValidRoomsForAttendance(attendance, roomCapabilities);
+        const keepCurrent = attendance.allocatedRoomId && validRooms.some(r => r.room.id === attendance.allocatedRoomId);
+
+        if (keepCurrent) {
+            allocateToRoom(attendance, attendance.allocatedRoomId!, true);
         } else {
-            // If no valid room found, mark it unallocated or keep allocatedRoomId null
-            attendance.allocatedRoomId = null;
+            toAllocate.push(attendance);
+        }
+    });
+
+    toAllocate.sort((a, b) => {
+        const priorityDiff = getAttendancePriority(a) - getAttendancePriority(b);
+        if (priorityDiff !== 0) {
+            return priorityDiff;
+        }
+
+        return (arrivalIndexById.get(a.id) ?? 0) - (arrivalIndexById.get(b.id) ?? 0);
+    });
+
+    toAllocate.forEach(attendance => {
+        const validRooms = getValidRoomsForAttendance(attendance, roomCapabilities);
+        const chosenRoom = chooseRoom(validRooms, isBalanceActive);
+
+        if (chosenRoom) {
+            allocateToRoom(attendance, chosenRoom.room.id, true);
         }
     });
 
     return roomCapabilities.map(rc => ({
         room: rc.room,
-        attendances: distribution[rc.room.id] || []
+        attendances: distribution[rc.room.id] || [],
     }));
 }

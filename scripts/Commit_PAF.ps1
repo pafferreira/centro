@@ -121,8 +121,46 @@ function Get-NextVersion {
     }
 }
 
+function Get-DiffStats {
+    $raw = Invoke-External -FilePath "git" -Arguments @("diff", "--cached", "--numstat") -Capture -AllowFail
+    $insertions = 0
+    $deletions = 0
+    $files = 0
+
+    if (-not [string]::IsNullOrWhiteSpace($raw)) {
+        foreach ($line in ($raw -split "\r?\n")) {
+            if ([string]::IsNullOrWhiteSpace($line)) {
+                continue
+            }
+
+            $parts = $line -split "`t"
+            if ($parts.Count -lt 3) {
+                continue
+            }
+
+            $files += 1
+            if ($parts[0] -match '^\d+$') {
+                $insertions += [int]$parts[0]
+            }
+            if ($parts[1] -match '^\d+$') {
+                $deletions += [int]$parts[1]
+            }
+        }
+    }
+
+    return [pscustomobject]@{
+        Files      = $files
+        Insertions = $insertions
+        Deletions  = $deletions
+    }
+}
+
 function Build-Summary {
-    param([string[]]$Files)
+    param(
+        [string[]]$Files,
+        [int]$Insertions,
+        [int]$Deletions
+    )
 
     if ($null -eq $Files -or $Files.Count -eq 0) {
         return "atualizacoes gerais do projeto"
@@ -134,13 +172,17 @@ function Build-Summary {
         $focusFiles = $Files
     }
 
+    $target = ""
     if ($focusFiles.Count -le 3) {
-        return "atualizacoes em $($focusFiles -join ', ')"
+        $target = $focusFiles -join ", "
+    }
+    else {
+        $firstThree = $focusFiles[0..2] -join ", "
+        $remaining = $focusFiles.Count - 3
+        $target = "$firstThree e mais $remaining arquivo(s)"
     }
 
-    $firstThree = $focusFiles[0..2] -join ", "
-    $remaining = $focusFiles.Count - 3
-    return "atualizacoes em $firstThree e mais $remaining arquivo(s)"
+    return "atualizacoes em $target (+$Insertions/-$Deletions)"
 }
 
 Invoke-External -FilePath "git" -Arguments @("rev-parse", "--is-inside-work-tree") | Out-Null
@@ -176,7 +218,7 @@ if ($DryRun) {
     Write-Host "Next tag: $nextTag"
     Write-Host "Bump: $Bump"
     if (-not [string]::IsNullOrWhiteSpace($Summary)) {
-        Write-Host "Summary override: $Summary"
+        Write-Host "Resumo manual: $Summary"
     }
     if ([string]::IsNullOrWhiteSpace($status)) {
         Write-Host "Changes: none"
@@ -201,7 +243,9 @@ if ($stagedFiles.Count -eq 0) {
     throw "No staged changes found. Nothing to commit."
 }
 
-$finalSummary = if ([string]::IsNullOrWhiteSpace($Summary)) { Build-Summary -Files $stagedFiles } else { $Summary.Trim() }
+$stats = Get-DiffStats
+$autoSummary = Build-Summary -Files $stagedFiles -Insertions $stats.Insertions -Deletions $stats.Deletions
+$finalSummary = if ([string]::IsNullOrWhiteSpace($Summary)) { $autoSummary } else { "$($Summary.Trim()) | $autoSummary" }
 $stamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 $message = "Commit_PAF $stamp [$branch] - $finalSummary"
 

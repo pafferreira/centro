@@ -374,6 +374,20 @@ export async function saveAttendances(attendances: PasseAttendance[]): Promise<v
     }
 }
 
+
+export async function linkFichaAssistenciaToAttendances(assistidoId: string, fichaId: string): Promise<void> {
+    try {
+        const { error } = await supabase
+            .from('gfa_atendimentos_passe')
+            .update({ id_ficha_assistencia: fichaId })
+            .eq('id_assistido', assistidoId)
+            .is('id_ficha_assistencia', null);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('Erro ao vincular ficha nos atendimentos:', error);
+    }
+}
 export async function saveAttendance(att: PasseAttendance): Promise<void> {
     try {
         const { error } = await supabase
@@ -584,4 +598,5 @@ export function getAppRules(): AppRule[] {
 export function saveAppRules(rules: AppRule[]): void {
     localStorage.setItem('@centro:AppRules', JSON.stringify(rules));
 }
+
 

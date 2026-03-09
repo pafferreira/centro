@@ -1,12 +1,11 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { ViewState, PasseAttendance, Room, Worker, AttendanceStatus, PasseType, AttendancePhase } from '../types';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { ViewState, PasseAttendance, Room, Worker, AttendanceStatus, PasseType, AttendancePhase, WorkerRole } from '../types';
 import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
 import { distributeAttendances } from '../utils/distributionLogic';
 import { saveAttendance, updateFichaRealizado } from '../utils/storage';
-import { CheckCircleIcon, ArrowUpIcon, HourglassIcon } from '../components/Icons';
+import { CheckCircleIcon, ArrowUpIcon, HourglassIcon, MoveIcon } from '../components/Icons';
 
-// ─── CSS animations injected once ────────────────────────────────────────────
 const STYLES = `
 @keyframes dist-slide-out {
   from { opacity: 1; transform: translateY(0); }
@@ -23,6 +22,53 @@ const STYLES = `
 .dist-row-enter {
   animation: dist-slide-in 0.35s ease forwards;
 }
+.dist-row-na-sala td {
+  background: rgba(219, 234, 254, 0.55);
+  border-bottom-color: rgba(59, 130, 246, 0.25);
+}
+.dist-row-a2-live td {
+  background: rgba(220, 252, 231, 0.45);
+  border-bottom-color: rgba(22, 163, 74, 0.2);
+}
+.dist-separator td {
+  padding: 8px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #334155;
+  background: rgba(15, 23, 42, 0.06);
+  border-top: 1px dashed rgba(71, 85, 105, 0.35);
+  border-bottom: 1px dashed rgba(71, 85, 105, 0.35);
+}
+.dist-separator-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dist-shuffle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(71, 85, 105, 0.3);
+  background: rgba(255, 255, 255, 0.86);
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dist-shuffle-btn:hover {
+  background: rgba(255, 255, 255, 1);
+}
+.dist-shuffle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .dist-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -37,6 +83,11 @@ const STYLES = `
   -webkit-tap-highlight-color: transparent;
 }
 .dist-icon-btn:hover { background: rgba(0,0,0,0.05); }
+.dist-icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.dist-icon-btn:disabled:hover { background: transparent; }
 .dist-table {
   width: 100%;
   border-collapse: collapse;
@@ -59,7 +110,7 @@ const STYLES = `
 }
 .dist-table td {
   padding: 10px 12px;
-  border-bottom: 1px solid rgba(13, 25, 27, 0.06);
+  border-bottom: 1px solid rgba(13, 15, 15, 0.06);
   color: #0d191b;
   vertical-align: middle;
 }
@@ -76,11 +127,11 @@ const STYLES = `
   box-shadow: 0 14px 28px -20px rgba(13, 25, 27, 0.55);
 }
 .dist-section-title {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #7a8c90;
+  color: #334155;
   margin-bottom: 8px;
 }
 .dist-badge {
@@ -96,6 +147,27 @@ const STYLES = `
 .dist-badge-a2 { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
 .dist-badge-first { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
 .dist-badge-retorno { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+.dist-room-select {
+  width: 100%;
+  min-width: 90px;
+  border: 1px solid rgba(13, 25, 27, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 8px;
+  padding: 5px 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+.dist-room-select:focus-visible {
+  outline: 2px solid rgba(68, 210, 240, 0.6);
+  outline-offset: 1px;
+}
+.dist-room-empty {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+}
 `;
 
 interface PasseDistributionViewProps {
@@ -110,10 +182,29 @@ interface PasseDistributionViewProps {
 
 type FlatAttendance = PasseAttendance & { assignedRoomName: string };
 
-function getPriority(a: FlatAttendance): number {
-    if (a.attendancePhase === AttendancePhase.PrimeiraVez || a.attendancePhase === AttendancePhase.Retorno) return 0;
-    if (a.passeType === PasseType.A2) return 1;
+type RoomOption = {
+    id: string;
+    name: string;
+    hasDialogo: boolean;
+};
+
+function getTipoPriority(att: PasseAttendance): number {
+    if (att.attendancePhase === AttendancePhase.PrimeiraVez || att.attendancePhase === AttendancePhase.Retorno) return 0;
+    if (att.attendancePhase === AttendancePhase.EmAtendimento && att.passeType === PasseType.A2) return 1;
+    if (att.attendancePhase === AttendancePhase.EmAtendimento && att.passeType === PasseType.A1) return 2;
+    return 3;
+}
+
+function getTopGroup(att: PasseAttendance): number {
+    if (att.status === AttendanceStatus.NaSala) return 0;
+    if (att.status === AttendanceStatus.EmAtendimento && att.passeType === PasseType.A2) return 1;
     return 2;
+}
+
+function toMillis(isoDate?: string): number {
+    if (!isoDate) return 0;
+    const value = Date.parse(isoDate);
+    return Number.isNaN(value) ? 0 : value;
 }
 
 function getTipoBadge(att: FlatAttendance): { label: string; className: string } {
@@ -129,7 +220,7 @@ function getTipoBadge(att: FlatAttendance): { label: string; className: string }
     return { label: 'A1', className: 'dist-badge-a1' };
 }
 
-function SituacaoIcon({ status, passeType }: { status: AttendanceStatus; passeType: PasseType }) {
+function SituacaoIcon({ status }: { status: AttendanceStatus }) {
     if (status === AttendanceStatus.Aguardando) {
         return <span style={{ color: '#9eb3b8', fontWeight: 700, fontSize: 18, letterSpacing: '-1px' }}>—</span>;
     }
@@ -137,9 +228,24 @@ function SituacaoIcon({ status, passeType }: { status: AttendanceStatus; passeTy
         return <ArrowUpIcon style={{ width: 22, height: 22, color: '#004e89' }} />;
     }
     if (status === AttendanceStatus.EmAtendimento) {
-        return <HourglassIcon style={{ width: 20, height: 20, color: '#10b981' }} />;
+        return (
+            <span
+                style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 999,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#ffffff',
+                    border: '1px solid #86efac',
+                    boxShadow: '0 0 0 1px rgba(22, 163, 74, 0.1)',
+                }}
+            >
+                <HourglassIcon style={{ width: 15, height: 15, color: '#16a34a' }} />
+            </span>
+        );
     }
-    // Atendido
     return <CheckCircleIcon style={{ width: 22, height: 22, color: '#10b981' }} />;
 }
 
@@ -149,11 +255,44 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
     const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
     const [exitingId, setExitingId] = useState<string | null>(null);
     const [recentlyLiberadoIds, setRecentlyLiberadoIds] = useState<Set<string>>(new Set());
+    const [remainingOrderById, setRemainingOrderById] = useState<Map<string, number>>(new Map());
 
     const todaysAttendances = useMemo(
         () => attendances.filter(a => a.date === date),
         [attendances, date]
     );
+
+    useEffect(() => {
+        setRemainingOrderById(new Map());
+    }, [date]);
+
+    const arrivalIndexById = useMemo(
+        () => new Map(todaysAttendances.map((att, idx) => [att.id, idx])),
+        [todaysAttendances]
+    );
+
+    const roomNameById = useMemo(
+        () => new Map(rooms.map(room => [room.id, room.name])),
+        [rooms]
+    );
+
+    const roomOptions = useMemo<RoomOption[]>(() => {
+        return rooms
+            .filter(r => r.type === 'Passe')
+            .map(room => {
+                const workersInRoom = workers.filter(w => w.assignedRoomId === room.id && w.present);
+                const hasMedium = workersInRoom.some(w => w.roles.includes(WorkerRole.Medium));
+                const hasDialogo = workersInRoom.some(w => w.roles.includes(WorkerRole.Dialogo));
+                return {
+                    id: room.id,
+                    name: room.name,
+                    hasDialogo,
+                    hasMedium,
+                };
+            })
+            .filter(r => r.hasMedium)
+            .map(({ hasMedium, ...rest }) => rest);
+    }, [rooms, workers]);
 
     const distribution = useMemo(
         () => distributeAttendances(todaysAttendances, rooms, workers),
@@ -161,27 +300,204 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
     );
 
     const flatAttendances = useMemo<FlatAttendance[]>(() => {
-        const flat: FlatAttendance[] = [];
+        const distributedById = new Map<string, FlatAttendance>();
+
         distribution.forEach(d => {
-            d.attendances.forEach(a => flat.push({ ...a, assignedRoomName: d.room.name }));
+            d.attendances.forEach(attendance => {
+                distributedById.set(attendance.id, { ...attendance, assignedRoomName: d.room.name });
+            });
         });
-        return flat;
-    }, [distribution]);
+
+        return todaysAttendances.map(attendance => {
+            const distributed = distributedById.get(attendance.id);
+            if (distributed) {
+                return distributed;
+            }
+
+            const fallbackName = attendance.allocatedRoomId ? roomNameById.get(attendance.allocatedRoomId) ?? 'Sem sala' : 'Sem sala';
+            return {
+                ...attendance,
+                assignedRoomName: fallbackName,
+            };
+        });
+    }, [distribution, roomNameById, todaysAttendances]);
+
+    const roomInUseOccupantByRoom = useMemo(() => {
+        const map = new Map<string, string>();
+        flatAttendances.forEach(attendance => {
+            const roomInUse =
+                attendance.status === AttendanceStatus.NaSala ||
+                attendance.status === AttendanceStatus.EmAtendimento;
+            if (attendance.allocatedRoomId && roomInUse && !map.has(attendance.allocatedRoomId)) {
+                map.set(attendance.allocatedRoomId, attendance.id);
+            }
+        });
+        return map;
+    }, [flatAttendances]);
+
+    const isStatusLocked = useCallback((att: FlatAttendance) => {
+        if (!att.allocatedRoomId) {
+            return false;
+        }
+        const occupantId = roomInUseOccupantByRoom.get(att.allocatedRoomId);
+        return !!occupantId && occupantId !== att.id;
+    }, [roomInUseOccupantByRoom]);
 
     const activeRows = useMemo(
         () => flatAttendances
-            .filter(a => a.status !== AttendanceStatus.Atendido)
-            .sort((a, b) => getPriority(a) - getPriority(b)),
-        [flatAttendances]
+            .filter(attendance => attendance.status !== AttendanceStatus.Atendido)
+            .sort((a, b) => {
+                const aGroup = getTopGroup(a);
+                const bGroup = getTopGroup(b);
+
+                if (aGroup !== bGroup) {
+                    return aGroup - bGroup;
+                }
+
+                if (aGroup === 0 || aGroup === 1) {
+                    const byEntrada = toMillis(b.horaEntrada) - toMillis(a.horaEntrada);
+                    if (byEntrada !== 0) {
+                        return byEntrada;
+                    }
+                }
+
+                const typeDiff = getTipoPriority(a) - getTipoPriority(b);
+                if (typeDiff !== 0) {
+                    return typeDiff;
+                }
+
+                const aCustom = remainingOrderById.get(a.id);
+                const bCustom = remainingOrderById.get(b.id);
+                if (aCustom !== undefined || bCustom !== undefined) {
+                    return (aCustom ?? Number.MAX_SAFE_INTEGER) - (bCustom ?? Number.MAX_SAFE_INTEGER);
+                }
+
+                return (arrivalIndexById.get(a.id) ?? Number.MAX_SAFE_INTEGER)
+                    - (arrivalIndexById.get(b.id) ?? Number.MAX_SAFE_INTEGER);
+            }),
+        [arrivalIndexById, flatAttendances, remainingOrderById]
+    );
+
+    const naSalaRows = useMemo(
+        () => activeRows.filter(attendance => attendance.status === AttendanceStatus.NaSala),
+        [activeRows]
+    );
+
+    const a2LiveRows = useMemo(
+        () => activeRows.filter(attendance => attendance.status === AttendanceStatus.EmAtendimento && attendance.passeType === PasseType.A2),
+        [activeRows]
+    );
+
+    const remainingRows = useMemo(
+        () => activeRows.filter(attendance => getTopGroup(attendance) === 2),
+        [activeRows]
     );
 
     const liberadoRows = useMemo(
-        () => flatAttendances.filter(a => a.status === AttendanceStatus.Atendido),
-        [flatAttendances]
+        () => flatAttendances
+            .filter(attendance => attendance.status === AttendanceStatus.Atendido)
+            .sort((a, b) => {
+                const byExitTime = toMillis(b.horaSaida) - toMillis(a.horaSaida);
+                if (byExitTime !== 0) {
+                    return byExitTime;
+                }
+
+                return (arrivalIndexById.get(a.id) ?? Number.MAX_SAFE_INTEGER)
+                    - (arrivalIndexById.get(b.id) ?? Number.MAX_SAFE_INTEGER);
+            }),
+        [arrivalIndexById, flatAttendances]
     );
+
+    const getValidRoomOptions = useCallback((att: FlatAttendance): RoomOption[] => {
+        if (att.attendancePhase === AttendancePhase.EmAtendimento && att.passeType === PasseType.A2) {
+            return roomOptions.filter(room => room.hasDialogo);
+        }
+        return roomOptions;
+    }, [roomOptions]);
+
+    const applyRecalculatedRooms = useCallback((baseRows: PasseAttendance[]) => {
+        const recalculated = distributeAttendances(
+            baseRows.map(row => ({ ...row })),
+            rooms,
+            workers
+        );
+
+        const recalculatedRoomById = new Map<string, string | null>();
+        recalculated.forEach(item => {
+            item.attendances.forEach(att => {
+                recalculatedRoomById.set(att.id, att.allocatedRoomId ?? null);
+            });
+        });
+
+        baseRows.forEach(att => {
+            if (att.status === AttendanceStatus.Atendido) {
+                return;
+            }
+
+            const nextRoomId = recalculatedRoomById.get(att.id);
+            if (nextRoomId === undefined) {
+                return;
+            }
+
+            const currentRoomId = att.allocatedRoomId ?? null;
+            if (nextRoomId !== currentRoomId) {
+                const updated: PasseAttendance = { ...att, allocatedRoomId: nextRoomId };
+                onUpdateAttendance(updated);
+                saveAttendance(updated);
+            }
+        });
+    }, [onUpdateAttendance, rooms, workers]);
+
+    const handleShuffleRemaining = useCallback(() => {
+        if (remainingRows.length <= 1) return;
+
+        const shuffled = [...remainingRows];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const tmp = shuffled[i];
+            shuffled[i] = shuffled[j];
+            shuffled[j] = tmp;
+        }
+
+        const orderMap = new Map<string, number>();
+        shuffled.forEach((att, idx) => orderMap.set(att.id, idx));
+        setRemainingOrderById(orderMap);
+
+        const byId = new Map(todaysAttendances.map(att => [att.id, att]));
+        const shuffledIds = shuffled.map(att => att.id);
+        let cursor = 0;
+
+        const rebuilt = todaysAttendances.map(att => {
+            if (!orderMap.has(att.id)) {
+                return att;
+            }
+            const replacementId = shuffledIds[cursor++];
+            return byId.get(replacementId) ?? att;
+        });
+
+        applyRecalculatedRooms(rebuilt);
+    }, [applyRecalculatedRooms, remainingRows, todaysAttendances]);
+
+    const handleRoomChange = useCallback((att: FlatAttendance, roomId: string) => {
+        const updated: PasseAttendance = {
+            ...att,
+            allocatedRoomId: roomId || null,
+        };
+
+        onUpdateAttendance(updated);
+        saveAttendance(updated);
+
+        const nextTodays = todaysAttendances.map(item => item.id === att.id ? updated : item);
+        applyRecalculatedRooms(nextTodays);
+    }, [applyRecalculatedRooms, onUpdateAttendance, todaysAttendances]);
 
     const handleIconClick = useCallback((att: FlatAttendance) => {
         if (att.status === AttendanceStatus.Atendido) return;
+
+        if (isStatusLocked(att)) {
+            alert(`A sala ${att.assignedRoomName} já tem um assistido em "Na Sala" ou "Em Atendimento". Finalize esse atendimento antes de avançar outro nome.`);
+            return;
+        }
 
         const now = new Date().toISOString();
         let updated: PasseAttendance = { ...att };
@@ -196,13 +512,12 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                 onUpdateAttendance(updated);
                 saveAttendance(updated);
             } else {
-                // A1 / PrimeiraVez / Retorno → Liberado
                 liberarAssistido(att, now);
             }
         } else if (att.status === AttendanceStatus.EmAtendimento) {
             liberarAssistido(att, now);
         }
-    }, [onUpdateAttendance]);
+    }, [isStatusLocked, onUpdateAttendance]);
 
     const liberarAssistido = (att: FlatAttendance, now: string) => {
         setExitingId(att.id);
@@ -214,7 +529,9 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
             saveAttendance(updated);
             setExitingId(null);
 
-            // Increment realizado on the ficha
+            const nextTodays = todaysAttendances.map(item => item.id === att.id ? updated : item);
+            applyRecalculatedRooms(nextTodays);
+
             if (att.fichaAssistenciaId) {
                 const type = att.passeType === PasseType.A2 ? 'A2' : 'A1';
                 updateFichaRealizado(att.fichaAssistenciaId, type);
@@ -224,13 +541,75 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
 
     const noValidRooms = distribution.length === 0;
 
+    const renderActiveRow = (att: FlatAttendance, order: number) => {
+        const tipoBadge = getTipoBadge(att);
+        const availableRooms = getValidRoomOptions(att);
+        const roomSelectOptions = att.allocatedRoomId && !availableRooms.some(room => room.id === att.allocatedRoomId)
+            ? [{ id: att.allocatedRoomId, name: att.assignedRoomName, hasDialogo: false }, ...availableRooms]
+            : availableRooms;
+        const statusLocked = isStatusLocked(att);
+        const rowClass = att.status === AttendanceStatus.NaSala
+            ? 'dist-row-na-sala'
+            : (att.status === AttendanceStatus.EmAtendimento && att.passeType === PasseType.A2 ? 'dist-row-a2-live' : '');
+
+        return (
+            <tr
+                key={att.id}
+                className={`${rowClass} ${exitingId === att.id ? 'dist-row-exit' : ''}`.trim() || undefined}
+            >
+                <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                        <span style={{ color: '#94a3b8', fontWeight: 800, fontSize: 12, minWidth: 20 }}>{order}.</span>
+                        <span style={{ fontWeight: 600, color: '#0d191b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {att.assistidoName}
+                        </span>
+                    </div>
+                </td>
+                <td>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <span className={`dist-badge ${tipoBadge.className}`}>
+                            {tipoBadge.label}
+                        </span>
+                    </div>
+                </td>
+                <td>
+                    {availableRooms.length === 0 ? (
+                        <span className="dist-room-empty">Sem sala válida</span>
+                    ) : (
+                        <select
+                            className="dist-room-select"
+                            value={att.allocatedRoomId ?? ''}
+                            onChange={(e) => handleRoomChange(att, e.target.value)}
+                            aria-label={`Alterar sala de ${att.assistidoName}`}
+                        >
+                            <option value="">Selecionar sala</option>
+                            {roomSelectOptions.map(room => (
+                                <option key={room.id} value={room.id}>{room.name}</option>
+                            ))}
+                        </select>
+                    )}
+                </td>
+                <td>
+                    <button
+                        className="dist-icon-btn"
+                        onClick={() => handleIconClick(att)}
+                        disabled={statusLocked}
+                        title={statusLocked ? `Sala ${att.assignedRoomName} com atendimento em Na Sala/Em Atendimento` : att.status}
+                        aria-label={`Avançar situação de ${att.assistidoName}`}
+                    >
+                        <SituacaoIcon status={att.status} />
+                    </button>
+                </td>
+            </tr>
+        );
+    };
+
     return (
         <PageContainer>
             <style>{STYLES}</style>
             <Header title="Painel de Distribuição" onBack={onBack} onHome={() => onNavigate('DASHBOARD')} />
 
             <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
-                {/* Date filter */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <label style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Data do Passe</label>
                     <input
@@ -250,7 +629,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                     />
                 </div>
 
-                {noValidRooms ? (
+                {noValidRooms && (
                     <div style={{
                         background: '#fefce8',
                         border: '1px solid #fde68a',
@@ -262,118 +641,108 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                     }}>
                         Não há salas de passe válidas (com médium alocado e presente). Verifique a Montagem das Salas.
                     </div>
-                ) : (
-                    <>
-                        {/* ── Tabela principal ── */}
-                        <div>
-                            <div className="dist-section-title">
-                                Em Atendimento <span style={{ fontWeight: 400, color: '#b0bec5', marginLeft: 4 }}>({activeRows.length})</span>
-                            </div>
-                            <div className="dist-table-wrap">
-                                <table className="dist-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Nome</th>
-                                            <th style={{ width: 84 }}>Tipo</th>
-                                            <th style={{ width: 98 }}>Sala</th>
-                                            <th style={{ width: 64 }}>Situação</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {activeRows.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={4} style={{ textAlign: 'center', padding: '28px 12px', color: '#b0bec5', fontStyle: 'italic', fontSize: 13 }}>
-                                                    Nenhum assistido aguardando
+                )}
+
+                <div>
+                    <div className="dist-section-title">Em Atendimento - Total: {activeRows.length}</div>
+                    <div className="dist-table-wrap">
+                        <table className="dist-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th style={{ width: 62 }}>Tipo</th>
+                                    <th style={{ width: 100 }}>Sala</th>
+                                    <th style={{ width: 50 }}>Situação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {activeRows.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} style={{ textAlign: 'center', padding: '28px 12px', color: '#b0bec5', fontStyle: 'italic', fontSize: 13 }}>
+                                            Nenhum assistido aguardando
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    <>
+                                        {naSalaRows.map((att, idx) => renderActiveRow(att, idx + 1))}
+                                        {a2LiveRows.map((att, idx) => renderActiveRow(att, naSalaRows.length + idx + 1))}
+                                        {remainingRows.length > 0 && (
+                                            <tr className="dist-separator">
+                                                <td colSpan={4}>
+                                                    <div className="dist-separator-inner">
+                                                        <span>Aguardando</span>
+                                                        <button
+                                                            type="button"
+                                                            className="dist-shuffle-btn"
+                                                            onClick={handleShuffleRemaining}
+                                                            disabled={remainingRows.length <= 1}
+                                                            aria-label="Redistribuir ordem dos nomes restantes"
+                                                            title="Reaplica a distribuição para os nomes restantes"
+                                                        >
+                                                            <MoveIcon className="w-3.5 h-3.5" />
+                                                            ReDistribuir
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
-                                        ) : activeRows.map((att, idx) => {
-                                            const tipoBadge = getTipoBadge(att);
-                                            return (
-                                                <tr
-                                                    key={att.id}
-                                                    className={exitingId === att.id ? 'dist-row-exit' : undefined}
-                                                >
-                                                    <td>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                                                            <span style={{ color: '#94a3b8', fontWeight: 800, fontSize: 12, minWidth: 20 }}>{idx + 1}.</span>
-                                                            <span style={{ fontWeight: 600, color: '#0d191b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                                {att.assistidoName}
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <span className={`dist-badge ${tipoBadge.className}`}>
-                                                            {tipoBadge.label}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ color: '#475569', fontSize: 12, fontWeight: 600 }}>{att.assignedRoomName}</td>
-                                                    <td>
-                                                        <button
-                                                            className="dist-icon-btn"
-                                                            onClick={() => handleIconClick(att)}
-                                                            title={att.status}
-                                                            aria-label={`Avançar situação de ${att.assistidoName}`}
-                                                        >
-                                                            <SituacaoIcon status={att.status} passeType={att.passeType} />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                                        )}
+                                        {remainingRows.map((att, idx) => renderActiveRow(att, naSalaRows.length + a2LiveRows.length + idx + 1))}
+                                    </>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                        {/* ── Tabela de Liberados ── */}
-                        {liberadoRows.length > 0 && (
-                            <div>
-                                <div className="dist-section-title">
-                                    Atendidos <span style={{ fontWeight: 400, color: '#b0bec5', marginLeft: 4 }}>({liberadoRows.length})</span>
-                                </div>
-                                <div className="dist-table-wrap">
-                                    <table className="dist-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Nome</th>
-                                                <th style={{ width: 84 }}>Tipo</th>
-                                                <th style={{ width: 98 }}>Sala</th>
-                                                <th style={{ width: 64 }}>Situação</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {liberadoRows.map(att => {
-                                                const tipoBadge = getTipoBadge(att);
-                                                return (
-                                                    <tr
-                                                        key={att.id}
-                                                        className={recentlyLiberadoIds.has(att.id) ? 'dist-row-enter' : undefined}
-                                                    >
-                                                        <td>
-                                                            <div style={{ fontWeight: 600, color: '#0d191b' }}>{att.assistidoName}</div>
-                                                        </td>
-                                                        <td>
-                                                            <span className={`dist-badge ${tipoBadge.className}`}>
-                                                                {tipoBadge.label}
-                                                            </span>
-                                                        </td>
-                                                        <td style={{ color: '#475569', fontSize: 12, fontWeight: 600 }}>{att.assignedRoomName}</td>
-                                                        <td>
-                                                            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44 }}>
-                                                                <CheckCircleIcon style={{ width: 22, height: 22, color: '#10b981' }} />
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                    </>
-                )}
+                <div>
+                    <div className="dist-section-title">Atendidos - Total: {liberadoRows.length}</div>
+                    <div className="dist-table-wrap">
+                        <table className="dist-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th style={{ width: 72 }}>Tipo</th>
+                                    <th style={{ width: 90 }}>Sala</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {liberadoRows.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={3} style={{ textAlign: 'center', padding: '24px 12px', color: '#9ca3af', fontStyle: 'italic', fontSize: 13 }}>
+                                            Nenhum assistido atendido nesta data
+                                        </td>
+                                    </tr>
+                                ) : liberadoRows.map(att => {
+                                    const tipoBadge = getTipoBadge(att);
+                                    return (
+                                        <tr
+                                            key={att.id}
+                                            className={recentlyLiberadoIds.has(att.id) ? 'dist-row-enter' : undefined}
+                                        >
+                                            <td>
+                                                <div style={{ fontWeight: 600, color: '#0d191b', whiteSpace: 'normal', overflowWrap: 'anywhere', lineHeight: 1.25 }}>
+                                                    {att.assistidoName}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className={`dist-badge ${tipoBadge.className}`}>
+                                                    {tipoBadge.label}
+                                                </span>
+                                            </td>
+                                            <td style={{ color: '#475569', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {att.assignedRoomName}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </PageContainer>
     );
 };
+
+
+

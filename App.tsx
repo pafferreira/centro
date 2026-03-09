@@ -31,6 +31,7 @@ import {
   deleteAssistido,
   loadAttendances,
   saveAttendances,
+  linkFichaAssistenciaToAttendances,
   saveAttendance,
   deleteAttendance,
   saveFichaAssistencia,
@@ -342,7 +343,10 @@ export default function App() {
       return [ficha, ...prev];
     });
 
-    // Vincula id_ficha_assistencia nos atendimentos do assistido ainda sem ficha
+    // Vincula id_ficha_assistencia no banco para atendimentos sem ficha
+    await linkFichaAssistenciaToAttendances(ficha.assistidoId, ficha.id);
+
+    // Vincula id_ficha_assistencia no estado local
     const updatedAttendances = attendances.map(att => {
       if (att.assistidoId === ficha.assistidoId && !att.fichaAssistenciaId) {
         return { ...att, fichaAssistenciaId: ficha.id };
@@ -567,4 +571,5 @@ export default function App() {
     </LayoutProvider>
   );
 }
+
 
