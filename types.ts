@@ -12,7 +12,6 @@ export interface Assistido {
   id: string;
   nome: string;
   telefone?: string;
-  dataNascimento?: string;
   observacoes?: string;
 }
 
@@ -25,6 +24,8 @@ export interface FichaAssistencia {
   qtdA1: number;
   tipoFicha: 'Inicial' | 'Acompanhamento';
   statusFicha: 'Ativa' | 'Concluida';
+  realizadoA2?: number;
+  realizadoA1?: number;
 }
 
 export interface Worker {
@@ -78,7 +79,7 @@ export enum PasseType {
 export enum AttendancePhase {
   PrimeiraVez = "Primeira Vez",
   Retorno = "Retorno",
-  Normal = "Normal"
+  EmAtendimento = "Em Atendimento"
 }
 
 export enum AttendanceStatus {
@@ -96,6 +97,7 @@ export interface PasseAttendance {
   attendancePhase: AttendancePhase;
   status: AttendanceStatus;
   allocatedRoomId?: string | null;
+  fichaAssistenciaId?: string;
 }
 
 export interface AppRule {

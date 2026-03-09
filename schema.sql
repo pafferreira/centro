@@ -37,7 +37,6 @@ CREATE TABLE public.gfa_assistidos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     nome_assistido TEXT NOT NULL,
     telefone TEXT,
-    data_nascimento DATE,
     observacoes TEXT,
     criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -52,6 +51,8 @@ CREATE TABLE public.gfa_fichas_assistencia (
     data_entrevista DATE NOT NULL,
     qtd_a2 INTEGER NOT NULL DEFAULT 0,
     qtd_a1 INTEGER NOT NULL DEFAULT 0,
+    realizado_a2 INTEGER NOT NULL DEFAULT 0,
+    realizado_a1 INTEGER NOT NULL DEFAULT 0,
     tipo_ficha TEXT NOT NULL DEFAULT 'Inicial',
     status_ficha TEXT NOT NULL DEFAULT 'Ativa',
     criado_em TIMESTAMPTZ NOT NULL DEFAULT now()

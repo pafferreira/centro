@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { ViewState, Worker, Room, PasseAttendance, Assistido, FichaAssistencia } from "./types";
+import { ViewState, Worker, Room, PasseAttendance, Assistido, FichaAssistencia, AttendancePhase, PasseType } from "./types";
 import { BottomNav } from "./components/shared/BottomNav";
 import { Toast, ToastMessage } from "./components/shared/Toast";
 import { LoginView } from "./views/LoginView";
@@ -34,6 +34,7 @@ import {
   saveAttendance,
   deleteAttendance,
   saveFichaAssistencia,
+  loadFichasAssistencia,
 } from "./utils/storage";
 import { LayoutProvider } from "./context/LayoutContext";
 
@@ -46,6 +47,7 @@ export default function App() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [attendances, setAttendances] = useState<PasseAttendance[]>([]);
+  const [fichasAssistencia, setFichasAssistencia] = useState<FichaAssistencia[]>([]);
   const [previousView, setPreviousView] = useState<ViewState | null>(null);
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
   const [showWorkerForm, setShowWorkerForm] = useState(false);
@@ -68,16 +70,18 @@ export default function App() {
   useEffect(() => {
     async function loadInitialData() {
       try {
-        const [loadedWorkers, loadedRooms, loadedAssistidos, loadedAttendances] = await Promise.all([
+        const [loadedWorkers, loadedRooms, loadedAssistidos, loadedAttendances, loadedFichas] = await Promise.all([
           loadWorkers(),
           loadRooms(),
           loadAssistidos(),
           loadAttendances(),
+          loadFichasAssistencia()
         ]);
         setWorkers(loadedWorkers);
         setRooms(loadedRooms);
         setAssistidos(loadedAssistidos);
         setAttendances(loadedAttendances);
+        setFichasAssistencia(loadedFichas);
       } catch (error) {
         console.error('Erro ao carregar dados iniciais do Supabase:', error);
       } finally {
@@ -298,14 +302,20 @@ export default function App() {
   };
 
   const handleSaveAssistidoForm = async (assistido: Assistido) => {
+    const isNew = !editingAssistido;
     if (editingAssistido) {
       setAssistidos(prev => prev.map(a => a.id === assistido.id ? assistido : a));
     } else {
       setAssistidos(prev => [...prev, assistido]);
     }
     await saveAssistido(assistido);
-    setShowAssistidoForm(false);
-    setEditingAssistido(null);
+    if (isNew) {
+      // Mantém o form aberto em modo edição para dar acesso à Ficha de Assistência
+      setEditingAssistido(assistido);
+    } else {
+      setShowAssistidoForm(false);
+      setEditingAssistido(null);
+    }
   };
 
   const handleCancelAssistidoForm = () => {
@@ -318,24 +328,28 @@ export default function App() {
     await saveAssistido(assistido);
   };
 
-  const handleSaveFicha = async (ficha: FichaAssistencia, ats: PasseAttendance[]) => {
+  const handleSaveFicha = async (ficha: FichaAssistencia) => {
     // Save to DB
     await saveFichaAssistencia(ficha);
-    for (const att of ats) {
-      await saveAttendance(att);
-    }
-    // Update local state
-    setAttendances(prev => [...prev, ...ats]);
+    // Update local state by replacing existing or appending
+    setFichasAssistencia(prev => {
+      const idx = prev.findIndex(f => f.id === ficha.id);
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = ficha;
+        return next;
+      }
+      return [ficha, ...prev];
+    });
 
     // Simulate back action
     setShowAssistanceView(false);
-    showToast("Ficha de Assistência e sessões salvas com sucesso!");
+    showToast("Ficha de Assistência salva com sucesso!");
   };
 
   // Settings handler
   const handleDataImported = (newWorkers: Worker[], newRooms: Room[]) => {
     setWorkers(newWorkers);
-    setRooms(newRooms);
   };
 
   // Loading screen
@@ -457,6 +471,7 @@ export default function App() {
               <AssistanceView
                 workers={workers}
                 assistido={editingAssistido}
+                existingFicha={fichasAssistencia.find(f => f.assistidoId === editingAssistido.id && f.statusFicha === 'Ativa')}
                 onSaveFicha={handleSaveFicha}
                 onBack={() => setShowAssistanceView(false)}
                 onHome={() => handleNavigate('DASHBOARD')}
@@ -467,17 +482,43 @@ export default function App() {
               <PasseRegistrationView
                 attendances={attendances}
                 assistidos={assistidos}
+                fichas={fichasAssistencia}
                 onAddAttendance={async (att) => {
                   setAttendances(prev => [...prev, att]);
                   await saveAttendance(att);
+                  if (att.fichaAssistenciaId && att.attendancePhase === AttendancePhase.EmAtendimento && att.passeType !== PasseType.Nenhum) {
+                    const ficha = fichasAssistencia.find(f => f.id === att.fichaAssistenciaId);
+                    if (ficha) {
+                      const updated: FichaAssistencia = {
+                        ...ficha,
+                        realizadoA2: (ficha.realizadoA2 || 0) + (att.passeType === PasseType.A2 ? 1 : 0),
+                        realizadoA1: (ficha.realizadoA1 || 0) + (att.passeType === PasseType.A1 ? 1 : 0),
+                      };
+                      setFichasAssistencia(prev => prev.map(f => f.id === updated.id ? updated : f));
+                      await saveFichaAssistencia(updated);
+                    }
+                  }
                 }}
                 onUpdateAttendance={async (updated) => {
                   setAttendances(prev => prev.map(a => a.id === updated.id ? updated : a));
                   await saveAttendance(updated);
                 }}
                 onDeleteAttendance={async (id) => {
+                  const att = attendances.find(a => a.id === id);
                   setAttendances(prev => prev.filter(a => a.id !== id));
                   await deleteAttendance(id);
+                  if (att?.fichaAssistenciaId && att.attendancePhase === AttendancePhase.EmAtendimento && att.passeType !== PasseType.Nenhum) {
+                    const ficha = fichasAssistencia.find(f => f.id === att.fichaAssistenciaId);
+                    if (ficha) {
+                      const updated: FichaAssistencia = {
+                        ...ficha,
+                        realizadoA2: Math.max(0, (ficha.realizadoA2 || 0) - (att.passeType === PasseType.A2 ? 1 : 0)),
+                        realizadoA1: Math.max(0, (ficha.realizadoA1 || 0) - (att.passeType === PasseType.A1 ? 1 : 0)),
+                      };
+                      setFichasAssistencia(prev => prev.map(f => f.id === updated.id ? updated : f));
+                      await saveFichaAssistencia(updated);
+                    }
+                  }
                 }}
                 onAddAssistido={handleQuickAddAssistido}
                 rooms={rooms}

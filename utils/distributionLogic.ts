@@ -72,9 +72,9 @@ export function distributeAttendances(attendances: PasseAttendance[], rooms: Roo
 
                 if (a.attendancePhase === AttendancePhase.PrimeiraVez || a.attendancePhase === AttendancePhase.Retorno) {
                     isStillValid = rc.hasMedium;
-                } else if (a.attendancePhase === AttendancePhase.Normal && a.passeType === PasseType.A2) {
+                } else if (a.attendancePhase === AttendancePhase.EmAtendimento && a.passeType === PasseType.A2) {
                     isStillValid = rc.hasMedium && rc.hasDialogo;
-                } else if (a.attendancePhase === AttendancePhase.Normal && a.passeType === PasseType.A1) {
+                } else if (a.attendancePhase === AttendancePhase.EmAtendimento && a.passeType === PasseType.A1) {
                     isStillValid = rc.hasMedium;
                 }
 
@@ -97,7 +97,7 @@ export function distributeAttendances(attendances: PasseAttendance[], rooms: Roo
             if (rule.id === 'rule_dist_first_time' && attendance.attendancePhase === AttendancePhase.PrimeiraVez) return i;
             if (rule.id === 'rule_dist_retorno' && attendance.attendancePhase === AttendancePhase.Retorno) return i;
             if (rule.id === 'rule_dist_a2' && attendance.passeType === PasseType.A2) return i;
-            if (rule.id === 'rule_dist_a1' && attendance.passeType === PasseType.A1 && attendance.attendancePhase === AttendancePhase.Normal) return i;
+            if (rule.id === 'rule_dist_a1' && attendance.passeType === PasseType.A1 && attendance.attendancePhase === AttendancePhase.EmAtendimento) return i;
         }
         return 999; // Fallback se não bater em nenhuma regra ativa
     };
@@ -110,10 +110,10 @@ export function distributeAttendances(attendances: PasseAttendance[], rooms: Roo
 
         if (attendance.attendancePhase === AttendancePhase.PrimeiraVez || attendance.attendancePhase === AttendancePhase.Retorno) {
             // Needs Medium, all our valid rooms already have Medium
-        } else if (attendance.attendancePhase === AttendancePhase.Normal && attendance.passeType === PasseType.A2) {
+        } else if (attendance.attendancePhase === AttendancePhase.EmAtendimento && attendance.passeType === PasseType.A2) {
             // Needs Medium + Dialogo
             validRooms = roomCapabilities.filter(r => r.hasDialogo);
-        } else if (attendance.attendancePhase === AttendancePhase.Normal && attendance.passeType === PasseType.A1) {
+        } else if (attendance.attendancePhase === AttendancePhase.EmAtendimento && attendance.passeType === PasseType.A1) {
             // Any valid
         }
 

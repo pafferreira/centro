@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Worker, Room, RoomType, WorkerRole } from "../types";
 import { Header } from "../components/shared/Header";
 import { WorkerCard } from "../components/shared/WorkerCardFixed";
-import { SparklesIcon } from "../components/Icons";
+import { SparklesIcon, EraserIcon } from "../components/Icons";
 import { generateAssembly } from "../services/assemblyService";
 import { PageContainer } from "../components/shared/PageContainer";
 
@@ -66,18 +66,42 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         setIsGenerating(true);
         const start = Date.now();
         try {
-            // First, clear all room assignments
-            const clearedWorkers = workers.map(w => ({ ...w, assignedRoomId: null }));
+            const currentActive = workers.filter(w => w.present !== false);
 
-            // Then use deterministic generator
-            const assignments = generateAssembly(clearedWorkers, rooms);
-            const newWorkers = clearedWorkers.map(w => {
+            // Workers already in Palestra/Aulinha are preserved and duplicated
+            const fixedPalestraWorkers = currentActive.filter(w =>
+                isReplicableRoom(findRoomById(w.assignedRoomId ?? null))
+            );
+            const fixedIds = new Set(fixedPalestraWorkers.map(w => w.id));
+
+            // Clear only non-Palestra workers; hide Palestra workers from generator
+            const workersForGeneration = workers.map(w => {
+                if (fixedIds.has(w.id)) return { ...w, present: false as const };
+                return { ...w, assignedRoomId: null };
+            });
+
+            const assignments = generateAssembly(workersForGeneration, rooms);
+
+            const newWorkers = workers.map(w => {
+                if (fixedIds.has(w.id)) return w; // keep Palestra assignment intact
                 const assignment = assignments.find(a => a.workerId === w.id);
-                return assignment ? { ...w, assignedRoomId: assignment.roomId } : { ...w, assignedRoomId: null };
+                return { ...w, assignedRoomId: assignment ? assignment.roomId : null };
             });
 
             setWorkers(newWorkers);
-            setReplicaAssignments({});
+
+            // Auto-assign replicas of Palestra workers round-robin across Passe rooms
+            const newReplicaAssignments: Record<string, string | null> = {};
+            const currentPasseRooms = rooms.filter(r =>
+                r.type === RoomType.Passe || r.name.toLowerCase().includes('passe')
+            );
+            fixedPalestraWorkers.forEach((pw, idx) => {
+                const replicaId = getReplicaId(pw);
+                if (currentPasseRooms.length > 0) {
+                    newReplicaAssignments[replicaId] = currentPasseRooms[idx % currentPasseRooms.length].id;
+                }
+            });
+            setReplicaAssignments(newReplicaAssignments);
         } catch (e) {
             alert("Falha ao gerar automaticamente.");
         } finally {
@@ -106,9 +130,30 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
             return;
         }
 
+        // When moving to Palestra/Aulinha, keep the worker's current Passe room via replica
+        const targetRoom = roomId === 'unassigned' ? null : findRoomById(roomId);
+        if (targetRoom && isReplicableRoom(targetRoom)) {
+            const worker = workers.find(w => w.id === workerId);
+            const previousRoomId = worker?.assignedRoomId ?? null;
+            const previousRoom = previousRoomId ? findRoomById(previousRoomId) : null;
+            if (previousRoomId && isPasseRoom(previousRoom)) {
+                // New replicaId will use the target Palestra room id
+                const newReplicaId = `replica:${workerId}:${roomId}`;
+                setReplicaAssignments(prev => ({
+                    ...prev,
+                    [newReplicaId]: previousRoomId
+                }));
+            }
+        }
+
         setWorkers((prev: Worker[]) =>
             prev.map(w => w.id === workerId ? { ...w, assignedRoomId: roomId === 'unassigned' ? null : roomId } : w)
         );
+    };
+
+    const handleClearAll = () => {
+        setWorkers((prev: Worker[]) => prev.map(w => ({ ...w, assignedRoomId: null })));
+        setReplicaAssignments({});
     };
 
     // Drag and drop handlers
@@ -122,10 +167,14 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
     };
     const onDragOver = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
     const onDragEnter = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
-    const handleDragStart = (e: React.DragEvent, id: string) => {
-        e.dataTransfer.setData('text/plain', id);
-        setDraggedWorkerId(id);
-    };
+    const makeDragHandleProps = (id: string) => ({
+        draggable: true as const,
+        onDragStart: (e: React.DragEvent) => {
+            e.dataTransfer.setData('text/plain', id);
+            setDraggedWorkerId(id);
+        },
+        onDragEnd: () => setDraggedWorkerId(null),
+    });
 
     const activeWorkers = workers.filter(w => w.present !== false);
 
@@ -267,7 +316,17 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
 
                 <div className="space-y-6">
                     <div className="space-y-3">
-                        <h3 className="text-lg font-medium text-slate-500 px-1">Salas de Passe</h3>
+                        <div className="flex items-center justify-between px-1">
+                            <h3 className="text-lg font-medium text-slate-500">Salas de Passe</h3>
+                            <button
+                                onClick={handleClearAll}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:text-rose-700 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-300 shadow-sm transition-colors cursor-pointer"
+                                title="Limpar todas as alocações"
+                            >
+                                <EraserIcon className="w-4 h-4" />
+                                Limpar
+                            </button>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {passeRooms.map(room => {
                                 const occupants = getRoomOccupants(room.id);
@@ -295,14 +354,14 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                             {occupants.map(w => {
                                                 const roomOptions = w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned;
                                                 return (
-                                                    <div key={w.id} draggable onDragStart={(e) => handleDragStart(e, w.id)} onDragEnd={() => setDraggedWorkerId(null)}>
-                                                        <WorkerCard
-                                                            worker={w}
-                                                            roleLabel={w.isCoordinator ? 'Coordenador' : undefined}
-                                                            rooms={roomOptions}
-                                                            onMove={handleMoveWorker}
-                                                        />
-                                                    </div>
+                                                    <WorkerCard
+                                                        key={w.id}
+                                                        worker={w}
+                                                        roleLabel={w.isCoordinator ? 'Coordenador' : undefined}
+                                                        rooms={roomOptions}
+                                                        onMove={handleMoveWorker}
+                                                        dragHandleProps={makeDragHandleProps(w.id)}
+                                                    />
                                                 );
                                             })}
                                         </div>
@@ -335,13 +394,13 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                         <div className="space-y-2">
                                             {occupants.length === 0 && <p className="text-xs text-stone-300 italic px-1">Vazio</p>}
                                             {occupants.map(w => (
-                                                <div key={w.id} draggable onDragStart={(e) => handleDragStart(e, w.id)} onDragEnd={() => setDraggedWorkerId(null)}>
-                                                    <WorkerCard
-                                                        worker={w}
-                                                        rooms={roomsWithUnassigned}
-                                                        onMove={handleMoveWorker}
-                                                    />
-                                                </div>
+                                                <WorkerCard
+                                                    key={w.id}
+                                                    worker={w}
+                                                    rooms={roomsWithUnassigned}
+                                                    onMove={handleMoveWorker}
+                                                    dragHandleProps={makeDragHandleProps(w.id)}
+                                                />
                                             ))}
                                         </div>
                                     </div>
@@ -365,14 +424,14 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                             </div>
                             <div className="space-y-2">
                                 {unassignedWorkers.map(w => (
-                                    <div key={w.id} draggable onDragStart={(e) => handleDragStart(e, w.id)} onDragEnd={() => setDraggedWorkerId(null)}>
-                                        <WorkerCard
-                                            worker={w}
-                                            roleLabel={w.isReplica && w.originRoomName ? `Extra ${w.originRoomName}` : undefined}
-                                            rooms={w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned}
-                                            onMove={handleMoveWorker}
-                                        />
-                                    </div>
+                                    <WorkerCard
+                                        key={w.id}
+                                        worker={w}
+                                        roleLabel={undefined}
+                                        rooms={w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned}
+                                        onMove={handleMoveWorker}
+                                        dragHandleProps={makeDragHandleProps(w.id)}
+                                    />
                                 ))}
                             </div>
                         </div>

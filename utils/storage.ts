@@ -68,6 +68,7 @@ function attendanceFromDb(row: any): PasseAttendance {
         attendancePhase: row.fase_atendimento,
         status: row.status_atendimento,
         allocatedRoomId: row.id_sala_alocada ?? null,
+        fichaAssistenciaId: row.id_ficha_assistencia ?? undefined,
     };
 }
 
@@ -80,6 +81,7 @@ function attendanceToDb(att: PasseAttendance): Record<string, any> {
         status_atendimento: att.status,
         id_assistido: att.assistidoId,
         id_sala_alocada: att.allocatedRoomId ?? null,
+        id_ficha_assistencia: att.fichaAssistenciaId ?? null,
     };
 }
 
@@ -156,7 +158,6 @@ export async function loadAssistidos(): Promise<Assistido[]> {
             id: row.id,
             nome: row.nome_assistido,
             telefone: row.telefone ?? undefined,
-            dataNascimento: row.data_nascimento ?? undefined,
             observacoes: row.observacoes ?? undefined,
         }));
     } catch (error) {
@@ -171,7 +172,6 @@ export async function saveAssistido(assistido: Assistido): Promise<void> {
             id: assistido.id,
             nome_assistido: assistido.nome,
             telefone: assistido.telefone ?? null,
-            data_nascimento: assistido.dataNascimento ?? null,
             observacoes: assistido.observacoes ?? null,
         };
 
@@ -202,6 +202,32 @@ export async function deleteAssistido(assistidoId: string): Promise<void> {
 // FUNÇÕES CRUD – FICHAS (gfa_fichas_assistencia)
 // ============================================================================
 
+export async function loadFichasAssistencia(): Promise<FichaAssistencia[]> {
+    try {
+        const { data, error } = await supabase
+            .from('gfa_fichas_assistencia')
+            .select('*')
+            .order('criado_em', { ascending: false });
+
+        if (error) throw error;
+        return (data ?? []).map((row: any) => ({
+            id: row.id,
+            assistidoId: row.id_assistido,
+            entrevistadorId: row.id_entrevistador ?? undefined,
+            dataEntrevista: row.data_entrevista,
+            qtdA2: row.qtd_a2,
+            qtdA1: row.qtd_a1,
+            tipoFicha: row.tipo_ficha,
+            statusFicha: row.status_ficha,
+            realizadoA2: row.realizado_a2 ?? 0,
+            realizadoA1: row.realizado_a1 ?? 0,
+        }));
+    } catch (error) {
+        console.error('Erro ao carregar fichas de assistência do Supabase:', error);
+        return [];
+    }
+}
+
 export async function saveFichaAssistencia(ficha: FichaAssistencia): Promise<void> {
     try {
         const row = {
@@ -213,6 +239,8 @@ export async function saveFichaAssistencia(ficha: FichaAssistencia): Promise<voi
             qtd_a1: ficha.qtdA1,
             tipo_ficha: ficha.tipoFicha,
             status_ficha: ficha.statusFicha,
+            realizado_a2: ficha.realizadoA2 ?? 0,
+            realizado_a1: ficha.realizadoA1 ?? 0,
         };
 
         const { error } = await supabase
@@ -427,7 +455,7 @@ export const DEFAULT_RULES: AppRule[] = [
     {
         id: 'rule_coord_priority',
         type: 'ROOM_ASSEMBLY',
-        label: 'Prioridade 1: Coordenadores',
+        label: 'Coordenadores',
         description: 'Garantir que cada sala tenha exatamente 1 Coordenador habilitado.',
         isActive: true,
         order: 1,
@@ -436,7 +464,7 @@ export const DEFAULT_RULES: AppRule[] = [
     {
         id: 'rule_medium_dist',
         type: 'ROOM_ASSEMBLY',
-        label: 'Prioridade 2: Distribuição de Médiuns',
+        label: 'Distribuição de Médiuns',
         description: 'Médiuns devem ser distribuídos de forma equalitária entre as salas.',
         isActive: true,
         order: 2,
@@ -445,7 +473,7 @@ export const DEFAULT_RULES: AppRule[] = [
     {
         id: 'rule_sust_fill',
         type: 'ROOM_ASSEMBLY',
-        label: 'Prioridade 3: Sustentação',
+        label: 'Sustentação',
         description: 'Completar os assentos restantes com trabalhadores de Sustentação.',
         isActive: true,
         order: 3,
@@ -464,7 +492,7 @@ export const DEFAULT_RULES: AppRule[] = [
     {
         id: 'rule_dist_first_time',
         type: 'PASSE_DISTRIBUTION',
-        label: '1) Primeira Vez (Sala c/ Médium)',
+        label: '1ª Vez (Sala c/ Médium)',
         description: 'Prioriza assistidos em fase de "Primeira Vez". Requer sala com Médium.',
         isActive: true,
         order: 1,
@@ -473,7 +501,7 @@ export const DEFAULT_RULES: AppRule[] = [
     {
         id: 'rule_dist_retorno',
         type: 'PASSE_DISTRIBUTION',
-        label: '2) Retorno (Sala c/ Médium)',
+        label: 'Retorno (Sala c/ Médium)',
         description: 'Prioriza assistidos em fase de "Retorno". Requer sala com Médium.',
         isActive: true,
         order: 2,
@@ -482,7 +510,7 @@ export const DEFAULT_RULES: AppRule[] = [
     {
         id: 'rule_dist_a2',
         type: 'PASSE_DISTRIBUTION',
-        label: '3) Passe A2 (Sala c/ Médium + Diálogo)',
+        label: 'Passe A2 (Sala c/ Médium + Diálogo)',
         description: 'Prioriza assistidos classificados como "A2". Requer sala com Médium e Diálogo.',
         isActive: true,
         order: 3,
@@ -491,7 +519,7 @@ export const DEFAULT_RULES: AppRule[] = [
     {
         id: 'rule_dist_a1',
         type: 'PASSE_DISTRIBUTION',
-        label: '4) Passe A1 (Qualquer Sala)',
+        label: 'Passe A1 (Qualquer Sala)',
         description: 'Prioriza assistidos classificados como "A1". Aceita qualquer sala de passe.',
         isActive: true,
         order: 4,
@@ -519,7 +547,12 @@ export function getAppRules(): AppRule[] {
                 saveAppRules(DEFAULT_RULES);
                 return DEFAULT_RULES;
             }
-            return parsed;
+            // Migration: sync labels from DEFAULT_RULES by id (keeps label text always fresh)
+            const synced = parsed.map((r: AppRule) => {
+                const def = DEFAULT_RULES.find(d => d.id === r.id);
+                return def ? { ...r, label: def.label } : r;
+            });
+            return synced;
         } catch (e) {
             console.error(e);
         }

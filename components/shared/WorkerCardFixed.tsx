@@ -1,15 +1,22 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Worker, WorkerRole } from "../../types";
-import { MoveIcon } from "../Icons";
+import { MoveIcon, DragHandleIcon } from "../Icons";
+
+export interface DragHandleProps {
+  draggable: boolean;
+  onDragStart: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
+}
 
 interface WorkerCardProps {
   worker: Worker;
   roleLabel?: string;
   rooms?: { id: string; name: string }[];
   onMove?: (workerId: string, roomId: string) => void;
+  dragHandleProps?: DragHandleProps;
 }
 
-export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms, onMove }) => {
+export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms, onMove, dragHandleProps }) => {
   const [showMove, setShowMove] = useState(false);
   const [openUpwards, setOpenUpwards] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -19,7 +26,7 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms
     [WorkerRole.Coordenador]: "bg-blue-200 text-blue-800",
     [WorkerRole.Medium]: "bg-purple-200 text-purple-800",
     [WorkerRole.Dialogo]: "bg-green-200 text-green-800",
-    [WorkerRole.Entrevista]: "bg-emerald-200 text-emerald-800",
+    [WorkerRole.Entrevista]: "bg-rose-200 text-rose-800",
     [WorkerRole.Recepção]: "bg-orange-200 text-orange-800",
     [WorkerRole.Psicografa]: "bg-indigo-200 text-indigo-800",
     [WorkerRole.Sustentacao]: "bg-[#e0dcd5] text-[#5c554a]",
@@ -70,20 +77,29 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms
   }, [showMove]);
 
   return (
-    <div className="flex items-center p-2.5 bg-[#fdfbf7] rounded-xl border border-[#e8e4db] shadow-sm mb-2 relative group">
+    <div className="flex items-center py-1.5 pl-0 pr-0 bg-[#fdfbf7] rounded-xl border border-[#e8e4db] shadow-sm mb-2 relative group">
+      {dragHandleProps && (
+        <div
+          {...dragHandleProps}
+          className="flex-shrink-0 flex items-center justify-center w-11 h-11 cursor-grab active:cursor-grabbing touch-none select-none text-slate-300 hover:text-slate-500 transition-colors"
+          title="Arrastar"
+        >
+          <DragHandleIcon className="w-5 h-5" />
+        </div>
+      )}
       <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden flex-shrink-0 border-2 border-white shadow-sm">
         <img src={avatarUrl} alt={worker.name} className="w-full h-full object-cover" />
       </div>
 
-      <div className="ml-3 flex-1 min-w-0">
-        <p className="font-semibold text-text-main text-sm truncate">{worker.name}</p>
+      <div className="ml-2.5 flex-1 min-w-0">
+        <p className="font-semibold text-text-main text-base truncate">{worker.name}</p>
         <div className="flex gap-1 mt-0.5 flex-wrap">
           {(roleLabel ? [roleLabel] : worker.roles).map((r, idx) => {
             const classes = (Object.values(WorkerRole).includes(r as WorkerRole))
               ? roleStylesMap[r as WorkerRole]
               : "bg-gray-100 text-gray-700";
             return (
-              <div key={idx} title={r} className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold truncate max-w-full ${classes}`}>
+              <div key={idx} title={r} className={`inline-block px-2 py-0.5 rounded-md text-xs font-bold truncate max-w-full ${classes}`}>
                 {r}
               </div>
             );
@@ -91,17 +107,17 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center">
         {onMove && rooms && (
           <div className="relative" ref={dropdownRef}>
             <button
               ref={buttonRef}
               onClick={toggleMove}
               onTouchStart={(e) => e.stopPropagation()}
-              className="p-2 rounded-xl hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200"
+              className="flex items-center justify-center w-11 h-11 rounded-xl hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200 cursor-pointer"
               title="Mover para outra sala"
             >
-              <MoveIcon className="w-5 h-5 text-slate-400 hover:text-blue-500 cursor-pointer" />
+              <MoveIcon className="w-5 h-5 text-slate-400 hover:text-blue-500" />
             </button>
             {showMove && (
               <div className={`absolute right-0 ${openUpwards ? "bottom-full mb-2 origin-bottom-right" : "top-full mt-1 origin-top-right"} bg-white border border-slate-200 rounded-xl shadow-lg z-[100] min-w-[200px] max-h-[300px] overflow-y-auto`}>

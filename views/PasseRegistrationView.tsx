@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { ViewState, PasseAttendance, AttendancePhase, PasseType, AttendanceStatus, Assistido, Room, Worker } from '../types';
+import React, { useState, useRef, useEffect } from 'react';
+import { ViewState, PasseAttendance, AttendancePhase, PasseType, AttendanceStatus, Assistido, Room, Worker, FichaAssistencia } from '../types';
 import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
 import { Tooltip, InfoIcon } from '../components/shared/Tooltip';
@@ -10,6 +10,7 @@ import { distributeAttendances } from '../utils/distributionLogic';
 interface PasseRegistrationViewProps {
     attendances: PasseAttendance[];
     assistidos: Assistido[];
+    fichas: FichaAssistencia[];
     rooms: Room[];
     workers: Worker[];
     onAddAttendance: (att: PasseAttendance) => void;
@@ -20,29 +21,62 @@ interface PasseRegistrationViewProps {
     onNavigate: (v: ViewState) => void;
 }
 
-export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ attendances, assistidos, rooms, workers, onAddAttendance, onUpdateAttendance, onDeleteAttendance, onAddAssistido, onBack, onNavigate }) => {
-    // Current date logic: We assume the user creates it for today
+export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ attendances, assistidos, fichas, rooms, workers, onAddAttendance, onUpdateAttendance, onDeleteAttendance, onAddAssistido, onBack, onNavigate }) => {
     const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
     const [assistidoName, setAssistidoName] = useState('');
     const [passeType, setPasseType] = useState<PasseType>(PasseType.A1);
-    const [attendancePhase, setAttendancePhase] = useState<AttendancePhase>(AttendancePhase.Normal);
+    const [attendancePhase, setAttendancePhase] = useState<AttendancePhase>(AttendancePhase.EmAtendimento);
     const [editingAttendanceId, setEditingAttendanceId] = useState<string | null>(null);
     const [isAccordionOpen, setIsAccordionOpen] = useState(true);
     const [sortMode, setSortMode] = useState<'CHEGADA' | 'TIPO'>('CHEGADA');
+    // true quando o assistido tem ficha ativa → campos ficam somente leitura
+    const [fichaAutoDetected, setFichaAutoDetected] = useState(false);
 
     const topRef = useRef<HTMLDivElement>(null);
 
     const todaysAttendances = attendances.filter(a => a.date === date);
+    const isPasseTypeEnabled = attendancePhase === AttendancePhase.EmAtendimento;
 
-    const isPasseTypeEnabled = attendancePhase === AttendancePhase.Normal;
+    // Auto-detecta Fase e Tipo de Passe com base na ficha do assistido
+    useEffect(() => {
+        if (!editingAttendanceId && assistidoName.trim() !== '') {
+            const typedName = assistidoName.trim().toLowerCase();
+            const ast = assistidos.find(a => a.nome.toLowerCase() === typedName);
+
+            if (ast) {
+                const activeFicha = fichas?.find(f => f.assistidoId === ast.id && f.statusFicha === 'Ativa');
+                if (activeFicha) {
+                    const realizadoA2 = activeFicha.realizadoA2 || 0;
+                    const realizadoA1 = activeFicha.realizadoA1 || 0;
+                    const totalCount = realizadoA2 + realizadoA1;
+                    const totalSessions = activeFicha.qtdA2 + activeFicha.qtdA1;
+
+                    if (totalCount === 0) {
+                        setAttendancePhase(AttendancePhase.PrimeiraVez);
+                        setPasseType(activeFicha.qtdA2 > 0 ? PasseType.A2 : PasseType.A1);
+                    } else if (totalCount >= totalSessions - 1) {
+                        setAttendancePhase(AttendancePhase.Retorno);
+                        setPasseType(activeFicha.qtdA1 > 0 ? PasseType.A1 : PasseType.A2);
+                    } else {
+                        setAttendancePhase(AttendancePhase.EmAtendimento);
+                        setPasseType(realizadoA2 < activeFicha.qtdA2 ? PasseType.A2 : PasseType.A1);
+                    }
+                    setFichaAutoDetected(true);
+                    return;
+                }
+            }
+            // Assistido não encontrado ou sem ficha ativa → campos editáveis
+            setFichaAutoDetected(false);
+        } else if (!editingAttendanceId) {
+            setFichaAutoDetected(false);
+        }
+    }, [assistidoName, assistidos, fichas, attendances, editingAttendanceId]);
 
     const handlePhaseChange = (phase: AttendancePhase) => {
         setAttendancePhase(phase);
-        // Quando não for Normal, trava o Tipo de Passe para Nenhum
-        if (phase !== AttendancePhase.Normal) {
+        if (phase !== AttendancePhase.EmAtendimento) {
             setPasseType(PasseType.Nenhum);
         } else if (passeType === PasseType.Nenhum) {
-            // Se voltar para Normal, sugere A2
             setPasseType(PasseType.A2);
         }
     };
@@ -54,7 +88,6 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
         setPasseType(att.passeType);
         setEditingAttendanceId(att.id);
         setIsAccordionOpen(true);
-        // Scroll to top using the ref because our PageContainer is a scrolling div, not the body
         if (topRef.current) {
             topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
@@ -63,7 +96,6 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
     const handleCancelEdit = () => {
         setEditingAttendanceId(null);
         setAssistidoName('');
-        // Resets
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -79,105 +111,115 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
 
         let ast = assistidos.find(a => a.nome.toLowerCase() === typedName.toLowerCase());
         if (!ast) {
-            ast = {
-                id: crypto.randomUUID(),
-                nome: typedName,
-            };
+            ast = { id: crypto.randomUUID(), nome: typedName };
             onAddAssistido(ast);
         }
 
+        const activeFicha = fichas.find(f => f.assistidoId === ast.id && f.statusFicha === 'Ativa');
+
         if (editingAttendanceId) {
-            // Update mode
             const existing = attendances.find(a => a.id === editingAttendanceId);
             if (existing) {
-                const updatedAttendance: PasseAttendance = {
+                onUpdateAttendance({
                     ...existing,
                     date,
                     assistidoName: ast.nome,
                     assistidoId: ast.id,
                     passeType: isPasseTypeEnabled ? passeType : PasseType.Nenhum,
                     attendancePhase,
-                };
-                onUpdateAttendance(updatedAttendance);
+                });
             }
             setEditingAttendanceId(null);
         } else {
-            // Create mode
-            const newAttendance: PasseAttendance = {
+            onAddAttendance({
                 id: crypto.randomUUID(),
                 date,
                 assistidoName: ast.nome,
                 assistidoId: ast.id,
                 passeType: isPasseTypeEnabled ? passeType : PasseType.Nenhum,
                 attendancePhase,
-                status: AttendanceStatus.Aguardando
-            };
-            onAddAttendance(newAttendance);
+                status: AttendanceStatus.Aguardando,
+                fichaAssistenciaId: activeFicha?.id,
+            });
         }
 
         setAssistidoName('');
-        // We keep date, passeType, and phase as they might be repeated
+        setAttendancePhase(AttendancePhase.EmAtendimento);
+        setPasseType(PasseType.A1);
     };
 
-    // Simulated distribution to get possible room
-    const simulatedAttendances = todaysAttendances.map(a => ({ ...a }));
-    const simulatedDistribution = distributeAttendances(simulatedAttendances, rooms, workers);
+    // Simulação de distribuição para prévia de sala
+    const simulatedDistribution = distributeAttendances(todaysAttendances.map(a => ({ ...a })), rooms, workers);
     const getPossibleRoomName = (attId: string) => {
         for (const rd of simulatedDistribution) {
             if (rd.attendances.some(a => a.id === attId)) return rd.room.name;
         }
-        return "-";
+        return null;
     };
 
     const attendancesWithIndex = todaysAttendances.map((att, idx) => ({ ...att, arrivalIndex: idx + 1 }));
 
     const groupedAttendances = {
         'Primeira Vez / Retorno': attendancesWithIndex.filter(a => a.attendancePhase === AttendancePhase.PrimeiraVez || a.attendancePhase === AttendancePhase.Retorno),
-        'Passe A2': attendancesWithIndex.filter(a => a.attendancePhase === AttendancePhase.Normal && a.passeType === PasseType.A2),
-        'Passe A1': attendancesWithIndex.filter(a => a.attendancePhase === AttendancePhase.Normal && a.passeType === PasseType.A1),
+        'Passe A2': attendancesWithIndex.filter(a => a.attendancePhase === AttendancePhase.EmAtendimento && a.passeType === PasseType.A2),
+        'Passe A1': attendancesWithIndex.filter(a => a.attendancePhase === AttendancePhase.EmAtendimento && a.passeType === PasseType.A1),
+    };
+
+    const getAttTag = (att: typeof attendancesWithIndex[0]) => {
+        if (att.attendancePhase === AttendancePhase.PrimeiraVez) return { label: '1ª Vez', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+        if (att.attendancePhase === AttendancePhase.Retorno) return { label: 'Retorno', cls: 'bg-slate-100 text-slate-600 border-slate-300' };
+        if (att.passeType === PasseType.A2) return { label: 'A2', cls: 'bg-amber-100 text-amber-700 border-amber-200' };
+        if (att.passeType === PasseType.A1) return { label: 'A1', cls: 'bg-blue-100 text-blue-700 border-blue-200' };
+        return null;
+    };
+
+    const phaseDisplayStyle: Record<AttendancePhase, string> = {
+        [AttendancePhase.PrimeiraVez]: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+        [AttendancePhase.Retorno]: 'bg-slate-100 border-slate-300 text-slate-700',
+        [AttendancePhase.EmAtendimento]: 'bg-blue-50 border-blue-200 text-blue-800',
     };
 
     const renderCard = (att: typeof attendancesWithIndex[0]) => {
-        let cardBgClass = "bg-white border-slate-100 hover:bg-slate-50 hover:border-blue-300";
-        if (sortMode === 'TIPO' && att.attendancePhase === AttendancePhase.Normal) {
-            if (att.passeType === PasseType.A1) cardBgClass = "bg-blue-100 border-blue-200 hover:bg-blue-200 hover:border-blue-400";
-            if (att.passeType === PasseType.A2) cardBgClass = "bg-amber-100 border-amber-200 hover:bg-amber-200 hover:border-amber-400";
+        const tag = getAttTag(att);
+        const roomName = getPossibleRoomName(att.id);
+        let cardBgClass = "bg-white border-slate-100 hover:bg-slate-50 hover:border-blue-200";
+        if (sortMode === 'TIPO' && att.attendancePhase === AttendancePhase.EmAtendimento) {
+            if (att.passeType === PasseType.A1) cardBgClass = "bg-blue-50 border-blue-200 hover:bg-blue-100 hover:border-blue-300";
+            if (att.passeType === PasseType.A2) cardBgClass = "bg-amber-50 border-amber-200 hover:bg-amber-100 hover:border-amber-300";
         }
 
         return (
             <div
                 key={att.id}
                 onClick={() => handleEditClick(att)}
-                className={`p-3 rounded-xl border shadow-sm flex items-center justify-between cursor-pointer transition-colors relative ${cardBgClass}`}
+                className={`pl-2 pr-3 py-2.5 rounded-xl border shadow-sm flex items-center gap-2 cursor-pointer transition-colors ${cardBgClass}`}
             >
-                <div className="flex items-center gap-4 flex-1 pointer-events-none">
-                    <div className="flex flex-col items-center justify-center bg-slate-100 w-8 h-8 rounded-lg shrink-0">
-                        <span className="text-sm font-black text-slate-500">{att.arrivalIndex}º</span>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="font-bold text-slate-800">{att.assistidoName}</span>
-                        <span className="text-xs text-slate-500">{att.attendancePhase}</span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 pointer-events-none">
-                        {att.passeType !== PasseType.Nenhum && att.attendancePhase === AttendancePhase.Normal && (
-                            <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${att.passeType === PasseType.A1 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                                {att.passeType}
-                            </span>
-                        )}
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${getPossibleRoomName(att.id) !== '-' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'text-slate-400 border border-slate-100'}`}>
-                            {getPossibleRoomName(att.id)}
-                        </span>
-                    </div>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); if (confirm(`Deseja remover ${att.assistidoName} da fila?`)) onDeleteAttendance(att.id); }}
-                        className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                        title="Remover da fila"
-                    >
-                        <TrashIcon className="w-5 h-5" />
-                    </button>
-                </div>
+                {/* Ordem */}
+                <span className="text-xs font-black text-slate-400 w-6 text-center shrink-0">{att.arrivalIndex}º</span>
+
+                {/* Nome */}
+                <span className="font-semibold text-slate-800 flex-1 truncate text-sm">{att.assistidoName}</span>
+
+                {/* Tag */}
+                {tag && (
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${tag.cls}`}>
+                        {tag.label}
+                    </span>
+                )}
+
+                {/* Sala */}
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${roomName ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+                    {roomName ?? '—'}
+                </span>
+
+                {/* Excluir */}
+                <button
+                    onClick={(e) => { e.stopPropagation(); if (confirm(`Deseja remover ${att.assistidoName} da fila?`)) onDeleteAttendance(att.id); }}
+                    className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                    title="Remover da fila"
+                >
+                    <TrashIcon className="w-4 h-4" />
+                </button>
             </div>
         );
     };
@@ -195,6 +237,8 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                     onToggle={setIsAccordionOpen}
                 >
                     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+                        {/* Data */}
                         <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                                 Data
@@ -211,6 +255,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                             />
                         </div>
 
+                        {/* Nome do Assistido */}
                         <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                                 Nome do Assistido
@@ -218,69 +263,81 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                                     <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
                                 </Tooltip>
                             </label>
-                            <input
-                                type="text"
-                                required
-                                list="assistidos-list"
-                                value={assistidoName}
-                                onChange={e => setAssistidoName(e.target.value)}
-                                placeholder="Ex: Maria"
-                                className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30 font-bold"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    required
+                                    list="assistidos-list"
+                                    value={assistidoName}
+                                    onChange={e => setAssistidoName(e.target.value)}
+                                    placeholder="Ex: Maria"
+                                    className="w-full px-4 py-3 pr-10 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30 font-bold"
+                                />
+                                {assistidoName && !editingAttendanceId && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setAssistidoName('')}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
                             <datalist id="assistidos-list">
                                 {assistidos
                                     .filter(ast => !todaysAttendances.some(att => att.assistidoId === ast.id || att.assistidoName.toLowerCase() === ast.nome.toLowerCase()))
+                                    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
                                     .map(ast => (
                                         <option key={ast.id} value={ast.nome} />
                                     ))}
                             </datalist>
                         </div>
 
+                        {/* Fase de Atendimento — editável se sem ficha, somente leitura se com ficha */}
                         <div className="flex flex-col gap-1.5">
                             <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                                 Fase de Atendimento
-                                <Tooltip text="Primeira Vez: chegou hoje pela 1ª vez. Retorno: está voltando para coletar resultado. Normal: atendimento de rotina com passe." position="top">
+                                <Tooltip text={fichaAutoDetected ? "Detectada automaticamente pela ficha do assistido." : "Selecione a fase de atendimento."} position="top">
                                     <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
                                 </Tooltip>
                             </label>
-                            <select
-                                value={attendancePhase}
-                                onChange={e => handlePhaseChange(e.target.value as AttendancePhase)}
-                                className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30"
-                            >
-                                <option value={AttendancePhase.PrimeiraVez}>Primeira Vez</option>
-                                <option value={AttendancePhase.Retorno}>Retorno</option>
-                                <option value={AttendancePhase.Normal}>Normal</option>
-                            </select>
+                            {fichaAutoDetected ? (
+                                <div className={`w-full px-4 py-3 rounded-xl border font-semibold text-sm ${phaseDisplayStyle[attendancePhase]}`}>
+                                    {attendancePhase}
+                                </div>
+                            ) : (
+                                <select
+                                    value={attendancePhase}
+                                    onChange={e => handlePhaseChange(e.target.value as AttendancePhase)}
+                                    className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30"
+                                >
+                                    <option value={AttendancePhase.PrimeiraVez}>Primeira Vez</option>
+                                    <option value={AttendancePhase.Retorno}>Retorno</option>
+                                    <option value={AttendancePhase.EmAtendimento}>Em Atendimento</option>
+                                </select>
+                            )}
                         </div>
 
-                        {/* Tipo de Passe - só habilitado quando Normal */}
+                        {/* Tipo de Passe — editável se sem ficha, somente leitura se com ficha */}
                         <div className={`flex flex-col gap-1.5 transition-opacity duration-200 ${isPasseTypeEnabled ? '' : 'opacity-40 grayscale-[50%]'}`}>
                             <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                                 Tipo de Passe
-                                <Tooltip text="A1: passe rápido (~15min). A2: passe longo (~30min). Só disponível na fase Normal." position="top">
+                                <Tooltip text="A1: passe rápido (~15min). A2: passe longo (~30min)." position="top">
                                     <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
                                 </Tooltip>
                             </label>
                             <div className="flex gap-3">
-                                <button
-                                    type="button"
-                                    disabled={!isPasseTypeEnabled}
-                                    onClick={() => setPasseType(PasseType.A1)}
-                                    className={`flex-1 py-3.5 rounded-xl font-bold border-2 transition-all cursor-pointer disabled:cursor-not-allowed ${passeType === PasseType.A1 ? 'bg-blue-100 border-blue-500 text-blue-800 shadow-sm scale-[1.02]' : 'bg-blue-50/50 border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300'
-                                        }`}
-                                >
-                                    A1
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={!isPasseTypeEnabled}
-                                    onClick={() => setPasseType(PasseType.A2)}
-                                    className={`flex-1 py-3.5 rounded-xl font-bold border-2 transition-all cursor-pointer disabled:cursor-not-allowed ${passeType === PasseType.A2 ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm scale-[1.02]' : 'bg-amber-50/50 border-amber-200 text-amber-600 hover:bg-amber-100 hover:border-amber-300'
-                                        }`}
-                                >
-                                    A2
-                                </button>
+                                {fichaAutoDetected ? (
+                                    <>
+                                        <div className={`flex-1 py-3.5 rounded-xl font-bold border-2 text-center text-base select-none ${passeType === PasseType.A1 && isPasseTypeEnabled ? 'bg-blue-100 border-blue-500 text-blue-800 shadow-sm' : 'bg-blue-50/50 border-blue-200 text-blue-300'}`}>A1</div>
+                                        <div className={`flex-1 py-3.5 rounded-xl font-bold border-2 text-center text-base select-none ${passeType === PasseType.A2 && isPasseTypeEnabled ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-amber-50/50 border-amber-200 text-amber-300'}`}>A2</div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button type="button" disabled={!isPasseTypeEnabled} onClick={() => setPasseType(PasseType.A1)} className={`flex-1 py-3.5 rounded-xl font-bold border-2 transition-all disabled:cursor-not-allowed ${passeType === PasseType.A1 ? 'bg-blue-100 border-blue-500 text-blue-800 shadow-sm scale-[1.02]' : 'bg-blue-50/50 border-blue-200 text-blue-600 hover:bg-blue-100 hover:border-blue-300'}`}>A1</button>
+                                        <button type="button" disabled={!isPasseTypeEnabled} onClick={() => setPasseType(PasseType.A2)} className={`flex-1 py-3.5 rounded-xl font-bold border-2 transition-all disabled:cursor-not-allowed ${passeType === PasseType.A2 ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm scale-[1.02]' : 'bg-amber-50/50 border-amber-200 text-amber-600 hover:bg-amber-100 hover:border-amber-300'}`}>A2</button>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -290,20 +347,21 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                                     Cancelar
                                 </button>
                             )}
-                            <button type="submit" className={`flex-2 flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer w-full`}>
+                            <button type="submit" className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer w-full">
                                 {editingAttendanceId ? "Salvar Alterações" : "Adicionar à Fila"}
                             </button>
                         </div>
                     </form>
                 </Accordion>
 
+                {/* Lista da fila */}
                 <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                            Fila para {date.split('-').reverse().join('/')}
-                            <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full">{todaysAttendances.length} Pessoas</span>
-                        </h3>
-                        <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <h3 className="font-bold text-slate-800 truncate">Fila · {date.split('-').reverse().join('/')}</h3>
+                            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full shrink-0">{todaysAttendances.length} Atendidos</span>
+                        </div>
+                        <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200 shrink-0">
                             <Tooltip text="Ordenar por Chegada" position="top">
                                 <button
                                     onClick={() => setSortMode('CHEGADA')}
@@ -324,7 +382,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                     </div>
 
                     {todaysAttendances.length === 0 ? (
-                        <p className="text-slate-500 bg-slate-50 p-4 rounded-xl text-center border border-slate-100">Ninguém registrado para esta sala ainda.</p>
+                        <p className="text-slate-500 bg-slate-50 p-4 rounded-xl text-center border border-slate-100">Ninguém registrado para esta data ainda.</p>
                     ) : (
                         <div className="flex flex-col gap-2">
                             {sortMode === 'CHEGADA' ? (

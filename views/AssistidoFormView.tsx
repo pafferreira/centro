@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Assistido, PasseAttendance, AttendancePhase, PasseType } from '../types';
 import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
-import { ChevronDownIconInline, ChevronUpIconInline, CardsIcon } from '../components/Icons';
+import { ChevronDownIconInline, ChevronUpIconInline, ClipboardListIcon } from '../components/Icons';
 
 interface AssistidoFormViewProps {
     assistido?: Assistido | null;
@@ -16,7 +16,6 @@ interface AssistidoFormViewProps {
 export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido, history = [], onSave, onCancel, onHome, onEditAssistance }) => {
     const [nome, setNome] = useState(assistido?.nome || '');
     const [telefone, setTelefone] = useState(assistido?.telefone || '');
-    const [dataNascimento, setDataNascimento] = useState(assistido?.dataNascimento || '');
     const [observacoes, setObservacoes] = useState(assistido?.observacoes || '');
 
     const [openAccordion, setOpenAccordion] = useState<number | null>(null); // 1 = Details, 2 = History
@@ -27,7 +26,6 @@ export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido,
             id: assistido?.id || crypto.randomUUID(),
             nome: nome.trim(),
             telefone: telefone.trim() || undefined,
-            dataNascimento: dataNascimento || undefined,
             observacoes: observacoes.trim() || undefined,
         });
     };
@@ -78,15 +76,6 @@ export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido,
                                     />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-sm font-semibold text-slate-700">Data de Nascimento</label>
-                                    <input
-                                        type="date"
-                                        value={dataNascimento}
-                                        onChange={(e) => setDataNascimento(e.target.value)}
-                                        className="w-full px-4 py-2 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30"
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
                                     <label className="text-sm font-semibold text-slate-700">Observações Relatadas</label>
                                     <textarea
                                         rows={3}
@@ -110,10 +99,15 @@ export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido,
                     <button
                         type="button"
                         onClick={() => onEditAssistance(assistido)}
-                        className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-4 rounded-2xl shadow-sm border border-indigo-200 flex items-center justify-center gap-3 transition-all active:scale-[0.98]"
+                        className="w-full bg-indigo-50 hover:bg-indigo-100 py-4 px-5 rounded-2xl shadow-sm border border-indigo-200 flex items-center gap-4 transition-all active:scale-[0.98]"
                     >
-                        <CardsIcon className="w-6 h-6" />
-                        Acessar Ficha de Assistência (Entrevista)
+                        <div className="w-11 h-11 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                            <ClipboardListIcon className="w-6 h-6 text-indigo-600" />
+                        </div>
+                        <div className="flex flex-col items-start text-left">
+                            <span className="font-bold text-indigo-800 text-base leading-snug">Ficha de Assistência</span>
+                            <span className="text-indigo-400 text-sm font-medium">(Entrevista)</span>
+                        </div>
                     </button>
                 )}
 
