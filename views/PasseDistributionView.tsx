@@ -16,11 +16,11 @@ const STYLES = `
   to   { opacity: 1; transform: translateY(0); }
 }
 .dist-row-exit {
-  animation: dist-slide-out 0.35s ease forwards;
+  animation: dist-slide-out 0.55s ease forwards;
   pointer-events: none;
 }
 .dist-row-enter {
-  animation: dist-slide-in 0.35s ease forwards;
+  animation: dist-slide-in 0.55s ease forwards;
 }
 .dist-row-na-sala td {
   background: rgba(219, 234, 254, 0.55);
@@ -73,8 +73,8 @@ const STYLES = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   cursor: pointer;
   border: none;
