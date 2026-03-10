@@ -109,11 +109,11 @@ export const DragIndicatorIcon = ({ className }: { className?: string }) => (
 export const DragHandleIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
     {/* Coluna esquerda */}
-    <circle cx="9" cy="7"  r="1.5" />
+    <circle cx="9" cy="7" r="1.5" />
     <circle cx="9" cy="12" r="1.5" />
     <circle cx="9" cy="17" r="1.5" />
     {/* Coluna direita */}
-    <circle cx="15" cy="7"  r="1.5" />
+    <circle cx="15" cy="7" r="1.5" />
     <circle cx="15" cy="12" r="1.5" />
     <circle cx="15" cy="17" r="1.5" />
   </svg>
@@ -347,5 +347,79 @@ export const EraserIcon = ({ className }: { className?: string }) => (
 export const ClipboardListIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9h6m-6 3h4" />
+  </svg>
+);
+
+// NOVOS ÍCONES DE "EM ATENDIMENTO" (TEMPO)
+export const TimerStopwatchIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className={className} style={style}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5v4.5l3 3M10.5 3h3M19.5 5.25l-2.25 2.25M12 21a8.25 8.25 0 100-16.5 8.25 8.25 0 000 16.5z" />
+  </svg>
+);
+
+export const ClockSolidIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className} style={style}>
+    <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clipRule="evenodd" />
+  </svg>
+);
+
+export const HourglassFilledIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className} style={style}>
+    <path fillRule="evenodd" d="M5.25 2.25a.75.75 0 01.75-.75h12a.75.75 0 01.75.75v3.483a3 3 0 01-.879 2.122l-2.096 2.095-2.095 2.096a3 3 0 010 4.243l2.095 2.095 2.096 2.096a3 3 0 01.879 2.122v3.483a.75.75 0 01-.75.75h-12a.75.75 0 01-.75-.75v-3.483a3 3 0 01.879-2.122l2.096-2.096 2.095-2.095a3 3 0 010-4.243l-2.095-2.096-2.096-2.095a3 3 0 01-.879-2.122V2.25z" clipRule="evenodd" />
+  </svg>
+);
+// OPÇÃO A Animada: Ampulheta rodopiante (Estilo Windows Clássico, Azul)
+export const HourglassSpinIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className} style={{ ...style }}>
+    <style>
+      {`
+        @keyframes hourglass-spin {
+          0% { transform: rotate(0deg); }
+          50% { transform: rotate(180deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .anim-hourglass-spin {
+          transform-origin: center;
+          animation: hourglass-spin 2s ease-in-out infinite;
+        }
+      `}
+    </style>
+    <path className="anim-hourglass-spin" d="M6 2v4l4 4-4 4v4h12v-4l-4-4 4-4V2H6zm10 14.5V20H8v-3.5l4-4 4 4zM8 4h8v3.5l-4 4-4-4V4z" />
+  </svg>
+);
+
+// OPÇÃO B Animada: Areia esvaziando/enchendo com flip (Azul/Roxo)
+export const HourglassPourIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className={className} style={{ ...style }}>
+    <style>
+      {`
+        @keyframes pour-top {
+          0%, 10% { transform: scaleY(1); opacity: 1; }
+          40%, 60% { transform: scaleY(0); opacity: 0; }
+          90%, 100% { transform: scaleY(1); opacity: 1; }
+        }
+        @keyframes pour-bottom {
+          0%, 10% { transform: scaleY(0); opacity: 0; }
+          40%, 60% { transform: scaleY(1); opacity: 1; }
+          90%, 100% { transform: scaleY(0); opacity: 0; }
+        }
+        @keyframes flip-glass {
+          0%, 45% { transform: rotate(0deg); }
+          50%, 95% { transform: rotate(180deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .hg-sand-top { transform-origin: bottom center; animation: pour-top 4s linear infinite; }
+        .hg-sand-bottom { transform-origin: bottom center; animation: pour-bottom 4s linear infinite; }
+        .hg-flip { transform-origin: center; animation: flip-glass 4s ease-in-out infinite; }
+      `}
+    </style>
+    <g className="hg-flip">
+      {/* Outline */}
+      <path d="M6 2v4l4 4-4 4v4h12v-4l-4-4 4-4V2H6zm10 14.5V20H8v-3.5l4-4 4 4zM8 4h8v3.5l-4 4-4-4V4z" fill="currentColor" />
+      {/* Sand Top */}
+      <path className="hg-sand-top" d="M8 4h8v3.5l-4 4-4-4V4z" fill="currentColor" opacity="0.8" />
+      {/* Sand Bottom */}
+      <path className="hg-sand-bottom" d="M10 16.5v3.5h4v-3.5l-2-2-2 2z" fill="currentColor" opacity="0.8" />
+    </g>
   </svg>
 );
