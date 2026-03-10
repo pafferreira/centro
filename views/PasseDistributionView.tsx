@@ -183,6 +183,7 @@ const STYLES = `
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
+  margin-right: 6px;
 }
 .dist-room-select:focus-visible {
   outline: 2px solid rgba(68, 210, 240, 0.6);
@@ -542,12 +543,12 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
         let updated: PasseAttendance = { ...att };
 
         if (att.status === AttendanceStatus.Aguardando) {
-            updated = { ...att, status: AttendanceStatus.NaSala, horaEntrada: now };
+            updated = { ...att, status: AttendanceStatus.NaSala };
             onUpdateAttendance(updated);
             saveAttendance(updated);
         } else if (att.status === AttendanceStatus.NaSala) {
             if (att.passeType === PasseType.A2) {
-                updated = { ...att, status: AttendanceStatus.EmAtendimento };
+                updated = { ...att, status: AttendanceStatus.EmAtendimento, horaEntrada: now };
                 onUpdateAttendance(updated);
                 saveAttendance(updated);
             } else {
@@ -572,8 +573,10 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
             applyRecalculatedRooms(nextTodays);
 
             if (att.fichaAssistenciaId) {
-                const type = att.passeType === PasseType.A2 ? 'A2' : 'A1';
-                updateFichaRealizado(att.fichaAssistenciaId, type);
+                if (att.attendancePhase !== AttendancePhase.PrimeiraVez && att.attendancePhase !== AttendancePhase.Retorno) {
+                    const type = att.passeType === PasseType.A2 ? 'A2' : 'A1';
+                    updateFichaRealizado(att.fichaAssistenciaId, type);
+                }
             }
         }, 380);
     };
