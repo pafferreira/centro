@@ -70,6 +70,7 @@ const STYLES = `
   cursor: not-allowed;
 }
 .dist-icon-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -81,7 +82,13 @@ const STYLES = `
   padding: 0;
   background: transparent;
   transition: background 150ms;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+.dist-icon-btn::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
 }
 .dist-icon-btn:hover { background: rgba(0,0,0,0.05); }
 .dist-icon-btn:disabled {
@@ -106,7 +113,7 @@ const STYLES = `
   border-bottom: 1px solid rgba(13, 25, 27, 0.08);
 }
 .dist-table th:first-child {
-  padding-left: 14px;
+  padding-left: 12px;
 }
 .dist-table th:last-child {
   text-align: center;
@@ -119,15 +126,18 @@ const STYLES = `
 }
 .dist-table td {
   padding: 10px 8px;
+  overflow: visible;
   border-bottom: 1px solid rgba(13, 15, 15, 0.06);
   color: #0d191b;
   vertical-align: middle;
 }
 .dist-table td:first-child {
-  padding-left: 14px;
+  padding-left: 12px;
 }
 .dist-table tr:last-child td { border-bottom: none; }
 .dist-table tr:hover td { background: rgba(68, 210, 240, 0.08); }
+.dist-hover-aguardando:hover td { background: rgba(134, 239, 172, 0.15) !important; }
+.dist-hover-aguardando:active td { background: rgba(134, 239, 172, 0.25) !important; }
 .dist-table-wrap {
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 12px;
@@ -161,7 +171,7 @@ const STYLES = `
 .dist-badge-retorno { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 .dist-room-select {
   width: auto;
-  max-width: 120px;
+  max-width: 84px;
   border: 1px solid rgba(13, 25, 27, 0.12);
   background: rgba(255, 255, 255, 0.82);
   border-radius: 8px;
@@ -237,7 +247,7 @@ function getTipoBadge(att: FlatAttendance): { label: string; className: string }
 
 function SituacaoIcon({ status }: { status: AttendanceStatus }) {
     if (status === AttendanceStatus.Aguardando) {
-        return <span style={{ color: '#9eb3b8', fontWeight: 700, fontSize: 18, letterSpacing: '-1px' }}>—</span>;
+        return null; // Sem ícone para aguardando
     }
     if (status === AttendanceStatus.NaSala) {
         return <ArrowUpIcon style={{ width: 22, height: 22, color: '#004e89' }} />;
@@ -576,19 +586,27 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
         const roomSelectOptions = att.allocatedRoomId && !availableRooms.some(room => room.id === att.allocatedRoomId)
             ? [{ id: att.allocatedRoomId, name: att.assignedRoomName, hasDialogo: false }, ...availableRooms]
             : availableRooms;
+        const isAguardando = att.status === AttendanceStatus.Aguardando;
         const statusLocked = isStatusLocked(att);
         const rowClass = att.status === AttendanceStatus.NaSala
             ? 'dist-row-na-sala'
             : (att.status === AttendanceStatus.EmAtendimento && att.passeType === PasseType.A2 ? 'dist-row-a2-live' : '');
 
+        const handleRowClick = () => {
+            if (isAguardando && !statusLocked) {
+                handleIconClick(att);
+            }
+        };
+
         return (
             <tr
                 key={att.id}
-                className={`${rowClass} ${exitingId === att.id ? 'dist-row-exit' : ''}`.trim() || undefined}
+                className={`${rowClass} ${exitingId === att.id ? 'dist-row-exit' : ''} ${isAguardando ? 'dist-hover-aguardando' : ''}`.trim() || undefined}
+                onClick={isAguardando ? handleRowClick : undefined}
+                style={isAguardando ? { cursor: statusLocked ? 'not-allowed' : 'pointer' } : undefined}
             >
-                <td style={{ maxWidth: 0, width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                        <span style={{ color: '#94a3b8', fontWeight: 800, fontSize: 11, minWidth: 16 }}>{order}.</span>
+                <td colSpan={isAguardando ? 2 : 1} style={{ maxWidth: 0, width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', minWidth: 0 }}>
                         <span style={{
                             fontWeight: 600,
                             color: '#0d191b',
@@ -599,6 +617,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                             textOverflow: 'ellipsis',
                             whiteSpace: 'normal',
                             lineHeight: 1.25,
+                            wordBreak: 'break-word',
                         }} title={att.assistidoName}>
                             {att.assistidoName}
                         </span>
@@ -619,6 +638,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                             className="dist-room-select"
                             value={att.allocatedRoomId ?? ''}
                             onChange={(e) => handleRoomChange(att, e.target.value)}
+                            onClick={(e) => isAguardando && e.stopPropagation()}
                             aria-label={`Alterar sala de ${att.assistidoName}`}
                         >
                             <option value="">Sel. sala</option>
@@ -628,17 +648,19 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                         </select>
                     )}
                 </td>
-                <td style={{ padding: 0, textAlign: 'center', verticalAlign: 'middle' }}>
-                    <button
-                        className="dist-icon-btn"
-                        onClick={() => handleIconClick(att)}
-                        disabled={statusLocked}
-                        title={statusLocked ? `Sala ${att.assignedRoomName} com atendimento em Na Sala/Em Atendimento` : att.status}
-                        aria-label={`Avançar situação de ${att.assistidoName}`}
-                    >
-                        <SituacaoIcon status={att.status} />
-                    </button>
-                </td>
+                {!isAguardando && (
+                    <td style={{ padding: 0, textAlign: 'center', verticalAlign: 'middle' }}>
+                        <button
+                            className="dist-icon-btn"
+                            onClick={() => handleIconClick(att)}
+                            disabled={statusLocked}
+                            title={statusLocked ? `Sala ${att.assignedRoomName} com atendimento em Na Sala/Em Atendimento` : att.status}
+                            aria-label={`Avançar situação de ${att.assistidoName}`}
+                        >
+                            <SituacaoIcon status={att.status} />
+                        </button>
+                    </td>
+                )}
             </tr>
         );
     };
@@ -692,7 +714,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                                     <th style={{ width: '100%' }}>Nome</th>
                                     <th style={{ whiteSpace: 'nowrap', textAlign: 'right', paddingRight: 10 }}>Tipo</th>
                                     <th style={{ width: 100 }}>Sala</th>
-                                    <th style={{ width: 28, textAlign: 'center', padding: 0 }}>Situação</th>
+                                    <th style={{ width: 44, textAlign: 'center', padding: 0 }}>Situação</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -709,7 +731,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                                         {remainingRows.length > 0 && (
                                             <tr className="dist-separator">
                                                 <td colSpan={4}>
-                                                    <div className="dist-separator-inner">
+                                                    <div className="dist-separator-inner" style={{ padding: '16px 0' }}>
                                                         <span>Aguardando</span>
                                                         <button
                                                             type="button"
@@ -742,7 +764,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                                 <tr>
                                     <th style={{ width: '100%' }}>Nome</th>
                                     <th style={{ whiteSpace: 'nowrap', textAlign: 'right', paddingRight: 10 }}>Tipo</th>
-                                    <th style={{ width: 100 }}>Sala</th>
+                                    <th style={{ width: 84 }}>Sala</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -760,7 +782,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                                             className={recentlyLiberadoIds.has(att.id) ? 'dist-row-enter' : undefined}
                                         >
                                             <td style={{ maxWidth: 0, width: '100%' }}>
-                                                <div style={{ fontWeight: 600, color: '#0d191b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={att.assistidoName}>
+                                                <div style={{ fontWeight: 600, color: '#0d191b', overflow: 'visible', textOverflow: 'clip', whiteSpace: 'nowrap', margin: 0, border: 0 }} title={att.assistidoName}>
                                                     {att.assistidoName}
                                                 </div>
                                             </td>
@@ -771,7 +793,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td style={{ color: '#475569', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            <td style={{ color: '#475569', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 16 }}>
                                                 {att.assignedRoomName}
                                             </td>
                                         </tr>
@@ -784,4 +806,6 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
             </div>
         </PageContainer>
     );
-};
+}
+
+export default PasseDistributionView;
