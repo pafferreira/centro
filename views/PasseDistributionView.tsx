@@ -73,11 +73,12 @@ const STYLES = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   cursor: pointer;
-  border: none;
+  border: 0;
+  padding: 0;
   background: transparent;
   transition: background 150ms;
   -webkit-tap-highlight-color: transparent;
@@ -107,10 +108,14 @@ const STYLES = `
 .dist-table th:first-child {
   padding-left: 14px;
 }
-.dist-table th:last-child,
+.dist-table th:last-child {
+  text-align: center;
+  padding-right: 4px;
+}
 .dist-table td:last-child {
   text-align: center;
-  padding-right: 14px;
+  padding: 0;
+  border-left: 0;
 }
 .dist-table td {
   padding: 10px 8px;
@@ -584,7 +589,17 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                 <td style={{ maxWidth: 0, width: '100%' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
                         <span style={{ color: '#94a3b8', fontWeight: 800, fontSize: 11, minWidth: 16 }}>{order}.</span>
-                        <span style={{ fontWeight: 600, color: '#0d191b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={att.assistidoName}>
+                        <span style={{
+                            fontWeight: 600,
+                            color: '#0d191b',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'normal',
+                            lineHeight: 1.25,
+                        }} title={att.assistidoName}>
                             {att.assistidoName}
                         </span>
                     </div>
@@ -613,7 +628,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                         </select>
                     )}
                 </td>
-                <td>
+                <td style={{ padding: 0, textAlign: 'center', verticalAlign: 'middle' }}>
                     <button
                         className="dist-icon-btn"
                         onClick={() => handleIconClick(att)}
@@ -677,7 +692,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                                     <th style={{ width: '100%' }}>Nome</th>
                                     <th style={{ whiteSpace: 'nowrap', textAlign: 'right', paddingRight: 10 }}>Tipo</th>
                                     <th style={{ width: 100 }}>Sala</th>
-                                    <th style={{ width: 44, textAlign: 'center' }}>Situação</th>
+                                    <th style={{ width: 28, textAlign: 'center', padding: 0 }}>Situação</th>
                                 </tr>
                             </thead>
                             <tbody>
