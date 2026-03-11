@@ -464,7 +464,14 @@ export default function App() {
             )}
 
             {view === 'SETTINGS' && (
-              <SettingsView onDataImported={handleDataImported} onBack={handleBack} onHome={() => handleNavigate('DASHBOARD')} />
+              <SettingsView
+                onDataImported={handleDataImported}
+                totalAssistidos={assistidos.length}
+                totalFichas={fichasAssistencia.length}
+                totalAtendimentos={attendances.length}
+                onBack={handleBack}
+                onHome={() => handleNavigate('DASHBOARD')}
+              />
             )}
 
             {view === 'ASSISTANCE' && !showAssistidoForm && (

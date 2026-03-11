@@ -514,12 +514,10 @@ export async function getStorageSize(): Promise<string> {
       .select("*", { count: "exact", head: true });
     const { count: rCount } = await supabase
       .from("gfa_salas")
-      .select("*", { count: "exact", head: true });
-    const { count: aCount } = await supabase
-      .from("gfa_atendimentos_passe")
-      .select("*", { count: "exact", head: true });
+      .select("*", { count: "exact", head: true })
+      .eq("tipo_sala", "Passe");
+    return `${wCount ?? 0} trabalhadores, ${rCount ?? 0} salas de passes`;
 
-    return `${wCount ?? 0} trabalhadores, ${rCount ?? 0} salas, ${aCount ?? 0} atendimentos`;
   } catch (error) {
     console.error("Erro ao calcular tamanho:", error);
     return "Desconhecido";

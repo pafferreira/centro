@@ -11,6 +11,9 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface SettingsViewProps {
     onDataImported: (workers: any[], rooms: any[]) => void;
+    totalAssistidos: number;
+    totalFichas: number;
+    totalAtendimentos: number;
     onBack?: () => void;
     onHome?: () => void;
 }
@@ -64,7 +67,7 @@ function StaticRuleItem({ rule, onToggle }: { key?: string | number; rule: AppRu
     );
 }
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, onHome }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, onHome, totalAssistidos, totalFichas, totalAtendimentos }) => {
     const lastModified = getLastModified();
     const [storageSize, setStorageSize] = useState<string>('Calculando...');
     const [rules, setRules] = useState<AppRule[]>([]);
@@ -140,6 +143,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onBack, onHome }) =>
                     <div className="space-y-1 text-sm text-slate-600">
                         <p><strong>Última modificação:</strong> {formatDate(lastModified)}</p>
                         <p><strong>Dados no banco:</strong> {storageSize}</p>
+                        <p><strong>Total de Assistidos:</strong> {totalAssistidos}</p>
+                        <p><strong>Total de Fichas:</strong> {totalFichas} e <strong>Total de Atendimentos:</strong> {totalAtendimentos} </p>
                     </div>
                 </div>
 
