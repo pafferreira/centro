@@ -29,7 +29,7 @@ export const AssistanceView: React.FC<AssistanceViewProps> = ({ workers, assisti
 
     const [formInput, setFormInput] = useState<SetupForm>({
         nome: assistido.nome,
-        dataEntrevista: existingFicha?.dataEntrevista || new Date().toISOString().split('T')[0],
+        dataEntrevista: existingFicha?.dataEntrevista || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
         entrevistador: existingEntrevistador,
         qtdA2: existingFicha ? existingFicha.qtdA2 : 0,
         qtdA1: existingFicha ? existingFicha.qtdA1 : 0,

@@ -22,7 +22,7 @@ interface PasseRegistrationViewProps {
 }
 
 export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ attendances, assistidos, fichas, rooms, workers, onAddAttendance, onUpdateAttendance, onDeleteAttendance, onAddAssistido, onBack, onNavigate }) => {
-    const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
     const [assistidoName, setAssistidoName] = useState('');
     const [passeType, setPasseType] = useState<PasseType>(PasseType.A1);
     const [attendancePhase, setAttendancePhase] = useState<AttendancePhase>(AttendancePhase.EmAtendimento);
@@ -127,6 +127,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                     assistidoId: ast.id,
                     passeType: isPasseTypeEnabled ? passeType : PasseType.Nenhum,
                     attendancePhase,
+                    fichaAssistenciaId: activeFicha?.id,
                 });
             }
             setEditingAttendanceId(null);
