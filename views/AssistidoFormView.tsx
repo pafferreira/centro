@@ -3,6 +3,7 @@ import { Assistido, PasseAttendance, AttendancePhase, PasseType } from '../types
 import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
 import { ChevronDownIconInline, ChevronUpIconInline, ClipboardListIcon } from '../components/Icons';
+import { Combobox } from '../components/shared/Combobox';
 
 interface AssistidoFormViewProps {
     assistido?: Assistido | null;
@@ -57,24 +58,17 @@ export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido,
                 <form onSubmit={handleSave} className="bg-white p-5 rounded-2xl shadow-soft border border-slate-100 flex flex-col gap-4">
                     <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-semibold text-slate-700">Nome do Assistido *</label>
-                        <div className="relative">
-                            <input
-                                type="text"
-                                required
-                                list="assistidos-nomes-cadastrados"
-                                value={nome}
-                                onChange={(e) => setNome(e.target.value)}
-                                placeholder="Nome completo"
-                                className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30 font-bold"
-                            />
-                            <datalist id="assistidos-nomes-cadastrados">
-                                {existingAssistidos
-                                    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
-                                    .map((a) => (
-                                        <option key={a.id} value={a.nome} />
-                                    ))}
-                            </datalist>
-                        </div>
+                        <Combobox
+                            required
+                            value={nome}
+                            onChange={(val) => setNome(val)}
+                            options={existingAssistidos
+                                .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                                .map((a) => ({ id: a.id, value: a.nome }))
+                            }
+                            placeholder="Nome completo"
+                            className="w-full"
+                        />
                     </div>
 
                     {/* Accordion Detalhes (Opcionais) */}

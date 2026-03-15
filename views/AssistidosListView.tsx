@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Assistido } from '../types';
 import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
-import { SearchIcon } from '../components/Icons';
-import { PlusIcon } from '../components/Icons';
+import { SearchIcon, PlusIcon, RefreshIcon } from '../components/Icons';
 import { Tooltip } from '../components/shared/Tooltip';
 
 interface AssistidosListViewProps {

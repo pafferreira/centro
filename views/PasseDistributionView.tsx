@@ -26,6 +26,7 @@ import {
   HourglassFlipIcon,
   StopwatchProgressIcon,
   HourglassWindowsIcon,
+  RefreshIcon,
 } from "../components/Icons";
 
 const STYLES = `
@@ -226,6 +227,7 @@ interface PasseDistributionViewProps {
   onUpdateAttendance: (att: PasseAttendance) => void;
   onBack?: () => void;
   onNavigate: (v: ViewState) => void;
+  onRefresh?: (silent?: boolean) => void;
 }
 
 type FlatAttendance = PasseAttendance & { assignedRoomName: string };
@@ -296,8 +298,8 @@ function SituacaoIcon({ status }: { status: AttendanceStatus }) {
   }
   if (status === AttendanceStatus.EmAtendimento) {
     return (
-      <HourglassPourIcon
-        style={{ width: 18, height: 18, background: "#ffffff",color: "#0b5fff" }}
+      <HourglassSpinIcon
+        style={{ width: 18, height: 18, color: "#0b5fff" }}
       />
     );
   }
@@ -313,6 +315,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
   onUpdateAttendance,
   onBack,
   onNavigate,
+  onRefresh,
 }) => {
   const [date, setDate] = useState(
     () =>
@@ -320,6 +323,15 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
         .toISOString()
         .split("T")[0],
   );
+
+  // Auto-refresh a cada 10 segundos
+  useEffect(() => {
+    if (!onRefresh) return;
+    const interval = setInterval(() => {
+      onRefresh(true);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [onRefresh]);
   const [exitingId, setExitingId] = useState<string | null>(null);
   const [recentlyLiberadoIds, setRecentlyLiberadoIds] = useState<Set<string>>(
     new Set(),
@@ -692,15 +704,15 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
     const availableRooms = getValidRoomOptions(att);
     const roomSelectOptions =
       att.allocatedRoomId &&
-      !availableRooms.some((room) => room.id === att.allocatedRoomId)
+        !availableRooms.some((room) => room.id === att.allocatedRoomId)
         ? [
-            {
-              id: att.allocatedRoomId,
-              name: att.assignedRoomName,
-              hasDialogo: false,
-            },
-            ...availableRooms,
-          ]
+          {
+            id: att.allocatedRoomId,
+            name: att.assignedRoomName,
+            hasDialogo: false,
+          },
+          ...availableRooms,
+        ]
         : availableRooms;
     const isAguardando = att.status === AttendanceStatus.Aguardando;
     const statusLocked = isStatusLocked(att);
@@ -708,7 +720,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
       att.status === AttendanceStatus.NaSala
         ? "dist-row-na-sala"
         : att.status === AttendanceStatus.EmAtendimento &&
-            att.passeType === PasseType.A2
+          att.passeType === PasseType.A2
           ? "dist-row-a2-live"
           : "";
 
@@ -890,9 +902,28 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
             <StopwatchProgressIcon
               style={{ width: 18, height: 18, color: "#0b5fff" }}
             />
-            <HourglassWindowsIcon
+            <HourglassSpinIcon
               style={{ width: 18, height: 18, color: "#0b5fff" }}
             />
+            {onRefresh && (
+              <button
+                onClick={() => onRefresh(false)}
+                className="dist-icon-btn"
+                title="Atualizar dados do banco"
+                style={{
+                  marginLeft: 8,
+                  background: "rgba(11, 95, 255, 0.1)",
+                  width: 32,
+                  height: 32,
+                  transition: "transform 0.2s"
+                }}
+                onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.9)"}
+                onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
+                onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+              >
+                <RefreshIcon style={{ width: 18, height: 18, color: "#0b5fff" }} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -931,7 +962,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                   >
                     Tipo
                   </th>
-                  <th style={{ width: 70 , textAlign: "center",}}>Sala</th>
+                  <th style={{ width: 70, textAlign: "center", }}>Sala</th>
                   <th style={{ width: 24, textAlign: "center", padding: 0 }}>
                     Situação
                   </th>

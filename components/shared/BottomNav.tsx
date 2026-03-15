@@ -14,9 +14,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ active, onChange }) => {
         { id: 'DASHBOARD', label: 'Início', icon: HomeIcon, color: 'text-cyan-500', bg: 'bg-cyan-50' },
         { id: 'ROOM_ASSEMBLY', label: 'Montagem', icon: MontagemIcon, color: 'text-green-600', bg: 'bg-green-50' },
         // Leva direto para o fluxo de Cadastro Dia de Passe (fila de assistidos)
-        { id: 'PASSE_REGISTRATION', label: 'Assistido', icon: UsersIcon, color: 'text-blue-500', bg: 'bg-blue-50' },
+        { id: 'PASSE_REGISTRATION', label: 'Recepção', icon: UsersIcon, color: 'text-blue-500', bg: 'bg-blue-50' },
         // Leva direto para o painel de Distribuição do Passe
-        { id: 'PASSE_DISTRIBUTION', label: 'Distribuição', icon: MapPinIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
+        { id: 'PASSE_DISTRIBUTION', label: 'Passes', icon: MapPinIcon, color: 'text-orange-500', bg: 'bg-orange-50' },
     ];
 
     return (

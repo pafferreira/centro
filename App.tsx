@@ -67,30 +67,34 @@ export default function App() {
   };
   const removeToast = (id: string) => setToasts(prev => prev.filter(t => t.id !== id));
 
+  // Lógica de atualização de dados (Refresh)
+  const handleRefresh = useCallback(async (silent = true) => {
+    try {
+      const [loadedWorkers, loadedRooms, loadedAssistidos, loadedAttendances, loadedFichas] = await Promise.all([
+        loadWorkers(),
+        loadRooms(),
+        loadAssistidos(),
+        loadAttendances(),
+        loadFichasAssistencia()
+      ]);
+      setWorkers(loadedWorkers);
+      setRooms(loadedRooms);
+      setAssistidos(loadedAssistidos);
+      setAttendances(loadedAttendances);
+      setFichasAssistencia(loadedFichas);
+      if (!silent) showToast('Dados atualizados!');
+    } catch (error) {
+      console.error('Erro ao atualizar dados:', error);
+      showToast('Erro ao atualizar dados.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // Carregamento inicial assíncrono do Supabase
   useEffect(() => {
-    async function loadInitialData() {
-      try {
-        const [loadedWorkers, loadedRooms, loadedAssistidos, loadedAttendances, loadedFichas] = await Promise.all([
-          loadWorkers(),
-          loadRooms(),
-          loadAssistidos(),
-          loadAttendances(),
-          loadFichasAssistencia()
-        ]);
-        setWorkers(loadedWorkers);
-        setRooms(loadedRooms);
-        setAssistidos(loadedAssistidos);
-        setAttendances(loadedAttendances);
-        setFichasAssistencia(loadedFichas);
-      } catch (error) {
-        console.error('Erro ao carregar dados iniciais do Supabase:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadInitialData();
-  }, []);
+    handleRefresh(true);
+  }, []); // Executa apenas uma vez no mount
 
   // Auto-save to Supabase whenever data changes (skip initial empty state)
   const [initialLoadDone, setInitialLoadDone] = useState(false);
@@ -555,6 +559,7 @@ export default function App() {
                 workers={workers}
                 onBack={handleBack}
                 onNavigate={handleNavigate}
+                onRefresh={handleRefresh}
               />
             )}
 
@@ -566,6 +571,7 @@ export default function App() {
                 onUpdateAttendance={(updated) => setAttendances(prev => prev.map(a => a.id === updated.id ? updated : a))}
                 onBack={handleBack}
                 onNavigate={handleNavigate}
+                onRefresh={handleRefresh}
               />
             )}
           </div>

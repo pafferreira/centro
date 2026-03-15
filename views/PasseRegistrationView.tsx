@@ -4,12 +4,10 @@ import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
 import { Tooltip, InfoIcon } from '../components/shared/Tooltip';
 import { Accordion } from '../components/shared/Accordion';
-import { TrashIcon, ListIcon, CardsIcon } from '../components/Icons';
+import { TrashIcon, ListIcon, CardsIcon, RefreshIcon } from '../components/Icons';
 import { distributeAttendances } from '../utils/distributionLogic';
+import { Combobox } from '../components/shared/Combobox';
 
-// Normaliza nome para exibição/gravação: remove espaços extras e
-// capitaliza cada palavra (primeira letra maiúscula, resto minúsculo),
-// preservando partículas minúsculas comuns em nomes próprios.
 const NAME_PARTICLES = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
 
 function formatAssistidoName(raw: string): string {
@@ -26,8 +24,6 @@ function formatAssistidoName(raw: string): string {
         .join(' ');
 }
 
-// Versão para uso no input: aplica a mesma capitalização,
-// mas preserva um espaço ao final enquanto o usuário está digitando.
 function formatAssistidoNameInput(raw: string): string {
     const hasTrailingSpace = raw.endsWith(' ');
     const trimmed = raw.trim();
@@ -52,9 +48,19 @@ interface PasseRegistrationViewProps {
     onAddAssistido: (ast: Assistido) => void;
     onBack?: () => void;
     onNavigate: (v: ViewState) => void;
+    onRefresh?: (silent?: boolean) => void;
 }
 
-export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ attendances, assistidos, fichas, rooms, workers, onAddAttendance, onUpdateAttendance, onDeleteAttendance, onAddAssistido, onBack, onNavigate }) => {
+export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ attendances, assistidos, fichas, rooms, workers, onAddAttendance, onUpdateAttendance, onDeleteAttendance, onAddAssistido, onBack, onNavigate, onRefresh }) => {
+    // Auto-refresh a cada 10 segundos
+    useEffect(() => {
+        if (!onRefresh) return;
+        const interval = setInterval(() => {
+            onRefresh(true);
+        }, 10000);
+        return () => clearInterval(interval);
+    }, [onRefresh]);
+
     const [date, setDate] = useState(() => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]);
     const [assistidoName, setAssistidoName] = useState('');
     const [passeType, setPasseType] = useState<PasseType>(PasseType.A1);
@@ -306,33 +312,29 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                                 </Tooltip>
                             </label>
                             <div className="relative">
-                                <input
-                                    type="text"
+                                <Combobox
                                     required
-                                    list="assistidos-list"
                                     value={assistidoName}
-                                    onChange={e => setAssistidoName(formatAssistidoNameInput(e.target.value))}
+                                    onChange={val => setAssistidoName(formatAssistidoNameInput(val))}
+                                    options={assistidos
+                                        .filter(ast => !todaysAttendances.some(att => att.assistidoId === ast.id || att.assistidoName.toLowerCase() === ast.nome.toLowerCase()))
+                                        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                                        .map(ast => ({ id: ast.id, value: ast.nome }))
+                                    }
                                     placeholder="Ex: Maria"
-                                    className="w-full px-4 py-3 pr-10 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30 font-bold"
+                                    className="w-full"
+                                    disabled={!!editingAttendanceId}
                                 />
                                 {assistidoName && !editingAttendanceId && (
                                     <button
                                         type="button"
                                         onClick={() => setAssistidoName('')}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors z-[10]"
                                     >
                                         ✕
                                     </button>
                                 )}
                             </div>
-                            <datalist id="assistidos-list">
-                                {assistidos
-                                    .filter(ast => !todaysAttendances.some(att => att.assistidoId === ast.id || att.assistidoName.toLowerCase() === ast.nome.toLowerCase()))
-                                    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
-                                    .map(ast => (
-                                        <option key={ast.id} value={ast.nome} />
-                                    ))}
-                            </datalist>
                         </div>
 
                         {/* Fase de Atendimento — editável se sem ficha, somente leitura se com ficha */}
@@ -400,26 +402,42 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                 <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
-                            <h3 className="font-bold text-slate-800 truncate">Fila · {date.split('-').reverse().join('/')}</h3>
-                            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full shrink-0">{todaysAttendances.length} Atendidos</span>
+                            <h3 className="font-bold text-slate-800 truncate text-sm">Fila · {date.split('-').reverse().join('/')}</h3>
+                            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">{todaysAttendances.length} Atendidos</span>
                         </div>
-                        <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200 shrink-0">
-                            <Tooltip text="Ordenar por Chegada" position="top">
-                                <button
-                                    onClick={() => setSortMode('CHEGADA')}
-                                    className={`px-3 py-1.5 rounded-md transition-colors flex items-center justify-center ${sortMode === 'CHEGADA' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
-                                >
-                                    <ListIcon className="w-5 h-5" />
-                                </button>
-                            </Tooltip>
-                            <Tooltip text="Agrupar por Tipo" position="top">
-                                <button
-                                    onClick={() => setSortMode('TIPO')}
-                                    className={`px-3 py-1.5 rounded-md transition-colors flex items-center justify-center ${sortMode === 'TIPO' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
-                                >
-                                    <CardsIcon className="w-5 h-5" />
-                                </button>
-                            </Tooltip>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {onRefresh && (
+                                <Tooltip text="Atualizar do Banco" position="top">
+                                    <button
+                                        type="button"
+                                        onClick={() => onRefresh(false)}
+                                        className="p-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition-colors flex items-center justify-center cursor-pointer active:scale-95"
+                                    >
+                                        <RefreshIcon className="w-4 h-4" />
+                                    </button>
+                                </Tooltip>
+                            )}
+                            <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
+                                <Tooltip text="Ordenar por Chegada" position="top">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSortMode('CHEGADA')}
+                                        className={`px-2 py-1 rounded-md transition-colors flex items-center justify-center ${sortMode === 'CHEGADA' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        <ListIcon className="w-4 h-4" />
+                                    </button>
+                                </Tooltip>
+                                <Tooltip text="Agrupar por Tipo" position="top">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSortMode('TIPO')}
+                                        className={`px-2 py-1 rounded-md transition-colors flex items-center justify-center ${sortMode === 'TIPO' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        <CardsIcon className="w-4 h-4" />
+                                    </button>
+                                </Tooltip>
+                            </div>
                         </div>
                     </div>
 
@@ -449,5 +467,3 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
         </PageContainer>
     );
 };
-
-
