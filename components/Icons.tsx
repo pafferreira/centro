@@ -351,6 +351,141 @@ export const ClipboardListIcon = ({ className }: { className?: string }) => (
 );
 
 // NOVOS ÍCONES DE "EM ATENDIMENTO" (TEMPO)
+
+// 1) Relógio de parede com ponteiro girando
+export const ClockSpinIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    className={className}
+    style={style}
+  >
+    <style>
+      {`
+        @keyframes clock-spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .clock-hand {
+          transform-origin: 12px 12px;
+          animation: clock-spin 8s linear infinite;
+        }
+      `}
+    </style>
+    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    <line x1="12" y1="4" x2="12" y2="5.5" stroke="currentColor" strokeWidth="1.3" />
+    <line x1="12" y1="18.5" x2="12" y2="20" stroke="currentColor" strokeWidth="1.3" />
+    <line x1="4" y1="12" x2="5.5" y2="12" stroke="currentColor" strokeWidth="1.3" />
+    <line x1="18.5" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth="1.3" />
+    <line x1="12" y1="12" x2="12" y2="8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    <line
+      className="clock-hand"
+      x1="12"
+      y1="12"
+      x2="16"
+      y2="12"
+      stroke="#ffb703"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+    />
+    <circle cx="12" cy="12" r="0.7" fill="#ffb703" />
+  </svg>
+);
+
+// 2) Ampulheta com areia caindo e flip
+export const HourglassFlipIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    className={className}
+    style={style}
+  >
+    <style>
+      {`
+        @keyframes hg-flip {
+          0%, 45% { transform: rotate(0deg); }
+          50%, 95% { transform: rotate(180deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes hg-sand-top {
+          0%, 10% { transform: scaleY(1); opacity: 1; }
+          40%, 60% { transform: scaleY(0); opacity: 0; }
+          90%, 100% { transform: scaleY(1); opacity: 1; }
+        }
+        @keyframes hg-sand-bottom {
+          0%, 10% { transform: scaleY(0); opacity: 0; }
+          40%, 60% { transform: scaleY(1); opacity: 1; }
+          90%, 100% { transform: scaleY(0); opacity: 0; }
+        }
+        .hg-flip-group {
+          transform-origin: 12px 12px;
+          animation: hg-flip 4s ease-in-out infinite;
+        }
+        .hg-sand-top {
+          transform-origin: 12px 11px;
+          animation: hg-sand-top 4s linear infinite;
+        }
+        .hg-sand-bottom {
+          transform-origin: 12px 13px;
+          animation: hg-sand-bottom 4s linear infinite;
+        }
+      `}
+    </style>
+    <g className="hg-flip-group" fill="none" stroke="currentColor" strokeWidth="1.4">
+      <rect x="7" y="3" width="10" height="18" rx="2" />
+      <path d="M9 7c2 1.5 4 1.5 6 0M9 17c2-1.5 4-1.5 6 0" />
+      <path className="hg-sand-top" d="M9 7h6l-3 3z" fill="#0b5fff" stroke="none" />
+      <path className="hg-sand-bottom" d="M9 17h6l-3-3z" fill="#0b5fff" stroke="none" />
+    </g>
+  </svg>
+);
+
+// 3) Cronômetro com barra de progresso circular
+export const StopwatchProgressIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    className={className}
+    style={style}
+  >
+    <style>
+      {`
+        @keyframes stroke-progress {
+          0%   { stroke-dashoffset: 62.8; }
+          100% { stroke-dashoffset: 0; }
+        }
+        .sw-progress {
+          animation: stroke-progress 3s linear infinite;
+        }
+      `}
+    </style>
+    <circle cx="12" cy="13" r="7" fill="none" stroke="currentColor" strokeWidth="1.4" />
+    <rect x="10.5" y="3" width="3" height="2" rx="0.6" fill="currentColor" />
+    <rect x="16.5" y="7.5" width="2" height="3" rx="0.6" fill="currentColor" />
+    <circle
+      cx="12"
+      cy="13"
+      r="5.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.1"
+      opacity="0.25"
+    />
+    <circle
+      className="sw-progress"
+      cx="12"
+      cy="13"
+      r="5.5"
+      fill="none"
+      stroke="#0b5fff"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeDasharray="34.5"
+      strokeDashoffset="62.8"
+      transform="rotate(-90 12 13)"
+    />
+  </svg>
+);
 export const TimerStopwatchIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className={className} style={style}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5v4.5l3 3M10.5 3h3M19.5 5.25l-2.25 2.25M12 21a8.25 8.25 0 100-16.5 8.25 8.25 0 000 16.5z" />
@@ -421,5 +556,82 @@ export const HourglassPourIcon = ({ className, style }: { className?: string; st
       {/* Sand Bottom */}
       <path className="hg-sand-bottom" d="M10 16.5v3.5h4v-3.5l-2-2-2 2z" fill="currentColor" opacity="0.8" />
     </g>
+  </svg>
+);
+
+export const HourglassWindowsIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    className={className}
+    style={style}
+  >
+    <style>
+      {`
+        @keyframes win-sand-top {
+          0%, 10%   { transform: scaleY(1);   opacity: 1; }
+          45%, 55%  { transform: scaleY(0);   opacity: 0; }
+          90%, 100% { transform: scaleY(1);   opacity: 1; }
+        }
+        @keyframes win-sand-bottom {
+          0%, 10%   { transform: scaleY(0);   opacity: 0; }
+          45%, 55%  { transform: scaleY(1);   opacity: 1; }
+          90%, 100% { transform: scaleY(0);   opacity: 0; }
+        }
+        .win-sand-top {
+          transform-origin: 12px 10px;
+          animation: win-sand-top 3.4s linear infinite;
+        }
+        .win-sand-bottom {
+          transform-origin: 12px 14px;
+          animation: win-sand-bottom 3.4s linear infinite;
+        }
+      `}
+    </style>
+
+    {/* Moldura da ampulheta */}
+    <rect
+      x="7"
+      y="3"
+      width="10"
+      height="18"
+      rx="2"
+      fill="#ffffff"
+      stroke="#0067c0"      /* azul Windows */
+      strokeWidth="1.4"
+    />
+    {/* Gargalo */}
+    <path
+      d="M9 7c2 1.5 4 1.5 6 0M9 17c2-1.5 4-1.5 6 0"
+      fill="none"
+      stroke="#0067c0"
+      strokeWidth="1.1"
+    />
+
+    {/* Areia do topo (azul claro) */}
+    <path
+      className="win-sand-top"
+      d="M9.3 7.1h5.4L12 10.3z"
+      fill="#33a1ff"
+    />
+
+    {/* Areia da base (azul claro) */}
+    <path
+      className="win-sand-bottom"
+      d="M9.3 16.9h5.4L12 13.7z"
+      fill="#33a1ff"
+    />
+
+    {/* “fio” de areia caindo */}
+    <line
+      x1="12"
+      y1="10.5"
+      x2="12"
+      y2="13.5"
+      stroke="#33a1ff"
+      strokeWidth="0.9"
+      strokeLinecap="round"
+      opacity="0.9"
+    />
   </svg>
 );

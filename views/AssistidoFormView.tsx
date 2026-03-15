@@ -7,13 +7,14 @@ import { ChevronDownIconInline, ChevronUpIconInline, ClipboardListIcon } from '.
 interface AssistidoFormViewProps {
     assistido?: Assistido | null;
     history?: PasseAttendance[]; // Histórico de atendimentos deste assistido
+    existingAssistidos: Assistido[]; // Lista completa para sugerir nomes e evitar duplicados
     onSave: (assistido: Assistido) => void;
     onCancel: () => void;
     onHome?: () => void;
     onEditAssistance?: (assistido: Assistido) => void;
 }
 
-export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido, history = [], onSave, onCancel, onHome, onEditAssistance }) => {
+export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido, history = [], existingAssistidos, onSave, onCancel, onHome, onEditAssistance }) => {
     const [nome, setNome] = useState(assistido?.nome || '');
     const [telefone, setTelefone] = useState(assistido?.telefone || '');
     const [observacoes, setObservacoes] = useState(assistido?.observacoes || '');
@@ -22,9 +23,23 @@ export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido,
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
+
+        const trimmedName = nome.trim();
+        if (!trimmedName) return;
+
+        const duplicate = existingAssistidos.find(a =>
+            a.nome.trim().toLowerCase() === trimmedName.toLowerCase() &&
+            a.id !== assistido?.id
+        );
+
+        if (duplicate) {
+            alert(`Já existe um assistido cadastrado com o nome "${trimmedName}".\n\nAltere o nome ou edite o cadastro existente.`);
+            return;
+        }
+
         onSave({
             id: assistido?.id || crypto.randomUUID(),
-            nome: nome.trim(),
+            nome: trimmedName,
             telefone: telefone.trim() || undefined,
             observacoes: observacoes.trim() || undefined,
         });
@@ -42,14 +57,24 @@ export const AssistidoFormView: React.FC<AssistidoFormViewProps> = ({ assistido,
                 <form onSubmit={handleSave} className="bg-white p-5 rounded-2xl shadow-soft border border-slate-100 flex flex-col gap-4">
                     <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-semibold text-slate-700">Nome do Assistido *</label>
-                        <input
-                            type="text"
-                            required
-                            value={nome}
-                            onChange={(e) => setNome(e.target.value)}
-                            placeholder="Nome completo"
-                            className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30 font-bold"
-                        />
+                        <div className="relative">
+                            <input
+                                type="text"
+                                required
+                                list="assistidos-nomes-cadastrados"
+                                value={nome}
+                                onChange={(e) => setNome(e.target.value)}
+                                placeholder="Nome completo"
+                                className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30 font-bold"
+                            />
+                            <datalist id="assistidos-nomes-cadastrados">
+                                {existingAssistidos
+                                    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+                                    .map((a) => (
+                                        <option key={a.id} value={a.nome} />
+                                    ))}
+                            </datalist>
+                        </div>
                     </div>
 
                     {/* Accordion Detalhes (Opcionais) */}

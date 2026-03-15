@@ -1,4 +1,5 @@
 
+Prompt Centro
 
 Me ajude a criar uma ou mais telas para controle de distribuição dos assistidos nas salas de passe.
 

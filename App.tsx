@@ -398,13 +398,14 @@ export default function App() {
 
             {view === 'DASHBOARD' && <DashboardView onNavigate={handleNavigate} />}
 
-            {view === 'ROOM_ASSEMBLY' && (
+            {view === 'ROOM_ASSEMBLY' && !showWorkerForm && (
               <RoomAssemblyView
                 workers={workers}
                 rooms={rooms}
                 setWorkers={setWorkers}
                 onBack={handleBack}
                 onHome={() => handleNavigate('DASHBOARD')}
+                onEditWorker={handleEditWorker}
               />
             )}
 
@@ -422,7 +423,7 @@ export default function App() {
               />
             )}
 
-            {view === 'WORKERS' && showWorkerForm && (
+            {(view === 'WORKERS' || view === 'ROOM_ASSEMBLY') && showWorkerForm && (
               <WorkerFormView
                 worker={editingWorker}
                 onSave={handleSaveWorker}
@@ -488,6 +489,7 @@ export default function App() {
               <AssistidoFormView
                 assistido={editingAssistido}
                 history={editingAssistido ? attendances.filter(a => a.assistidoName === editingAssistido.nome) : []}
+                existingAssistidos={assistidos}
                 onSave={handleSaveAssistidoForm}
                 onCancel={handleCancelAssistidoForm}
                 onEditAssistance={() => setShowAssistanceView(true)}

@@ -22,6 +22,10 @@ import {
   MoveIcon,
   HourglassSpinIcon,
   HourglassPourIcon,
+  ClockSpinIcon,
+  HourglassFlipIcon,
+  StopwatchProgressIcon,
+  HourglassWindowsIcon,
 } from "../components/Icons";
 
 const STYLES = `
@@ -143,7 +147,7 @@ const STYLES = `
   border-left: 0;
 }
 .dist-table td {
-  padding: 8px 4px;
+  padding: 10px 4px;
   overflow: visible;
   border-bottom: 1px solid rgba(13, 15, 15, 0.06);
   color: #0d191b;
@@ -292,38 +296,9 @@ function SituacaoIcon({ status }: { status: AttendanceStatus }) {
   }
   if (status === AttendanceStatus.EmAtendimento) {
     return (
-      <span
-        style={{
-          width: 20,
-          height: 20,
-          borderRadius: 999,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#ffffff",
-          border: "1px solid #86efac",
-          boxShadow: "0 0 0 1px rgba(22, 163, 74, 0.1)",
-          padding: 0,
-        }}
-      >
-        {/* 
-                  Opções Animadas Estilo Windows:
-                  Cor verde restaurada a pedido do usuário.
-                */}
-
-        {/* OPÇÃO 1 Animada: Rodopiante ("Spin") 
-                <HourglassSpinIcon style={{ width: 17, height: 17, color: '#16a34a' }} />
-                */}
-
-        {/* OPÇÃO 2 Animada: Enchendo/Esvaziando com Flip ("Pour") - ATIVA */}
-        <HourglassPourIcon
-          style={{ width: 13, height: 13, color: "#16a34a" }}
-        />
-
-        {/* OPÇÃO 3: Ampulheta Preenchida Sólida (Mais nítida) 
-                <HourglassFilledIcon style={{ width: 15, height: 15, color: '#16a34a' }} />
-                */}
-      </span>
+      <HourglassPourIcon
+        style={{ width: 18, height: 18, background: "#ffffff",color: "#0b5fff" }}
+      />
     );
   }
   return (
@@ -737,12 +712,6 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
           ? "dist-row-a2-live"
           : "";
 
-    const handleRowClick = () => {
-      if (isAguardando && !statusLocked) {
-        handleIconClick(att);
-      }
-    };
-
     return (
       <tr
         key={att.id}
@@ -750,15 +719,9 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
           `${rowClass} ${exitingId === att.id ? "dist-row-exit" : ""} ${isAguardando ? "dist-hover-aguardando" : ""}`.trim() ||
           undefined
         }
-        onClick={isAguardando ? handleRowClick : undefined}
-        style={
-          isAguardando
-            ? { cursor: statusLocked ? "not-allowed" : "pointer" }
-            : undefined
-        }
+        style={undefined}
       >
         <td
-          colSpan={isAguardando ? 2 : 1}
           style={{ maxWidth: 0, width: "100%" }}
         >
           <div
@@ -815,10 +778,29 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
             </select>
           )}
         </td>
-        {!isAguardando && (
-          <td
-            style={{ padding: 0, textAlign: "center", verticalAlign: "middle" }}
-          >
+        <td
+          style={{ padding: 0, textAlign: "center", verticalAlign: "middle" }}
+        >
+          {isAguardando ? (
+            <button
+              type="button"
+              className="dist-icon-btn"
+              onClick={() => handleIconClick(att)}
+              disabled={statusLocked}
+              title="Colocar assistido Na Sala"
+              aria-label={`Colocar ${att.assistidoName} na sala`}
+            >
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  letterSpacing: "0.06em",
+                }}
+              >
+                OK
+              </span>
+            </button>
+          ) : (
             <button
               className="dist-icon-btn"
               onClick={() => handleIconClick(att)}
@@ -832,8 +814,8 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
             >
               <SituacaoIcon status={att.status} />
             </button>
-          </td>
-        )}
+          )}
+        </td>
       </tr>
     );
   };
@@ -859,30 +841,59 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            gap: 6,
-            maxWidth: 220,
+            flexDirection: "row",
+            alignItems: "flex-end",
+            gap: 12,
           }}
         >
-          <label style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>
-            Data do Passe
-          </label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
+          <div
             style={{
-              padding: "10px 14px",
-              border: "1px solid rgba(255, 255, 255, 0.4)",
-              borderRadius: 10,
-              fontSize: 14,
-              fontWeight: 600,
-              background: "rgba(255, 255, 255, 0.65)",
-              backdropFilter: "blur(10px)",
-              color: "#0d191b",
-              outline: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+              maxWidth: 220,
             }}
-          />
+          >
+            <label style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>
+              Data do Passe
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              style={{
+                padding: "10px 14px",
+                border: "1px solid rgba(255, 255, 255, 0.4)",
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 600,
+                background: "rgba(255, 255, 255, 0.65)",
+                backdropFilter: "blur(10px)",
+                color: "#0d191b",
+                outline: "none",
+              }}
+            />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <ClockSpinIcon
+              style={{ width: 18, height: 18, color: "#0b5fff" }}
+            />
+            <HourglassFlipIcon
+              style={{ width: 18, height: 18, color: "#0b5fff" }}
+            />
+            <StopwatchProgressIcon
+              style={{ width: 18, height: 18, color: "#0b5fff" }}
+            />
+            <HourglassWindowsIcon
+              style={{ width: 18, height: 18, color: "#0b5fff" }}
+            />
+          </div>
         </div>
 
         {noValidRooms && (
@@ -920,7 +931,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                   >
                     Tipo
                   </th>
-                  <th style={{ width: 70 }}>Sala</th>
+                  <th style={{ width: 70 , textAlign: "center",}}>Sala</th>
                   <th style={{ width: 24, textAlign: "center", padding: 0 }}>
                     Situação
                   </th>

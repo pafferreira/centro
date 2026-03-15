@@ -14,9 +14,10 @@ interface WorkerCardProps {
   rooms?: { id: string; name: string }[];
   onMove?: (workerId: string, roomId: string) => void;
   dragHandleProps?: DragHandleProps;
+  onDoubleClick?: (worker: Worker) => void;
 }
 
-export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms, onMove, dragHandleProps }) => {
+export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms, onMove, dragHandleProps, onDoubleClick }) => {
   const [showMove, setShowMove] = useState(false);
   const [openUpwards, setOpenUpwards] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -77,7 +78,10 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, roleLabel, rooms
   }, [showMove]);
 
   return (
-    <div className="flex items-center py-1.5 pl-0 pr-0 bg-[#fdfbf7] rounded-xl border border-[#e8e4db] shadow-sm mb-2 relative group">
+    <div
+      className="flex items-center py-1.5 pl-0 pr-0 bg-[#fdfbf7] rounded-xl border border-[#e8e4db] shadow-sm mb-2 relative group"
+      onDoubleClick={() => onDoubleClick && onDoubleClick(worker)}
+    >
       {dragHandleProps && (
         <div
           {...dragHandleProps}

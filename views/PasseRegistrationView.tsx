@@ -7,6 +7,39 @@ import { Accordion } from '../components/shared/Accordion';
 import { TrashIcon, ListIcon, CardsIcon } from '../components/Icons';
 import { distributeAttendances } from '../utils/distributionLogic';
 
+// Normaliza nome para exibição/gravação: remove espaços extras e
+// capitaliza cada palavra (primeira letra maiúscula, resto minúsculo),
+// preservando partículas minúsculas comuns em nomes próprios.
+const NAME_PARTICLES = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+
+function formatAssistidoName(raw: string): string {
+    return raw
+        .split(' ')
+        .filter(Boolean)
+        .map((word, index) => {
+            const lower = word.toLowerCase();
+            if (index > 0 && NAME_PARTICLES.has(lower)) {
+                return lower;
+            }
+            return lower.charAt(0).toUpperCase() + lower.slice(1);
+        })
+        .join(' ');
+}
+
+// Versão para uso no input: aplica a mesma capitalização,
+// mas preserva um espaço ao final enquanto o usuário está digitando.
+function formatAssistidoNameInput(raw: string): string {
+    const hasTrailingSpace = raw.endsWith(' ');
+    const trimmed = raw.trim();
+
+    if (!trimmed) {
+        return hasTrailingSpace ? ' ' : '';
+    }
+
+    const base = formatAssistidoName(trimmed);
+    return hasTrailingSpace ? base + ' ' : base;
+}
+
 interface PasseRegistrationViewProps {
     attendances: PasseAttendance[];
     assistidos: Assistido[];
@@ -40,8 +73,8 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
     // Auto-detecta Fase e Tipo de Passe com base na ficha do assistido
     useEffect(() => {
         if (!editingAttendanceId && assistidoName.trim() !== '') {
-            const typedName = assistidoName.trim().toLowerCase();
-            const ast = assistidos.find(a => a.nome.toLowerCase() === typedName);
+            const normalizedInput = formatAssistidoName(assistidoName.trim()).toLowerCase();
+            const ast = assistidos.find(a => a.nome.trim().toLowerCase() === normalizedInput);
 
             if (ast) {
                 const activeFicha = fichas?.find(f => f.assistidoId === ast.id && f.statusFicha === 'Ativa');
@@ -101,17 +134,25 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const typedName = assistidoName.trim();
-        const existingInQueue = todaysAttendances.find(a => a.assistidoName.toLowerCase() === typedName.toLowerCase() && a.id !== editingAttendanceId);
+        const rawName = assistidoName.trim();
+        if (!rawName) return;
+
+        const formattedName = formatAssistidoName(rawName);
+        const normalizedName = formattedName.toLowerCase();
+
+        const existingInQueue = todaysAttendances.find(a =>
+            a.assistidoName.trim().toLowerCase() === normalizedName &&
+            a.id !== editingAttendanceId
+        );
 
         if (existingInQueue) {
-            alert(`ATENÇÃO: Este assistido (${typedName}) já está na fila de hoje!`);
+            alert(`ATENÇÃO: Este assistido (${formattedName}) já está na fila de hoje!`);
             return;
         }
 
-        let ast = assistidos.find(a => a.nome.toLowerCase() === typedName.toLowerCase());
+        let ast = assistidos.find(a => a.nome.trim().toLowerCase() === normalizedName);
         if (!ast) {
-            ast = { id: crypto.randomUUID(), nome: typedName };
+            ast = { id: crypto.randomUUID(), nome: formattedName };
             onAddAssistido(ast);
         }
 
@@ -193,7 +234,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
             <div
                 key={att.id}
                 onClick={() => handleEditClick(att)}
-                className={`pl-2 pr-3 py-2.5 rounded-xl border shadow-sm flex items-center gap-2 cursor-pointer transition-colors ${cardBgClass}`}
+                className={`pl-2 pr-3 py-4 rounded-xl border shadow-sm flex items-center gap-2 cursor-pointer transition-colors ${cardBgClass}`}
             >
                 {/* Ordem */}
                 <span className="text-xs font-black text-slate-400 w-6 text-center shrink-0">{att.arrivalIndex}º</span>
@@ -270,7 +311,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                                     required
                                     list="assistidos-list"
                                     value={assistidoName}
-                                    onChange={e => setAssistidoName(e.target.value)}
+                                    onChange={e => setAssistidoName(formatAssistidoNameInput(e.target.value))}
                                     placeholder="Ex: Maria"
                                     className="w-full px-4 py-3 pr-10 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30 font-bold"
                                 />

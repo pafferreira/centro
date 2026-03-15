@@ -74,7 +74,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             items: [
                 { id: 'ASSISTANCE', label: 'Ficha de Assistência', icon: BookIcon },
                 { id: 'PASSE_REGISTRATION', label: 'Cadastro Dia de Passe', icon: UsersIcon },
-                { id: 'PASSE_DISTRIBUTION', label: 'Distribuição e Relatório', icon: MapPinIcon },
+                { id: 'PASSE_DISTRIBUTION', label: 'Distribuição do Passe', icon: MapPinIcon },
             ],
         },
         {

@@ -18,9 +18,10 @@ interface RoomAssemblyViewProps {
     setWorkers: any;
     onBack: () => void;
     onHome?: () => void;
+    onEditWorker?: (worker: Worker) => void;
 }
 
-export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, rooms, setWorkers, onBack, onHome }) => {
+export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, rooms, setWorkers, onBack, onHome, onEditWorker }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [replicaAssignments, setReplicaAssignments] = useState<Record<string, string | null>>({});
     const [draggedWorkerId, setDraggedWorkerId] = useState<string | null>(null);
@@ -361,6 +362,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                                         rooms={roomOptions}
                                                         onMove={handleMoveWorker}
                                                         dragHandleProps={makeDragHandleProps(w.id)}
+                                                        onDoubleClick={onEditWorker ? () => onEditWorker(w) : undefined}
                                                     />
                                                 );
                                             })}
@@ -400,6 +402,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                                     rooms={roomsWithUnassigned}
                                                     onMove={handleMoveWorker}
                                                     dragHandleProps={makeDragHandleProps(w.id)}
+                                                    onDoubleClick={onEditWorker ? () => onEditWorker(w) : undefined}
                                                 />
                                             ))}
                                         </div>
@@ -431,6 +434,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                         rooms={w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned}
                                         onMove={handleMoveWorker}
                                         dragHandleProps={makeDragHandleProps(w.id)}
+                                        onDoubleClick={onEditWorker ? () => onEditWorker(w) : undefined}
                                     />
                                 ))}
                             </div>
