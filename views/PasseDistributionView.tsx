@@ -11,6 +11,7 @@ import {
 } from "../types";
 import { Header } from "../components/shared/Header";
 import { PageContainer } from "../components/shared/PageContainer";
+import { Tooltip } from "../components/shared/Tooltip";
 import { distributeAttendances } from "../utils/distributionLogic";
 import { saveAttendance, updateFichaRealizado } from "../utils/storage";
 import {
@@ -310,6 +311,7 @@ function SituacaoIcon({ status }: { status: AttendanceStatus }) {
 
 export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
   attendances,
+  fichas,
   rooms,
   workers,
   onUpdateAttendance,
@@ -675,6 +677,11 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
         ...att,
         status: AttendanceStatus.Atendido,
         horaSaida: now,
+        attendancePhase:
+          att.attendancePhase === AttendancePhase.PrimeiraVez ||
+          att.attendancePhase === AttendancePhase.Retorno
+            ? AttendancePhase.EmAtendimento
+            : att.attendancePhase,
       };
       onUpdateAttendance(updated);
       saveAttendance(updated);
@@ -839,6 +846,16 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
         title="Painel de Distribuição"
         onBack={onBack}
         onHome={() => onNavigate("DASHBOARD")}
+        action={onRefresh && (
+          <Tooltip text="Atualizar Dados" position="bottom">
+            <button
+              onClick={() => onRefresh(false)}
+              className="p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors flex items-center justify-center cursor-pointer active:scale-95"
+            >
+              <RefreshIcon style={{ width: 22, height: 22 }} />
+            </button>
+          </Tooltip>
+        )}
       />
 
       <div
@@ -893,37 +910,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
               gap: 8,
             }}
           >
-            <ClockSpinIcon
-              style={{ width: 18, height: 18, color: "#0b5fff" }}
-            />
-            <HourglassFlipIcon
-              style={{ width: 18, height: 18, color: "#0b5fff" }}
-            />
-            <StopwatchProgressIcon
-              style={{ width: 18, height: 18, color: "#0b5fff" }}
-            />
-            <HourglassSpinIcon
-              style={{ width: 18, height: 18, color: "#0b5fff" }}
-            />
-            {onRefresh && (
-              <button
-                onClick={() => onRefresh(false)}
-                className="dist-icon-btn"
-                title="Atualizar dados do banco"
-                style={{
-                  marginLeft: 8,
-                  background: "rgba(11, 95, 255, 0.1)",
-                  width: 32,
-                  height: 32,
-                  transition: "transform 0.2s"
-                }}
-                onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.9)"}
-                onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
-                onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-              >
-                <RefreshIcon style={{ width: 18, height: 18, color: "#0b5fff" }} />
-              </button>
-            )}
+            {/* Ícones de teste removidos da visualização (mantidos no código conforme solicitado) */}
           </div>
         </div>
 

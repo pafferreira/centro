@@ -482,6 +482,7 @@ export default function App() {
             {view === 'ASSISTANCE' && !showAssistidoForm && (
               <AssistidosListView
                 assistidos={assistidos}
+                fichas={fichasAssistencia}
                 onAdd={handleAddAssistido}
                 onEdit={handleEditAssistido}
                 onBack={handleBack}
@@ -566,6 +567,7 @@ export default function App() {
             {view === 'PASSE_DISTRIBUTION' && (
               <PasseDistributionView
                 attendances={attendances}
+                fichas={fichasAssistencia}
                 rooms={rooms}
                 workers={workers}
                 onUpdateAttendance={(updated) => setAttendances(prev => prev.map(a => a.id === updated.id ? updated : a))}

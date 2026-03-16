@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ViewState, PasseAttendance, AttendancePhase, PasseType, AttendanceStatus, Assistido, Room, Worker, FichaAssistencia } from '../types';
 import { Header } from '../components/shared/Header';
 import { PageContainer } from '../components/shared/PageContainer';
@@ -66,15 +66,24 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
     const [passeType, setPasseType] = useState<PasseType>(PasseType.A1);
     const [attendancePhase, setAttendancePhase] = useState<AttendancePhase>(AttendancePhase.EmAtendimento);
     const [editingAttendanceId, setEditingAttendanceId] = useState<string | null>(null);
-    const [isAccordionOpen, setIsAccordionOpen] = useState(true);
-    const [sortMode, setSortMode] = useState<'CHEGADA' | 'TIPO'>('CHEGADA');
+    const [isAccordionOpen, setIsAccordionOpen] = useState(false);
+    const [sortMode, setSortMode] = useState<'CHEGADA' | 'TIPO'>('TIPO');
     // true quando o assistido tem ficha ativa → campos ficam somente leitura
     const [fichaAutoDetected, setFichaAutoDetected] = useState(false);
 
     const topRef = useRef<HTMLDivElement>(null);
+    const dateInputRef = useRef<HTMLInputElement>(null);
 
     const todaysAttendances = attendances.filter(a => a.date === date);
-    const isPasseTypeEnabled = attendancePhase === AttendancePhase.EmAtendimento;
+
+    // Tipo de passe habilitado para todas as fases — PrimeiraVez e Retorno também recebem A1 ou A2
+    const isPasseTypeEnabled = useMemo(() => {
+        return (
+            attendancePhase === AttendancePhase.EmAtendimento ||
+            attendancePhase === AttendancePhase.PrimeiraVez ||
+            attendancePhase === AttendancePhase.Retorno
+        );
+    }, [attendancePhase]);
 
     // Auto-detecta Fase e Tipo de Passe com base na ficha do assistido
     useEffect(() => {
@@ -113,9 +122,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
 
     const handlePhaseChange = (phase: AttendancePhase) => {
         setAttendancePhase(phase);
-        if (phase !== AttendancePhase.EmAtendimento) {
-            setPasseType(PasseType.Nenhum);
-        } else if (passeType === PasseType.Nenhum) {
+        if (passeType === PasseType.Nenhum) {
             setPasseType(PasseType.A2);
         }
     };
@@ -275,10 +282,59 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
     return (
         <PageContainer>
             <div ref={topRef}>
-                <Header title="Cadastro Dia de Passe" onBack={onBack} onHome={() => onNavigate('DASHBOARD')} />
+                <Header
+                    title="Cadastro Dia de Passe"
+                    onBack={onBack}
+                    onHome={() => onNavigate('DASHBOARD')}
+                    action={onRefresh && (
+                        <Tooltip text="Atualizar Dados" position="bottom">
+                            <button
+                                onClick={() => onRefresh(false)}
+                                className="p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors flex items-center justify-center cursor-pointer active:scale-95"
+                            >
+                                <RefreshIcon className="w-5 h-5" />
+                            </button>
+                        </Tooltip>
+                    )}
+                />
             </div>
 
-            <div className="mt-3 flex flex-col gap-6 px-1 pb-10">
+            <div className="mt-3 flex flex-col gap-4 px-1 pb-10">
+                {/* Card de Data Separado */}
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between gap-4">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">Data do Passe</span>
+                        <h2 className="text-lg font-bold text-slate-800 leading-none">
+                            {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                        </h2>
+                    </div>
+                    <div className="relative">
+                        <input
+                            ref={dateInputRef}
+                            type="date"
+                            required
+                            value={date}
+                            onChange={e => setDate(e.target.value)}
+                            className="absolute inset-0 opacity-0 -z-10"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (dateInputRef.current) {
+                                    if ('showPicker' in HTMLInputElement.prototype) {
+                                        (dateInputRef.current as any).showPicker();
+                                    } else {
+                                        dateInputRef.current.click();
+                                    }
+                                }
+                            }}
+                            className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold border border-blue-100 hover:bg-blue-100 transition-colors cursor-pointer active:scale-95"
+                        >
+                            Alterar
+                        </button>
+                    </div>
+                </div>
+
                 <Accordion
                     title={editingAttendanceId ? "Editar Registro da Fila" : "Registrar Assistido na Fila"}
                     isOpen={isAccordionOpen}
@@ -286,30 +342,10 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                 >
                     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-                        {/* Data */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                                Data do Passe
-                                <Tooltip text="Data do atendimento. Normalmente é a data de hoje." position="top">
-                                    <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
-                                </Tooltip>
-                            </label>
-                            <input
-                                type="date"
-                                required
-                                value={date}
-                                onChange={e => setDate(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/30 font-bold"
-                            />
-                        </div>
-
                         {/* Nome do Assistido */}
                         <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                            <label className="text-sm font-semibold text-slate-700">
                                 Nome do Assistido
-                                <Tooltip text="Digite ou escolha um nome já cadastrado. Se for novo, a ficha será criada automaticamente." position="top">
-                                    <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
-                                </Tooltip>
                             </label>
                             <div className="relative">
                                 <Combobox
@@ -339,11 +375,8 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
 
                         {/* Fase de Atendimento — editável se sem ficha, somente leitura se com ficha */}
                         <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                            <label className="text-sm font-semibold text-slate-700">
                                 Fase de Atendimento
-                                <Tooltip text={fichaAutoDetected ? "Detectada automaticamente pela ficha do assistido." : "Selecione a fase de atendimento."} position="top">
-                                    <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
-                                </Tooltip>
                             </label>
                             {fichaAutoDetected ? (
                                 <div className={`w-full px-4 py-3 rounded-xl border font-semibold text-sm ${phaseDisplayStyle[attendancePhase]}`}>
@@ -364,17 +397,14 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
 
                         {/* Tipo de Passe — editável se sem ficha, somente leitura se com ficha */}
                         <div className={`flex flex-col gap-1.5 transition-opacity duration-200 ${isPasseTypeEnabled ? '' : 'opacity-40 grayscale-[50%]'}`}>
-                            <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                            <label className="text-sm font-semibold text-slate-700">
                                 Tipo de Passe
-                                <Tooltip text="A1: passe rápido (~15min). A2: passe longo (~30min)." position="top">
-                                    <InfoIcon className="w-3.5 h-3.5 text-slate-400" />
-                                </Tooltip>
                             </label>
                             <div className="flex gap-3">
-                                {fichaAutoDetected ? (
+                                {fichaAutoDetected && !isPasseTypeEnabled ? (
                                     <>
-                                        <div className={`flex-1 py-3.5 rounded-xl font-bold border-2 text-center text-base select-none ${passeType === PasseType.A2 && isPasseTypeEnabled ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-amber-50/50 border-amber-200 text-amber-300'}`}>A2</div>
-                                        <div className={`flex-1 py-3.5 rounded-xl font-bold border-2 text-center text-base select-none ${passeType === PasseType.A1 && isPasseTypeEnabled ? 'bg-blue-100 border-blue-500 text-blue-800 shadow-sm' : 'bg-blue-50/50 border-blue-200 text-blue-300'}`}>A1</div>
+                                        <div className={`flex-1 py-3.5 rounded-xl font-bold border-2 text-center text-base select-none ${passeType === PasseType.A2 ? 'bg-amber-100 border-amber-500 text-amber-800 shadow-sm' : 'bg-amber-50/50 border-amber-200 text-amber-300'}`}>A2</div>
+                                        <div className={`flex-1 py-3.5 rounded-xl font-bold border-2 text-center text-base select-none ${passeType === PasseType.A1 ? 'bg-blue-100 border-blue-500 text-blue-800 shadow-sm' : 'bg-blue-50/50 border-blue-200 text-blue-300'}`}>A1</div>
                                     </>
                                 ) : (
                                     <>
@@ -407,17 +437,6 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
-                            {onRefresh && (
-                                <Tooltip text="Atualizar do Banco" position="top">
-                                    <button
-                                        type="button"
-                                        onClick={() => onRefresh(false)}
-                                        className="p-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition-colors flex items-center justify-center cursor-pointer active:scale-95"
-                                    >
-                                        <RefreshIcon className="w-4 h-4" />
-                                    </button>
-                                </Tooltip>
-                            )}
                             <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
                                 <Tooltip text="Ordenar por Chegada" position="top">
                                     <button
