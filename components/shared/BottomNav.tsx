@@ -21,11 +21,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ active, onChange }) => {
 
     return (
         <nav
-            className="fixed bottom-0 left-0 right-0 z-30 bg-white/92 backdrop-blur-2xl border-t border-white/70 pt-1.5 px-2 shadow-[0_-8px_30px_rgba(34,70,120,0.16)] rounded-t-[30px]"
-            //className={`absolute bottom-0 left-0 right-0 z-30 bg-white/92 backdrop-blur-2xl border-t border-white/70 pt-1.5 px-2 shadow-[0_-8px_30px_rgba(34,70,120,0.16)] rounded-t-[30px] transition-transform duration-300 translate-y-0`}
+            className="absolute bottom-0 left-0 right-0 z-30 bg-white/92 backdrop-blur-2xl border-t border-white/70 pt-1.5 px-2 shadow-[0_-8px_30px_rgba(34,70,120,0.16)] rounded-t-[30px]"
             style={{
                 paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)',
-                bottom: 0,
             }}
         >
             <div className="flex justify-around items-end gap-1">
