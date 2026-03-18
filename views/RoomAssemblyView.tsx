@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Worker, Room, RoomType, WorkerRole } from "../types";
 import { Header } from "../components/shared/Header";
 import { WorkerCard } from "../components/shared/WorkerCardFixed";
@@ -21,15 +21,36 @@ interface RoomAssemblyViewProps {
     onEditWorker?: (worker: Worker) => void;
 }
 
+const SESSION_KEY = "centro_replica_assignments";
+
+function loadReplicas(): Record<string, string> {
+    try {
+        const raw = sessionStorage.getItem(SESSION_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch {
+        return {};
+    }
+}
+
+function saveReplicas(data: Record<string, string>) {
+    try {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
+    } catch {}
+}
+
 export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, rooms, setWorkers, onBack, onHome, onEditWorker }) => {
     const [isGenerating, setIsGenerating] = useState(false);
-    const [replicaAssignments, setReplicaAssignments] = useState<Record<string, string | null>>({});
+    // Maps replicaId → non-Passe room ID (where the duplicate card should appear)
+    const [replicaAssignments, setReplicaAssignments] = useState<Record<string, string>>(loadReplicas);
     const [draggedWorkerId, setDraggedWorkerId] = useState<string | null>(null);
 
-    // Helper to get role priority for sorting (lower = higher priority)
+    // Persist replica assignments across navigation
+    useEffect(() => {
+        saveReplicas(replicaAssignments);
+    }, [replicaAssignments]);
+
     const getRolePriority = (worker: Worker): number => {
         if (worker.isCoordinator) return 0;
-
         const roleOrder = [
             WorkerRole.Coordenador,
             WorkerRole.Medium,
@@ -39,71 +60,161 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
             WorkerRole.Recepção,
             WorkerRole.Entrevista
         ];
-
         for (let i = 0; i < roleOrder.length; i++) {
-            if (worker.roles.includes(roleOrder[i])) {
-                return i;
-            }
+            if (worker.roles.includes(roleOrder[i])) return i;
         }
         return roleOrder.length;
     };
 
-    const findRoomById = (roomId?: string | null) => rooms.find(r => r.id === roomId);
-    const isPasseRoom = (room?: Room) => room ? (room.type === RoomType.Passe || room.name.toLowerCase().includes('passe')) : false;
-    const isReplicableRoom = (room?: Room) => {
-        if (!room) return false;
-        const name = room.name.toLowerCase();
-        return name.includes('palestra') || name.includes('aulinha');
-    };
-    const getReplicaId = (worker: Worker) => `replica:${worker.id}:${worker.assignedRoomId ?? 'none'}`;
-    const isReplicaId = (workerId: string) => workerId.startsWith('replica:');
+    const sortWorkersByRole = (list: Worker[]): Worker[] =>
+        [...list].sort((a, b) => getRolePriority(a) - getRolePriority(b));
 
-    // Helper to sort workers by role priority
-    const sortWorkersByRole = (workersList: Worker[]): Worker[] => {
-        return [...workersList].sort((a, b) => getRolePriority(a) - getRolePriority(b));
+    const findRoomById = (roomId?: string | null) => rooms.find(r => r.id === roomId);
+    const isPasseRoom = (room?: Room | null) =>
+        room ? (room.type === RoomType.Passe || room.name.toLowerCase().includes('passe')) : false;
+
+    // Simple replica ID — one secondary per worker
+    const getReplicaId = (workerId: string) => `replica:${workerId}`;
+    const isReplicaId = (id: string) => id.startsWith('replica:');
+
+    const activeWorkers = workers.filter(w => w.present !== false);
+
+    // Replica workers appear in NON-Passe rooms (Palestra / Aulinha / etc.)
+    const replicaWorkers: AssemblyWorker[] = activeWorkers
+        .filter(w => getReplicaId(w.id) in replicaAssignments)
+        .map(w => {
+            const replicaId = getReplicaId(w.id);
+            return {
+                ...w,
+                id: replicaId,
+                assignedRoomId: replicaAssignments[replicaId],
+                isReplica: true,
+                originalId: w.id,
+                originRoomName: findRoomById(w.assignedRoomId ?? null)?.name ?? undefined,
+            };
+        });
+
+    const getRoomOccupants = (roomId: string): AssemblyWorker[] => {
+        const room = findRoomById(roomId);
+        const base = activeWorkers.filter(w => w.assignedRoomId === roomId) as AssemblyWorker[];
+        // Replicas appear ONLY in non-Passe rooms
+        const replicas = !isPasseRoom(room)
+            ? replicaWorkers.filter(w => w.assignedRoomId === roomId)
+            : [];
+        return sortWorkersByRole([...base, ...replicas]) as AssemblyWorker[];
+    };
+
+    const passeRooms = rooms.filter(r => r.type === RoomType.Passe || r.name.toLowerCase().includes('passe'));
+    const otherRooms = rooms.filter(r => r.type !== RoomType.Passe && !r.name.toLowerCase().includes('passe'));
+
+    // Unassigned: only real workers with no assignment (no phantom replicas here)
+    const unassignedWorkers = sortWorkersByRole(
+        activeWorkers.filter(w => !w.assignedRoomId)
+    ) as AssemblyWorker[];
+
+    const handleMoveWorker = (workerId: string, roomId: string) => {
+        const targetRoom = roomId === 'unassigned' ? null : findRoomById(roomId);
+
+        // ── Replica card being moved ──
+        if (isReplicaId(workerId)) {
+            if (roomId === 'unassigned') {
+                setReplicaAssignments(prev => {
+                    const next = { ...prev };
+                    delete next[workerId];
+                    return next;
+                });
+            } else {
+                // Replicas can only go to non-Passe rooms
+                if (isPasseRoom(targetRoom)) {
+                    alert("Esta cópia só pode ser alocada em salas não-Passe (Palestra, Aulinha, etc.).");
+                    return;
+                }
+                setReplicaAssignments(prev => ({ ...prev, [workerId]: roomId }));
+            }
+            return;
+        }
+
+        // ── Real worker being moved ──
+        const worker = workers.find(w => w.id === workerId);
+        const currentRoomId = worker?.assignedRoomId ?? null;
+        const currentRoom = currentRoomId ? findRoomById(currentRoomId) : null;
+        const replicaId = getReplicaId(workerId);
+
+        if (roomId === 'unassigned') {
+            // Remove worker from all rooms and clear any replica
+            setWorkers((prev: Worker[]) =>
+                prev.map(w => w.id === workerId ? { ...w, assignedRoomId: null } : w)
+            );
+            setReplicaAssignments(prev => {
+                const next = { ...prev };
+                delete next[replicaId];
+                return next;
+            });
+            return;
+        }
+
+        // Worker in Passe → selects non-Passe: add secondary appearance (keep primary)
+        if (targetRoom && !isPasseRoom(targetRoom) && isPasseRoom(currentRoom)) {
+            setReplicaAssignments(prev => ({ ...prev, [replicaId]: roomId }));
+            return;
+        }
+
+        // Worker in non-Passe → selects Passe: move primary to Passe, keep old non-Passe as secondary
+        if (targetRoom && isPasseRoom(targetRoom) && currentRoom && !isPasseRoom(currentRoom)) {
+            setWorkers((prev: Worker[]) =>
+                prev.map(w => w.id === workerId ? { ...w, assignedRoomId: roomId } : w)
+            );
+            if (currentRoomId) {
+                setReplicaAssignments(prev => ({ ...prev, [replicaId]: currentRoomId }));
+            }
+            return;
+        }
+
+        // Default: normal primary room change
+        setWorkers((prev: Worker[]) =>
+            prev.map(w => w.id === workerId ? { ...w, assignedRoomId: roomId } : w)
+        );
     };
 
     const handleAutoGenerate = async () => {
         setIsGenerating(true);
         const start = Date.now();
         try {
-            const currentActive = workers.filter(w => w.present !== false);
+            const passeRoomIds = new Set(passeRooms.map(r => r.id));
 
-            // Workers already in Palestra/Aulinha are preserved and duplicated
-            const fixedPalestraWorkers = currentActive.filter(w =>
-                isReplicableRoom(findRoomById(w.assignedRoomId ?? null))
+            // Workers currently in non-Passe rooms (Palestra / Aulinha / etc.)
+            const nonPasseWorkers = activeWorkers.filter(w =>
+                w.assignedRoomId && !passeRoomIds.has(w.assignedRoomId)
             );
-            const fixedIds = new Set(fixedPalestraWorkers.map(w => w.id));
 
-            // Clear only non-Palestra workers; hide Palestra workers from generator
-            const workersForGeneration = workers.map(w => {
-                if (fixedIds.has(w.id)) return { ...w, present: false as const };
-                return { ...w, assignedRoomId: null };
-            });
-
+            // Run algorithm with everyone, clean slate
+            const workersForGeneration = workers.map(w => ({ ...w, assignedRoomId: null }));
             const assignments = generateAssembly(workersForGeneration, rooms);
+            const assignmentMap = new Map(assignments.map(a => [a.workerId, a.roomId]));
+
+            const newReplicas: Record<string, string> = {};
 
             const newWorkers = workers.map(w => {
-                if (fixedIds.has(w.id)) return w; // keep Palestra assignment intact
-                const assignment = assignments.find(a => a.workerId === w.id);
-                return { ...w, assignedRoomId: assignment ? assignment.roomId : null };
+                const choice = assignmentMap.get(w.id) ?? null;
+                const nonPasseWorker = nonPasseWorkers.find(np => np.id === w.id);
+
+                if (nonPasseWorker) {
+                    // Was in non-Passe: move primary to Passe room, keep old non-Passe as secondary
+                    const oldNonPasseRoomId = nonPasseWorker.assignedRoomId!;
+                    if (choice && passeRoomIds.has(choice)) {
+                        newReplicas[getReplicaId(w.id)] = oldNonPasseRoomId;
+                        return { ...w, assignedRoomId: choice };
+                    }
+                    // Algorithm didn't send them to Passe — leave them where they were
+                    return w;
+                }
+
+                return { ...w, assignedRoomId: choice };
             });
 
             setWorkers(newWorkers);
-
-            // Auto-assign replicas of Palestra workers round-robin across Passe rooms
-            const newReplicaAssignments: Record<string, string | null> = {};
-            const currentPasseRooms = rooms.filter(r =>
-                r.type === RoomType.Passe || r.name.toLowerCase().includes('passe')
-            );
-            fixedPalestraWorkers.forEach((pw, idx) => {
-                const replicaId = getReplicaId(pw);
-                if (currentPasseRooms.length > 0) {
-                    newReplicaAssignments[replicaId] = currentPasseRooms[idx % currentPasseRooms.length].id;
-                }
-            });
-            setReplicaAssignments(newReplicaAssignments);
-        } catch (e) {
+            setReplicaAssignments(newReplicas);
+        } catch {
             alert("Falha ao gerar automaticamente.");
         } finally {
             const elapsed = Date.now() - start;
@@ -115,55 +226,17 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         }
     };
 
-    // Move worker to a specific room or unassign
-    const handleMoveWorker = (workerId: string, roomId: string) => {
-        if (isReplicaId(workerId)) {
-            const targetRoom = roomId === 'unassigned' ? null : findRoomById(roomId);
-            if (roomId !== 'unassigned' && !isPasseRoom(targetRoom)) {
-                alert("Trabalhadores replicados de Palestra/Aulinha só podem ser usados nas Salas de Passe.");
-                return;
-            }
-
-            setReplicaAssignments(prev => ({
-                ...prev,
-                [workerId]: roomId === 'unassigned' ? null : roomId
-            }));
-            return;
-        }
-
-        // When moving to Palestra/Aulinha, keep the worker's current Passe room via replica
-        const targetRoom = roomId === 'unassigned' ? null : findRoomById(roomId);
-        if (targetRoom && isReplicableRoom(targetRoom)) {
-            const worker = workers.find(w => w.id === workerId);
-            const previousRoomId = worker?.assignedRoomId ?? null;
-            const previousRoom = previousRoomId ? findRoomById(previousRoomId) : null;
-            if (previousRoomId && isPasseRoom(previousRoom)) {
-                // New replicaId will use the target Palestra room id
-                const newReplicaId = `replica:${workerId}:${roomId}`;
-                setReplicaAssignments(prev => ({
-                    ...prev,
-                    [newReplicaId]: previousRoomId
-                }));
-            }
-        }
-
-        setWorkers((prev: Worker[]) =>
-            prev.map(w => w.id === workerId ? { ...w, assignedRoomId: roomId === 'unassigned' ? null : roomId } : w)
-        );
-    };
-
     const handleClearAll = () => {
         setWorkers((prev: Worker[]) => prev.map(w => ({ ...w, assignedRoomId: null })));
         setReplicaAssignments({});
     };
 
-    // Drag and drop handlers
+    // Drag and drop
     const onDropToRoom = (e: React.DragEvent, roomId: string | null) => {
         e.preventDefault();
         const workerId = e.dataTransfer.getData('text/plain') || draggedWorkerId;
         if (!workerId) return;
-        const target = roomId ?? 'unassigned';
-        handleMoveWorker(workerId, target);
+        handleMoveWorker(workerId, roomId ?? 'unassigned');
         setDraggedWorkerId(null);
     };
     const onDragOver = (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); };
@@ -177,67 +250,33 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         onDragEnd: () => setDraggedWorkerId(null),
     });
 
-    const activeWorkers = workers.filter(w => w.present !== false);
-
-    const replicableWorkers = activeWorkers.filter(w => isReplicableRoom(findRoomById(w.assignedRoomId ?? null)));
-    const replicaWorkers: AssemblyWorker[] = replicableWorkers.map(w => {
-        const replicaId = getReplicaId(w);
-        return {
-            ...w,
-            id: replicaId,
-            assignedRoomId: replicaAssignments[replicaId] ?? null,
-            isReplica: true,
-            originalId: w.id,
-            originRoomName: findRoomById(w.assignedRoomId ?? null)?.name,
-        };
-    });
-
-    const passeRooms = rooms.filter(r =>
-        r.type === RoomType.Passe ||
-        r.name.toLowerCase().includes('passe')
-    );
-    const otherRooms = rooms.filter(r =>
-        r.type !== RoomType.Passe &&
-        !r.name.toLowerCase().includes('passe')
-    );
-    const unassignedWorkers = sortWorkersByRole([
-        ...activeWorkers.filter(w => !w.assignedRoomId),
-        ...replicaWorkers.filter(w => !w.assignedRoomId),
-    ]) as AssemblyWorker[];
-
-    const getRoomOccupants = (roomId: string): AssemblyWorker[] => {
-        const room = findRoomById(roomId);
-        const baseOccupants = activeWorkers.filter(w => w.assignedRoomId === roomId);
-        const replicaOccupants = isPasseRoom(room)
-            ? replicaWorkers.filter(w => w.assignedRoomId === roomId)
-            : [];
-        return sortWorkersByRole([...(baseOccupants as AssemblyWorker[]), ...replicaOccupants]);
-    };
+    const roomsWithUnassigned = [{ id: 'unassigned', name: '❌ Não Alocados' }, ...rooms];
+    const nonPasseRoomsWithUnassigned = [
+        { id: 'unassigned', name: '❌ Não Alocados' },
+        ...otherRooms
+    ];
 
     const buildAssemblyText = () => {
         const dateStr = new Date().toLocaleDateString("pt-BR");
         const lines: string[] = [`Dia: ${dateStr}`, ""];
-
         const sortedRooms = [...rooms].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-
         sortedRooms.forEach(room => {
             const occupants = getRoomOccupants(room.id);
-
             lines.push(room.name);
             if (occupants.length === 0) {
                 lines.push("—");
             } else {
-                occupants.forEach(w => lines.push(w.name + (w.isReplica && w.originRoomName ? " (extra " + w.originRoomName + ")" : "")));
+                occupants.forEach(w =>
+                    lines.push(w.name + (w.isReplica && w.originRoomName ? ` (extra ${w.originRoomName})` : ""))
+                );
             }
             lines.push("");
         });
-
         if (unassignedWorkers.length) {
             lines.push("Não Alocados");
-            unassignedWorkers.forEach(w => lines.push(w.name + (w.isReplica && w.originRoomName ? " (extra " + w.originRoomName + ")" : "")));
+            unassignedWorkers.forEach(w => lines.push(w.name));
             lines.push("");
         }
-
         return lines.join("\n");
     };
 
@@ -245,20 +284,9 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         const message = buildAssemblyText()
             .split("\n")
             .map(line => encodeURIComponent(line))
-            .join("%0A"); // força quebra de linha estilo Ctrl+Enter
-        const whatsappUrl = `https://wa.me/?text=${message}`;
-        window.open(whatsappUrl, "_blank");
+            .join("%0A");
+        window.open(`https://wa.me/?text=${message}`, "_blank");
     };
-
-    // Create rooms list with "Não Alocados" option
-    const roomsWithUnassigned = [
-        { id: 'unassigned', name: '❌ Não Alocados' },
-        ...rooms
-    ];
-    const passeRoomsWithUnassigned = [
-        { id: 'unassigned', name: '❌ Não Alocados' },
-        ...passeRooms
-    ];
 
     return (
         <PageContainer>
@@ -284,7 +312,6 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                     </div>
                 </div>
             )}
-
 
             <div>
                 <Header
@@ -316,6 +343,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                 </div>
 
                 <div className="space-y-6">
+                    {/* Salas de Passe */}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between px-1">
                             <h3 className="text-lg font-medium text-slate-500">Salas de Passe</h3>
@@ -331,7 +359,6 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                         <div className="grid grid-cols-1 gap-4">
                             {passeRooms.map(room => {
                                 const occupants = getRoomOccupants(room.id);
-
                                 return (
                                     <div
                                         key={room.id}
@@ -352,20 +379,17 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                                     Arraste aqui
                                                 </div>
                                             )}
-                                            {occupants.map(w => {
-                                                const roomOptions = w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned;
-                                                return (
-                                                    <WorkerCard
-                                                        key={w.id}
-                                                        worker={w}
-                                                        roleLabel={w.isCoordinator ? 'Coordenador' : undefined}
-                                                        rooms={roomOptions}
-                                                        onMove={handleMoveWorker}
-                                                        dragHandleProps={makeDragHandleProps(w.id)}
-                                                        onDoubleClick={onEditWorker ? () => onEditWorker(w) : undefined}
-                                                    />
-                                                );
-                                            })}
+                                            {occupants.map(w => (
+                                                <WorkerCard
+                                                    key={w.id}
+                                                    worker={w}
+                                                    roleLabel={w.isCoordinator ? 'Coordenador' : undefined}
+                                                    rooms={roomsWithUnassigned}
+                                                    onMove={handleMoveWorker}
+                                                    dragHandleProps={makeDragHandleProps(w.id)}
+                                                    onDoubleClick={onEditWorker ? () => onEditWorker(w) : undefined}
+                                                />
+                                            ))}
                                         </div>
                                     </div>
                                 );
@@ -373,12 +397,12 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                         </div>
                     </div>
 
+                    {/* Outras Salas (Palestra, Aulinha, Recepção, Entrevista) */}
                     <div className="space-y-3">
-                        <h3 className="text-lg font-medium text-slate-500 px-1">Entrevista</h3>
+                        <h3 className="text-lg font-medium text-slate-500 px-1">Outras Salas</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {otherRooms.map(room => {
                                 const occupants = getRoomOccupants(room.id);
-
                                 return (
                                     <div
                                         key={room.id}
@@ -394,12 +418,14 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                             </span>
                                         </div>
                                         <div className="space-y-2">
-                                            {occupants.length === 0 && <p className="text-xs text-stone-300 italic px-1">Vazio</p>}
+                                            {occupants.length === 0 && (
+                                                <p className="text-xs text-stone-300 italic px-1">Vazio</p>
+                                            )}
                                             {occupants.map(w => (
                                                 <WorkerCard
                                                     key={w.id}
                                                     worker={w}
-                                                    rooms={roomsWithUnassigned}
+                                                    rooms={w.isReplica ? nonPasseRoomsWithUnassigned : roomsWithUnassigned}
                                                     onMove={handleMoveWorker}
                                                     dragHandleProps={makeDragHandleProps(w.id)}
                                                     onDoubleClick={onEditWorker ? () => onEditWorker(w) : undefined}
@@ -412,6 +438,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                         </div>
                     </div>
 
+                    {/* Não Alocados */}
                     {unassignedWorkers.length > 0 && (
                         <div
                             className="bg-white rounded-2xl p-4 border border-card-border/60 shadow-soft"
@@ -431,7 +458,7 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
                                         key={w.id}
                                         worker={w}
                                         roleLabel={undefined}
-                                        rooms={w.isReplica ? passeRoomsWithUnassigned : roomsWithUnassigned}
+                                        rooms={roomsWithUnassigned}
                                         onMove={handleMoveWorker}
                                         dragHandleProps={makeDragHandleProps(w.id)}
                                         onDoubleClick={onEditWorker ? () => onEditWorker(w) : undefined}
