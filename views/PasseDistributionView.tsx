@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   ViewState,
   PasseAttendance,
@@ -98,8 +98,8 @@ const STYLES = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   cursor: pointer;
   border: 0;
@@ -268,6 +268,14 @@ function getTopGroup(att: PasseAttendance): number {
   return 2;
 }
 
+function formatDateDisplay(dateStr: string): string {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-");
+  const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  return `${day}/${month}/${year.slice(2)} · ${weekDays[d.getDay()]}`;
+}
+
 function toMillis(isoDate?: string): number {
   if (!isoDate) return 0;
   const value = Date.parse(isoDate);
@@ -295,17 +303,17 @@ function SituacaoIcon({ status }: { status: AttendanceStatus }) {
     return null; // Sem ícone para aguardando
   }
   if (status === AttendanceStatus.NaSala) {
-    return <ArrowUpIcon style={{ width: 18, height: 18, color: "#004e89" }} />;
+    return <ArrowUpIcon style={{ width: 16, height: 16, color: "#004e89" }} />;
   }
   if (status === AttendanceStatus.EmAtendimento) {
     return (
       <HourglassSpinIcon
-        style={{ width: 18, height: 18, color: "#0b5fff" }}
+        style={{ width: 16, height: 16, color: "#0b5fff" }}
       />
     );
   }
   return (
-    <CheckCircleIcon style={{ width: 19, height: 19, color: "#10b981" }} />
+    <CheckCircleIcon style={{ width: 16, height: 16, color: "#10b981" }} />
   );
 }
 
@@ -325,6 +333,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
         .toISOString()
         .split("T")[0],
   );
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-refresh a cada 10 segundos
   useEffect(() => {
@@ -363,7 +372,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
 
   const roomOptions = useMemo<RoomOption[]>(() => {
     return rooms
-      .filter((r) => r.type === "Passe")
+      .filter((r) => r.type === "Passe" && (r.status ?? 'Aberto') === 'Aberto')
       .map((room) => {
         const workersInRoom = workers.filter(
           (w) => w.assignedRoomId === room.id && w.present,
@@ -860,58 +869,54 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
 
       <div
         style={{
-          marginTop: 24,
+          marginTop: 10,
           display: "flex",
           flexDirection: "column",
-          gap: 24,
+          gap: 20,
           paddingBottom: 40,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "flex-end",
-            gap: 12,
-          }}
-        >
-          <div
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span
             style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-              maxWidth: 220,
+              fontSize: 15,
+              fontWeight: 700,
+              color: "#0d191b",
+              letterSpacing: "0.01em",
             }}
           >
-            <label style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>
-              Data do Passe
-            </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              style={{
-                padding: "10px 14px",
-                border: "1px solid rgba(255, 255, 255, 0.4)",
-                borderRadius: 10,
-                fontSize: 14,
-                fontWeight: 600,
-                background: "rgba(255, 255, 255, 0.65)",
-                backdropFilter: "blur(10px)",
-                color: "#0d191b",
-                outline: "none",
-              }}
-            />
-          </div>
-          <div
+            {formatDateDisplay(date)}
+          </span>
+          <button
+            type="button"
+            onClick={() => dateInputRef.current?.showPicker?.()}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
+              padding: "4px 12px",
+              fontSize: 12,
+              fontWeight: 700,
+              border: "1px solid rgba(13, 25, 27, 0.15)",
+              borderRadius: 8,
+              background: "rgba(255,255,255,0.65)",
+              color: "#334155",
+              cursor: "pointer",
+              letterSpacing: "0.04em",
             }}
           >
-            {/* Ícones de teste removidos da visualização (mantidos no código conforme solicitado) */}
-          </div>
+            Alterar
+          </button>
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            style={{
+              position: "absolute",
+              opacity: 0,
+              pointerEvents: "none",
+              width: 0,
+              height: 0,
+            }}
+          />
         </div>
 
         {noValidRooms && (
@@ -950,9 +955,7 @@ export const PasseDistributionView: React.FC<PasseDistributionViewProps> = ({
                     Tipo
                   </th>
                   <th style={{ width: 70, textAlign: "center", }}>Sala</th>
-                  <th style={{ width: 24, textAlign: "center", padding: 0 }}>
-                    Situação
-                  </th>
+                  <th style={{ width: 20, textAlign: "center", padding: 0 }} />
                 </tr>
               </thead>
               <tbody>

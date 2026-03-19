@@ -24,6 +24,7 @@ function roomFromDb(row: any): Room {
     description: row.descricao ?? undefined,
     avatarUrl: row.url_avatar ?? undefined,
     avatarIcon: row.icone_avatar ?? undefined,
+    status: (row.status as 'Aberto' | 'Fechado') ?? 'Aberto',
   };
 }
 
@@ -36,6 +37,7 @@ function roomToDb(room: Room): Record<string, any> {
     descricao: room.description ?? null,
     url_avatar: room.avatarUrl ?? null,
     icone_avatar: room.avatarIcon ?? null,
+    status: room.status ?? 'Aberto',
   };
 }
 

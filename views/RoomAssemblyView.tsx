@@ -104,8 +104,9 @@ export const RoomAssemblyView: React.FC<RoomAssemblyViewProps> = ({ workers, roo
         return sortWorkersByRole([...base, ...replicas]) as AssemblyWorker[];
     };
 
-    const passeRooms = rooms.filter(r => r.type === RoomType.Passe || r.name.toLowerCase().includes('passe'));
-    const otherRooms = rooms.filter(r => r.type !== RoomType.Passe && !r.name.toLowerCase().includes('passe'));
+    const openRooms = rooms.filter(r => (r.status ?? 'Aberto') === 'Aberto');
+    const passeRooms = openRooms.filter(r => r.type === RoomType.Passe || r.name.toLowerCase().includes('passe'));
+    const otherRooms = openRooms.filter(r => r.type !== RoomType.Passe && !r.name.toLowerCase().includes('passe'));
 
     // Unassigned: only real workers with no assignment (no phantom replicas here)
     const unassignedWorkers = sortWorkersByRole(

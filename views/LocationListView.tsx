@@ -62,7 +62,14 @@ export const LocationListView: React.FC<LocationListViewProps> = ({ onBack, room
 
                         {/* Only icon/avatar visual + name (clean view) */}
                         <div className="flex-1 min-w-0 z-10">
-                            <h4 className="font-bold text-lg text-slate-800 truncate">{loc.name}</h4>
+                            <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-lg text-slate-800 truncate">{loc.name}</h4>
+                                {loc.status === 'Fechado' && (
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-100 text-red-600 flex-shrink-0">
+                                        Fechado
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         {/* Keep actions available for CRUD but keep them small */}

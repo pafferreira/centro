@@ -56,6 +56,8 @@ export interface Room {
   avatarUrl?: string;
   /** Optional icon key to render an inline SVG icon for the room (e.g. 'SpaIcon') */
   avatarIcon?: string;
+  /** Status operacional da sala: 'Aberto' = disponível para uso; 'Fechado' = fora de operação */
+  status?: 'Aberto' | 'Fechado';
 }
 
 export type ViewState =

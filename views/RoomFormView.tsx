@@ -24,6 +24,7 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
     const [selectedAvatar, setSelectedAvatar] = useState(room?.avatarUrl || "");
     const [selectedIcon, setSelectedIcon] = useState<string | null>(room?.avatarIcon ?? "DoorIcon");
     const [avatarLocked, setAvatarLocked] = useState(true);
+    const [status, setStatus] = useState<'Aberto' | 'Fechado'>(room?.status ?? 'Aberto');
 
     // Location-themed avatar suggestions (door/pin shapes) to avoid person avatars
     const avatarSuggestions = [
@@ -43,6 +44,7 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
             setSelectedAvatar(room.avatarUrl || "");
             setSelectedIcon(room.avatarIcon || "DoorIcon");
             setAvatarLocked(true);
+            setStatus(room.status ?? 'Aberto');
         }
     }, [room]);
 
@@ -74,6 +76,7 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
             description: description.trim(),
             avatarUrl: selectedAvatar || undefined,
             avatarIcon: selectedIcon || "DoorIcon",
+            status,
         };
 
         onSave(newRoom);
@@ -245,6 +248,33 @@ export const RoomFormView: React.FC<RoomFormViewProps> = ({ room, onSave, onCanc
                         className="w-full px-4 py-3 bg-green-50/80 border-none rounded-xl text-text-main placeholder:text-slate-400 focus:ring-2 focus:ring-green-300 outline-none resize-none"
                         placeholder="Descrição da sala..."
                     />
+                </div>
+
+                {/* Status da Sala */}
+                <div>
+                    <label className="block text-sm font-semibold text-text-main mb-2 ml-1">Status</label>
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setStatus('Aberto')}
+                            className={`flex-1 h-11 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer ${status === 'Aberto'
+                                ? 'bg-green-100 border-green-500 text-green-800 shadow-sm'
+                                : 'bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:bg-green-50/50'
+                            }`}
+                        >
+                            Aberto
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setStatus('Fechado')}
+                            className={`flex-1 h-11 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer ${status === 'Fechado'
+                                ? 'bg-red-100 border-red-400 text-red-700 shadow-sm'
+                                : 'bg-white border-slate-200 text-slate-500 hover:border-red-300 hover:bg-red-50/50'
+                            }`}
+                        >
+                            Fechado
+                        </button>
+                    </div>
                 </div>
 
                 {/* Botões */}

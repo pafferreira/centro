@@ -47,7 +47,14 @@ export const RoomsListView: React.FC<RoomsListViewProps> = ({ rooms, onEdit, onD
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-slate-800 text-base truncate">{room.name}</h4>
+                            <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-slate-800 text-base truncate">{room.name}</h4>
+                                {room.status === 'Fechado' && (
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-100 text-red-600 flex-shrink-0">
+                                        Fechado
+                                    </span>
+                                )}
+                            </div>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-green-100 text-green-700">
                                     Capacidade: {room.capacity}

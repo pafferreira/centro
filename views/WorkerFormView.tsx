@@ -14,7 +14,6 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
     const [name, setName] = useState(worker?.name || "");
     const [contact, setContact] = useState(worker?.contact || "");
     const [selectedAvatar, setSelectedAvatar] = useState(worker?.avatarUrl || "");
-    const [avatarLocked, setAvatarLocked] = useState(!!worker?.avatarUrl); // Lock if editing existing worker
     const [skills, setSkills] = useState({
         medium: worker?.roles.includes(WorkerRole.Medium) || false,
         dialogue: worker?.roles.includes(WorkerRole.Dialogo) || false,
@@ -25,21 +24,40 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
     });
     const [isCoordinator, setIsCoordinator] = useState(worker?.isCoordinator || false);
 
-    // Generate avatar suggestions
-    const avatarSuggestions = [
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name || 'avatar1')}&backgroundColor=b6e3f4`,
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name || 'avatar2')}&backgroundColor=c0aede`,
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name || 'avatar3')}&backgroundColor=d1d4f9`,
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent((name || 'avatar4') + '1')}&backgroundColor=b6e3f4`,
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent((name || 'avatar5') + '2')}&backgroundColor=c0aede`,
+    // Static avatar list — seeds are fixed so they never change as user types
+    const AVATAR_LIST = [
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=felix&backgroundColor=b6e3f4`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=luna&backgroundColor=c0aede`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=marco&backgroundColor=d1d4f9`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=ana&backgroundColor=b6e3f4`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=pedro&backgroundColor=ffd5dc`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=julia&backgroundColor=c0aede`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=carlos&backgroundColor=d1d4f9`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=beatriz&backgroundColor=b6e3f4`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=rafael&backgroundColor=ffd5dc`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=mariana&backgroundColor=c0aede`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=thiago&backgroundColor=d1d4f9`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=fernanda&backgroundColor=ffd5dc`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=guilherme&backgroundColor=b6e3f4`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=camila&backgroundColor=c0aede`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=leandro&backgroundColor=d1d4f9`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=patricia&backgroundColor=ffd5dc`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=rodrigo&backgroundColor=b6e3f4`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=luciana&backgroundColor=c0aede`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=diego&backgroundColor=d1d4f9`,
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=renata&backgroundColor=ffd5dc`,
     ];
+
+    // Se o trabalhador já tem um avatar salvo que não está na lista, inclui ele primeiro
+    const avatarSuggestions = worker?.avatarUrl && !AVATAR_LIST.includes(worker.avatarUrl)
+        ? [worker.avatarUrl, ...AVATAR_LIST]
+        : AVATAR_LIST;
 
     useEffect(() => {
         if (worker) {
             setName(worker.name);
             setContact(worker.contact || "");
             setSelectedAvatar(worker.avatarUrl || "");
-            setAvatarLocked(!!worker.avatarUrl);
             setSkills({
                 medium: worker.roles.includes(WorkerRole.Medium),
                 dialogue: worker.roles.includes(WorkerRole.Dialogo),
@@ -63,16 +81,8 @@ export const WorkerFormView: React.FC<WorkerFormViewProps> = ({ worker, onSave, 
         return () => window.removeEventListener('keydown', onKey);
     }, [onCancel]);
 
-    useEffect(() => {
-        // Only update avatar automatically if user hasn't explicitly selected one
-        if (!avatarLocked && name && !worker) {
-            setSelectedAvatar(avatarSuggestions[0]);
-        }
-    }, [name, avatarLocked]);
-
     const handleAvatarSelect = (avatarUrl: string) => {
         setSelectedAvatar(avatarUrl);
-        setAvatarLocked(true); // Lock avatar once user selects one
     };
 
     const toggleSkill = (skill: keyof typeof skills) => {

@@ -9,6 +9,13 @@ import { distributeAttendances } from '../utils/distributionLogic';
 import { Combobox } from '../components/shared/Combobox';
 
 const NAME_PARTICLES = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+function formatDateShort(dateStr: string): string {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    return `${day}/${month}/${year.slice(2)} · ${weekDays[d.getDay()]}`;
+}
 
 function formatAssistidoName(raw: string): string {
     return raw
@@ -300,14 +307,9 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
             </div>
 
             <div className="mt-3 flex flex-col gap-4 px-1 pb-10">
-                {/* Card de Data Separado */}
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between gap-4">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1">Data do Passe</span>
-                        <h2 className="text-lg font-bold text-slate-800 leading-none">
-                            {new Date(date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                        </h2>
-                    </div>
+                {/* Data do Passe — inline */}
+                <div className="flex items-center gap-2.5">
+                    <span className="text-base font-bold text-slate-800"><span className="text-slate-600 font-semibold">Dia do Passe: </span>{formatDateShort(date)}</span>
                     <div className="relative">
                         <input
                             ref={dateInputRef}
@@ -315,7 +317,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                             required
                             value={date}
                             onChange={e => setDate(e.target.value)}
-                            className="absolute inset-0 opacity-0 -z-10"
+                            className="absolute opacity-0 pointer-events-none w-0 h-0"
                         />
                         <button
                             type="button"
@@ -328,7 +330,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                                     }
                                 }
                             }}
-                            className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold border border-blue-100 hover:bg-blue-100 transition-colors cursor-pointer active:scale-95"
+                            className="bg-white text-slate-600 px-3 py-1 rounded-lg text-xs font-bold border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer active:scale-95"
                         >
                             Alterar
                         </button>
@@ -432,8 +434,8 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                 <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
-                            <h3 className="font-bold text-slate-800 truncate text-sm">Fila · {date.split('-').reverse().join('/')}</h3>
-                            <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">{todaysAttendances.length} Atendidos</span>
+                            <h3 className="font-bold text-slate-800 truncate text-sm">Fila </h3>
+                            <span className="bg-blue-100 text-blue-700 text-[15px] font-bold px-2 py-0.5 rounded-full shrink-0">{todaysAttendances.length} Atendidos</span>
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -444,7 +446,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                                         onClick={() => setSortMode('CHEGADA')}
                                         className={`px-2 py-1 rounded-md transition-colors flex items-center justify-center ${sortMode === 'CHEGADA' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
                                     >
-                                        <ListIcon className="w-4 h-4" />
+                                        <ListIcon className="w-5 h-5" />
                                     </button>
                                 </Tooltip>
                                 <Tooltip text="Agrupar por Tipo" position="top">
@@ -453,7 +455,7 @@ export const PasseRegistrationView: React.FC<PasseRegistrationViewProps> = ({ at
                                         onClick={() => setSortMode('TIPO')}
                                         className={`px-2 py-1 rounded-md transition-colors flex items-center justify-center ${sortMode === 'TIPO' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
                                     >
-                                        <CardsIcon className="w-4 h-4" />
+                                        <CardsIcon className="w-5 h-5" />
                                     </button>
                                 </Tooltip>
                             </div>
