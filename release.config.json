@@ -1,0 +1,6 @@
+{
+  "version_file": "package.json",
+  "tag_prefix": "v",
+  "checks": ["npm run build"],
+  "disable_hooks": true
+}
