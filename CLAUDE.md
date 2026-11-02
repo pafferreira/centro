@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Hub DEV
+Este projeto segue o hub **`pafferreira/dev-tools`** (no Windows, a pasta `..\dev-tools`): ficha `projetos/centro.md`, convenções `padroes/convencoes.md`, banco `padroes/banco-de-dados.md`, versão `padroes/versionamento.md` e chaves `segredos/MAPA.md` (só nomes; valores no Infisical). As regras deste arquivo são específicas do projeto e prevalecem.
+
+- **Estilo:** skill `estilo-paf`, tema **`centro` = paleta `paf`** (decisão 0004 do hub; cópia em `antigravity-skills/skills/estilo_paf/`). Até a migração, telas existentes mantêm as cores atuais; telas novas e a migração usam o tema `paf`. Layout por tela continua em `design-system/centro/pages/`.
+
 ## Project Overview
 
 Centro — community center management app (GFA Nossa Casa). React 19 + Vite + TypeScript SPA with Supabase backend and Gemini AI integration. Deployed on Vercel.
