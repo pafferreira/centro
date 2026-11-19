@@ -61,8 +61,8 @@ O controle de versão usa o `release.py` do repositório **`pafferreira/dev-tool
 
 - **Windows:** de dentro da pasta do projeto (`\DEV\centro`): `python ..\dev-tools\release.py patch "texto curto"`.
 - **Sessão na nuvem:** anexar `pafferreira/dev-tools` (`add_repo`), clonar e rodar `python /home/user/dev-tools/release.py patch "texto curto" --project <pasta do projeto>`.
-- `--dry-run` mostra a versão sem alterar nada. Rodar na branch principal, com a árvore limpa, depois do merge (o script faz push direto na branch atual, sem PR).
-- No ambiente de nuvem o push da **tag** costuma falhar (403): o release continua válido e a tag pode ser enviada depois (`git push origin vX.Y.Z`).
+- `--dry-run` mostra a versão sem alterar nada. Rodar com a árvore limpa **na branch do PR, antes do merge**: o script faz commit e push na branch atual, a versão entra no PR e o merge é o release. Sem PR, rodar na `main`.
+- A **tag** `vX.Y.Z` e o Release do GitHub são criados pelo workflow `.github/workflows/tag-versao.yml` (cópia do modelo do hub) quando o arquivo de versão muda na `main`. Não envie tag à mão; para criar tags que faltam, rode o workflow pela aba Actions.
 - **Fluxos antigos** (`Commit_PAF.cmd`, `npm run release`): continuam no repositório, mas não devem ser usados junto com o `release.py` na mesma alteração. O `Commit_PAF` também commita os arquivos em stage; o `release.py` só roda com a árvore limpa.
 
 ### Gatilho "commit"
